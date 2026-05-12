@@ -42,12 +42,19 @@ async function startServer() {
       return;
     }
 
-    // Since we don't have Supabase, we mock fetching the real URL
-    const mockSecureUrl = `https://example.com/download-secure?fileId=${id}&token=${crypto.randomBytes(16).toString('hex')}`;
+    // Since we don't have Supabase, we mock fetching the real URL optionally passing it via query
+    let targetUrl = `https://example.com/download-secure?fileId=${id}&token=${crypto.randomBytes(16).toString('hex')}`;
+    if (req.query.url && typeof req.query.url === 'string') {
+      try {
+        targetUrl = Buffer.from(req.query.url, 'base64').toString('utf-8');
+      } catch (e) {
+        // Fallback to mock on decode error
+      }
+    }
     
     // Server-side redirect (302) to mask real URL
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-    res.redirect(302, mockSecureUrl);
+    res.redirect(302, targetUrl);
   });
 
   // Vite middleware for development

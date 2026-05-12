@@ -150,7 +150,7 @@ export default function DownloadPage() {
           </div>
         </div>
         
-        <SecureDownloadButton appId={app.id} status={app.safety_status as 'Verified' | 'Caution' | 'Unsafe'} />
+        <SecureDownloadButton appId={app.id} status={app.safety_status as 'Verified' | 'Caution' | 'Unsafe'} downloadUrl={app.encrypted_download_url} />
       </div>
 
       {/* Strict Section Order 1: Admin Alert Boxes */}

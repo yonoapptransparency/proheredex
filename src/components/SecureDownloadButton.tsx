@@ -4,9 +4,10 @@ import { ShieldCheck, AlertTriangle, ShieldAlert, Loader2 } from 'lucide-react';
 interface SecureDownloadButtonProps {
   appId: string;
   status: 'Verified' | 'Caution' | 'Unsafe';
+  downloadUrl?: string;
 }
 
-export default function SecureDownloadButton({ appId, status }: SecureDownloadButtonProps) {
+export default function SecureDownloadButton({ appId, status, downloadUrl }: SecureDownloadButtonProps) {
   const [loadTime, setLoadTime] = useState<number>(0);
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -24,16 +25,19 @@ export default function SecureDownloadButton({ appId, status }: SecureDownloadBu
     // 2. Gate 1: Human Verification
     const timeOnPage = Date.now() - loadTime;
     
+    // Convert to mock target URL if available
+    const urlParam = downloadUrl ? `&url=${encodeURIComponent(btoa(downloadUrl))}` : '';
+    
     if (timeOnPage < 3000) {
       // Simulate waiting or reject if clicked instantly
       setIsVerifying(true);
       setTimeout(() => {
-        window.location.replace(`/api/v1/secure-fetch?id=${appId}&timestamp=${loadTime}`);
+        window.location.replace(`/api/v1/secure-fetch?id=${appId}&timestamp=${loadTime}${urlParam}`);
       }, 3000 - timeOnPage);
     } else {
       // Allow download immediately if they already waited
       setIsVerifying(true);
-      window.location.replace(`/api/v1/secure-fetch?id=${appId}&timestamp=${loadTime}`);
+      window.location.replace(`/api/v1/secure-fetch?id=${appId}&timestamp=${loadTime}${urlParam}`);
     }
   };
 
