@@ -26,7 +26,11 @@ export default function SecureDownloadButton({ appId, status, downloadUrl }: Sec
     const timeOnPage = Date.now() - loadTime;
     
     // Convert to mock target URL if available
-    const urlParam = downloadUrl ? `&url=${encodeURIComponent(btoa(downloadUrl))}` : '';
+    // Unicode-safe base64 encoding
+    const encodedUrl = downloadUrl 
+      ? btoa(encodeURIComponent(downloadUrl).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode(parseInt(p1, 16))))
+      : '';
+    const urlParam = encodedUrl ? `&url=${encodeURIComponent(encodedUrl)}` : '';
     
     if (timeOnPage < 3000) {
       // Simulate waiting or reject if clicked instantly

@@ -46,9 +46,25 @@ async function startServer() {
     let targetUrl = `https://example.com/download-secure?fileId=${id}&token=${crypto.randomBytes(16).toString('hex')}`;
     if (req.query.url && typeof req.query.url === 'string') {
       try {
+        // Try decoding base64 first
         targetUrl = Buffer.from(req.query.url, 'base64').toString('utf-8');
       } catch (e) {
-        // Fallback to mock on decode error
+        // Fallback
+        targetUrl = req.query.url;
+      }
+      
+      // If the url was not base64 encoded, decoding it might result in garbage or original string.
+      // Let's ensure targetUrl is usable.
+      if (!targetUrl.startsWith('http')) {
+        // Did we fail decoding?
+        if (req.query.url.startsWith('http')) {
+           targetUrl = req.query.url;
+        } else if (targetUrl === 'U2FsdGVkX19xxxxxx' || targetUrl.trim() === '') {
+           targetUrl = `https://example.com/mock-secure-redirect?original=${targetUrl}`;
+        } else {
+           // Maybe they typed google.com without https://
+           targetUrl = 'https://' + targetUrl.replace(/^[^\w]+/, '');
+        }
       }
     }
     
@@ -73,7 +89,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, () => {
+  app.listen(PORT as number, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
