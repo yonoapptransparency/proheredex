@@ -1,10 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* Global Magic Text Contrast */
+/* Global Magic Text - Simplified for performance */
 .magic-text {
-  @apply text-white transition-opacity duration-300;
-  mix-blend-mode: difference;
+  @apply transition-opacity duration-300;
+  /* Removed mix-blend-mode: difference as it causes performance issues */
 }
 
 /* Ensure the background underneath is properly defined for the blend to work */
@@ -37,15 +37,15 @@ html.dark body {
   background-attachment: fixed;
 }
 
-/* Spatial Glassmorphism Utils - Refined for "Premium" look */
+/* Spatial Glassmorphism Utils - Optimized for performance */
 .glass-panel {
-  @apply bg-white/95 dark:bg-zinc-900/40 backdrop-blur-2xl border border-white dark:border-white/5 shadow-2xl rounded-[2.5rem];
-  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.03), inset 0 1px 1px rgba(255, 255, 255, 1);
+  @apply bg-white/95 dark:bg-zinc-900/40 backdrop-blur-md border border-white dark:border-white/5 shadow-xl rounded-[2.5rem];
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
   transform: translateZ(0);
 }
 
 .glass-nav {
-  @apply bg-white/60 dark:bg-black/60 backdrop-blur-2xl border-b border-white/20 dark:border-white/5 sticky top-0 z-50;
+  @apply bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-white/20 dark:border-white/5 sticky top-0 z-50;
   transform: translateZ(0);
 }
 
@@ -60,7 +60,7 @@ html.dark body {
 }
 
 .white-theme-portal {
-  @apply bg-white dark:bg-zinc-900/60 backdrop-blur-3xl text-black dark:text-white py-16 px-6 sm:px-12 md:px-24 border-y border-black/5 dark:border-white/5;
+  @apply bg-white dark:bg-zinc-900/60 backdrop-blur-md text-black dark:text-white py-16 px-6 sm:px-12 md:px-24 border-y border-black/5 dark:border-white/5;
 }
 
 /* Simple animations */

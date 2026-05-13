@@ -1,44 +1,20 @@
 {
   "entities": {
-    "app": {
-      "title": "App",
-      "description": "An application listed in the store",
+    "StoreDataApps": {
+      "title": "Apps Collection Wrapper",
+      "description": "A wrapper for the list of apps",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "slug": { "type": "string" },
-        "seo_title": { "type": "string" },
-        "seo_description": { "type": "string" },
-        "seo_keywords": { "type": "string" },
-        "og_image_url": { "type": "string" },
-        "canonical_url": { "type": "string" },
-        "category": { "type": "string" },
-        "version": { "type": "string" },
-        "file_size": { "type": "string" },
-        "developer": { "type": "string" },
-        "icon_url": { "type": "string" },
-        "screenshots": { "type": "array" },
-        "encrypted_download_url": { "type": "string" },
-        "description_html": { "type": "string" },
-        "red_box_msg": { "type": "string" },
-        "yellow_box_msg": { "type": "string" },
-        "idea_box_msg": { "type": "string" },
-        "safety_status": { "type": "string" },
-        "serial_number": { "type": "number" },
-        "is_featured": { "type": "boolean" },
-        "is_new": { "type": "boolean" },
-        "release_notes": { "type": "string" },
-        "rating": { "type": "number" },
-        "created_at": { "type": "string" },
-        "custom_admin_box_html": { "type": "string" },
-        "custom_admin_box_heading": { "type": "string" },
-        "faqs": { "type": "array" }
-      }
+        "items": {
+          "type": "array",
+          "description": "List of AppConfig objects"
+        }
+      },
+      "required": ["items"]
     },
-    "setting": {
-      "title": "Setting",
-      "description": "Global settings for the store",
+    "StoreDataSettings": {
+      "title": "Global Settings",
+      "description": "Global application settings",
       "type": "object",
       "properties": {
         "site_title": { "type": "string" },
@@ -52,86 +28,59 @@
         "ethics_discrimination_text": { "type": "string" },
         "ticker_text": { "type": "string" },
         "animations_enabled": { "type": "boolean" },
-        "seo_keywords": { "type": "string" },
-        "about_content": { "type": "string" },
-        "contact_content": { "type": "string" },
-        "privacy_content": { "type": "string" },
-        "terms_content": { "type": "string" },
-        "important_notice": { "type": "string" },
         "categories": { "type": "array" },
         "banners": { "type": "array" }
-      }
+      },
+      "required": ["site_title"]
     },
-    "news": {
-      "title": "News",
-      "description": "News items",
+    "StoreDataNews": {
+      "title": "News Collection",
+      "description": "A wrapper for news items",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "slug": { "type": "string" },
-        "title": { "type": "string" },
-        "logo_url": { "type": "string" },
-        "description": { "type": "string" },
-        "ceo_name": { "type": "string" },
-        "ceo_description": { "type": "string" },
-        "seo_title": { "type": "string" },
-        "seo_description": { "type": "string" },
-        "seo_keywords": { "type": "string" },
-        "og_image_url": { "type": "string" },
-        "content": { "type": "string" },
-        "link": { "type": "string" }
-      }
+        "items": { "type": "array" }
+      },
+      "required": ["items"]
     },
-    "blog": {
-      "title": "Blog",
-      "description": "Blog posts",
+    "StoreDataBlogs": {
+      "title": "Blog Collection",
+      "description": "A wrapper for blog items",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string" },
-        "content": { "type": "string" },
-        "author": { "type": "string" },
-        "cover_url": { "type": "string" },
-        "published_at": { "type": "string" }
-      }
+        "items": { "type": "array" }
+      },
+      "required": ["items"]
     },
-    "video": {
-      "title": "Video",
-      "description": "Videos",
+    "StoreDataVideos": {
+      "title": "Video Collection",
+      "description": "A wrapper for video items",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "slug": { "type": "string" },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "youtube_url": { "type": "string" },
-        "seo_title": { "type": "string" },
-        "seo_description": { "type": "string" },
-        "seo_keywords": { "type": "string" },
-        "created_at": { "type": "string" }
-      }
+        "items": { "type": "array" }
+      },
+      "required": ["items"]
     }
   },
   "firestore": {
-    "store_data/apps": {
-      "schema": { "$ref": "#/entities/app" },
-      "description": "List of apps (stored as items array in one doc)"
+    "/store_data/apps": {
+      "schema": "StoreDataApps",
+      "description": "Application configurations"
     },
-    "store_data/settings": {
-      "schema": { "$ref": "#/entities/setting" },
-      "description": "Global settings"
+    "/store_data/settings": {
+      "schema": "StoreDataSettings",
+      "description": "Global site settings"
     },
-    "store_data/news": {
-      "schema": { "$ref": "#/entities/news" },
-      "description": "List of news items"
+    "/store_data/news": {
+      "schema": "StoreDataNews",
+      "description": "News items"
     },
-    "store_data/blogs": {
-      "schema": { "$ref": "#/entities/blog" },
-      "description": "List of blogs"
+    "/store_data/blogs": {
+      "schema": "StoreDataBlogs",
+      "description": "Blog posts"
     },
-    "store_data/videos": {
-      "schema": { "$ref": "#/entities/video" },
-      "description": "List of videos"
+    "/store_data/videos": {
+      "schema": "StoreDataVideos",
+      "description": "Video gallery"
     }
   }
 }

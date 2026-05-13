@@ -43,8 +43,8 @@ function Header() {
   };
 
   const navVariants = settings.animations_enabled ? {
-    hidden: { y: -100, opacity: 0 },
-    visible: { y: 0, opacity: 1, transition: { duration: 0.8, delay: 0.5 } }
+    hidden: { y: -20, opacity: 0 },
+    visible: { y: 0, opacity: 1, transition: { duration: 0.4 } }
   } : {
     hidden: { y: 0, opacity: 1 },
     visible: { y: 0, opacity: 1 }
@@ -281,10 +281,6 @@ function AppContent() {
       link.href = settings.favicon_url;
     }
   }, [settings]);
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  }
 
   return (
     <Router>
