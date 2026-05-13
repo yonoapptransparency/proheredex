@@ -8,5 +8,5 @@ export const auth = getAuth(app);
 
 // Use initializeFirestore with long polling enabled for all database configurations to handle preview instability
 export const db = (!firebaseConfig.firestoreDatabaseId || firebaseConfig.firestoreDatabaseId === '(default)')
-  ? initializeFirestore(app, { experimentalAutoDetectLongPolling: true })
-  : initializeFirestore(app, { experimentalAutoDetectLongPolling: true }, firebaseConfig.firestoreDatabaseId);
+  ? initializeFirestore(app, { experimentalForceLongPolling: true })
+  : initializeFirestore(app, { experimentalForceLongPolling: true }, firebaseConfig.firestoreDatabaseId);

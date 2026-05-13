@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, getDoc, getDocFromServer } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { AppConfig, GlobalSettings, NewsItem, BlogPost, VideoItem } from '../lib/supabase';
 
@@ -75,57 +75,83 @@ interface DataContextType {
   saveNews: (news: NewsItem[]) => Promise<void>;
   saveBlogs: (blogs: BlogPost[]) => Promise<void>;
   saveVideos: (videos: VideoItem[]) => Promise<void>;
+  isConnected: boolean | null;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
-  const [apps, setApps] = useState<AppConfig[]>(mockApps);
-  const [settings, setSettings] = useState<GlobalSettings>(mockSettings);
-  const [news, setNews] = useState<NewsItem[]>(mockNews);
-  const [blogs, setBlogs] = useState<BlogPost[]>(mockBlogs);
-  const [videos, setVideos] = useState<VideoItem[]>(mockVideos);
-  const [loading, setLoading] = useState(false); // Start with false to show mock data immediately
+  const [apps, setApps] = useState<AppConfig[]>(() => {
+    const saved = localStorage.getItem('yonostore_apps');
+    return saved ? JSON.parse(saved) : mockApps;
+  });
+  const [settings, setSettings] = useState<GlobalSettings>(() => {
+    const saved = localStorage.getItem('yonostore_settings');
+    return saved ? JSON.parse(saved) : mockSettings;
+  });
+  const [news, setNews] = useState<NewsItem[]>(() => {
+    const saved = localStorage.getItem('yonostore_news');
+    return saved ? JSON.parse(saved) : mockNews;
+  });
+  const [blogs, setBlogs] = useState<BlogPost[]>(() => {
+    const saved = localStorage.getItem('yonostore_blogs');
+    return saved ? JSON.parse(saved) : mockBlogs;
+  });
+  const [videos, setVideos] = useState<VideoItem[]>(() => {
+    const saved = localStorage.getItem('yonostore_videos');
+    return saved ? JSON.parse(saved) : mockVideos;
+  });
+  const [loading, setLoading] = useState(false);
+  const [isConnected, setIsConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
     let initialCount = 0;
     const totalListen = 5;
     const checkLoaded = () => {
       initialCount++;
-      // No longer force-hiding the app behind a loading screen
     };
 
-    // We still want to track if we've synced at least once if needed, 
-    // but we'll show pages immediately.
-    
-    // Set a small safety timeout to ensure any critical data is fetched, 
-    // but the UI is already active.
-    const timeoutId = setTimeout(() => {
-      // Any logic that depends on 'sync complete' can go here
-    }, 2000);
+    // Test connectivity
+    const testDoc = doc(db, 'store_data', 'connectivity_test');
+    setDoc(testDoc, { last_check: new Date().toISOString() }, { merge: true })
+      .then(() => setIsConnected(true))
+      .catch((err) => {
+        console.error("Connectivity Test Failed:", err);
+        setIsConnected(false);
+      });
 
     const unsubs = [
-      onSnapshot(doc(db, 'store_data', 'apps'), (snap) => {
+      onSnapshot(doc(db, 'store_data', 'apps'), { includeMetadataChanges: true }, (snap) => {
+        const isServerUpdate = !snap.metadata.hasPendingWrites && !snap.metadata.fromCache;
+        console.log("Sync [Apps]: Server Confirmed =", isServerUpdate);
+        
         if (snap.exists()) {
           const data = snap.data().items || [];
           setApps(data);
           localStorage.setItem('yonostore_apps', JSON.stringify(data));
+          if (isServerUpdate) setIsConnected(true);
         }
         checkLoaded();
       }, (err) => {
+        console.error("Sync Error [Apps]:", err);
+        setIsConnected(false);
         checkLoaded();
-        console.error(err);
       }),
-      onSnapshot(doc(db, 'store_data', 'settings'), (snap) => {
+      onSnapshot(doc(db, 'store_data', 'settings'), { includeMetadataChanges: true }, (snap) => {
+        const isServerUpdate = !snap.metadata.hasPendingWrites && !snap.metadata.fromCache;
+        console.log("Sync [Settings]: Server Confirmed =", isServerUpdate);
+        
         if (snap.exists()) {
           const data = snap.data() as GlobalSettings;
           setSettings(data);
           localStorage.setItem('yonostore_settings', JSON.stringify(data));
+          if (isServerUpdate) setIsConnected(true);
         }
         checkLoaded();
       }, (err) => {
+        console.error("Sync Error [Settings]:", err);
+        setIsConnected(false);
         checkLoaded();
-        console.error(err);
       }),
       onSnapshot(doc(db, 'store_data', 'news'), (snap) => {
         if (snap.exists()) {
@@ -135,8 +161,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
         checkLoaded();
       }, (err) => {
+        console.error("Firestore Sync Error (news):", err);
         checkLoaded();
-        console.error(err);
       }),
       onSnapshot(doc(db, 'store_data', 'blogs'), (snap) => {
         if (snap.exists()) {
@@ -146,8 +172,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
         checkLoaded();
       }, (err) => {
+        console.error("Firestore Sync Error (blogs):", err);
         checkLoaded();
-        console.error(err);
       }),
       onSnapshot(doc(db, 'store_data', 'videos'), (snap) => {
         if (snap.exists()) {
@@ -157,65 +183,110 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
         checkLoaded();
       }, (err) => {
+        console.error("Firestore Sync Error (videos):", err);
         checkLoaded();
-        console.error(err);
       })
     ];
     
     return () => {
-      clearTimeout(timeoutId);
       unsubs.forEach(u => u());
     };
   }, []);
 
   const saveApps = async (newApps: AppConfig[]) => {
     try {
+      console.log("Attempting to save apps to Firestore...");
       localStorage.setItem('yonostore_apps', JSON.stringify(newApps));
       setApps(newApps);
-      await setDoc(doc(db, 'store_data', 'apps'), { items: newApps });
+      
+      const docRef = doc(db, 'store_data', 'apps');
+      await setDoc(docRef, { items: newApps });
+      
+      // Use getDocFromServer to bypass local cache and see if it actually hit the server
+      const verify = await getDocFromServer(docRef);
+      if (verify.exists()) {
+        console.log("Apps verified on SERVER after save.");
+      } else {
+        console.warn("Apps NOT found on SERVER after save! This usually means the write is queued but hasn't reached Firestore yet.");
+      }
     } catch (err) {
+      console.error("Save Apps Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/apps');
     }
   };
   const saveSettings = async (newSettings: GlobalSettings) => {
     try {
+      console.log("Attempting to save settings to Firestore...");
       localStorage.setItem('yonostore_settings', JSON.stringify(newSettings));
       setSettings(newSettings);
-      await setDoc(doc(db, 'store_data', 'settings'), newSettings);
+      
+      const docRef = doc(db, 'store_data', 'settings');
+      await setDoc(docRef, newSettings);
+      
+      // Use getDocFromServer to bypass local cache
+      const verify = await getDocFromServer(docRef);
+      if (verify.exists()) {
+        console.log("Settings verified on SERVER after save.");
+      } else {
+        console.warn("Settings NOT found on SERVER after save!");
+      }
     } catch (err) {
+      console.error("Save Settings Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/settings');
     }
   };
   const saveNews = async (newNews: NewsItem[]) => {
     try {
+      console.log("Attempting to save news to Firestore...");
       localStorage.setItem('yonostore_news', JSON.stringify(newNews));
       setNews(newNews);
       await setDoc(doc(db, 'store_data', 'news'), { items: newNews });
+      console.log("News saved successfully to Firestore.");
     } catch (err) {
+      console.error("Save News Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/news');
     }
   };
   const saveBlogs = async (newBlogs: BlogPost[]) => {
     try {
+      console.log("Attempting to save blogs to Firestore...");
       localStorage.setItem('yonostore_blogs', JSON.stringify(newBlogs));
       setBlogs(newBlogs);
       await setDoc(doc(db, 'store_data', 'blogs'), { items: newBlogs });
+      console.log("Blogs saved successfully to Firestore.");
     } catch (err) {
+      console.error("Save Blogs Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/blogs');
     }
   };
   const saveVideos = async (newVideos: VideoItem[]) => {
     try {
+      console.log("Attempting to save videos to Firestore...");
       localStorage.setItem('yonostore_videos', JSON.stringify(newVideos));
       setVideos(newVideos);
       await setDoc(doc(db, 'store_data', 'videos'), { items: newVideos });
+      console.log("Videos saved successfully to Firestore.");
     } catch (err) {
+      console.error("Save Videos Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/videos');
     }
   };
 
   return (
-    <DataContext.Provider value={{ apps, settings, news, blogs, videos, loading, saveApps, saveSettings, saveNews, saveBlogs, saveVideos }}>
+    <DataContext.Provider value={{
+      apps, 
+      settings, 
+      news, 
+      blogs, 
+      videos, 
+      loading, 
+      saveApps, 
+      saveSettings, 
+      saveNews, 
+      saveBlogs, 
+      saveVideos,
+      isConnected
+    }}>
       {children}
     </DataContext.Provider>
   );

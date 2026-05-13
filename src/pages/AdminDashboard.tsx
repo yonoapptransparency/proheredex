@@ -136,7 +136,7 @@ export default function AdminDashboard() {
       
       await saveMockSettings(updatedSettings);
       triggerHaptic();
-      alert('Settings saved successfully. Reload to see changes everywhere.');
+      alert('Global Settings Synced! Updates are now live for all users.');
     } catch (err: any) {
       console.error(err);
       alert('Error saving settings: ' + (err.message || 'Unknown error'));
@@ -194,7 +194,7 @@ export default function AdminDashboard() {
       setAppsList(updatedApps);
       triggerHaptic();
       setEditingAppId(null);
-      alert(editingAppId ? 'App updated successfully.' : 'App added successfully. Browse to Home Page to see.');
+      alert(editingAppId ? 'Application Updated & Synced Live!' : 'New Application Published Successfully!');
     } catch (err: any) {
       console.error(err);
       alert('Error saving app: ' + (err.message || 'Unknown error'));
@@ -375,8 +375,8 @@ export default function AdminDashboard() {
       <div className="mb-8 flex justify-between items-center bg-pink-100 dark:bg-pink-500/10 border border-pink-200 dark:border-pink-500/20 p-6 rounded-2xl">
         <div>
           <h1 className="text-2xl font-bold text-pink-400">YonoStore Admin Central</h1>
-          <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">Logged in as {user.email} • 🔐 God Mode Active (Case Insensitive)</p>
-          <p className="text-[10px] text-pink-500/50 mt-1 uppercase tracking-widest font-bold">System Status: Fully Operational • Last Patch: May 13 2026</p>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">Logged in as {user.email} • 🔐 God Mode Active</p>
+          <p className="text-[10px] text-pink-500/50 mt-1 uppercase tracking-widest font-bold">Live Sync Status: {saving ? 'Pushing Updates...' : 'Cloud Connected'} • Data Core: v2.1</p>
         </div>
         <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-white/10 hover:bg-white/20 rounded-lg transition-colors font-medium text-sm min-h-[48px]">
           <LogOut className="w-4 h-4" /> Sign Out

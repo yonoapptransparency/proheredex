@@ -1,86 +1,59 @@
 {
   "entities": {
-    "StoreDataApps": {
-      "title": "Apps Collection Wrapper",
-      "description": "A wrapper for the list of apps",
+    "AppConfig": {
+      "title": "App Configuration",
+      "description": "Configuration for a single app in the store",
       "type": "object",
       "properties": {
-        "items": {
-          "type": "array",
-          "description": "List of AppConfig objects"
-        }
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "icon_url": { "type": "string" },
+        "category": { "type": "string" },
+        "version": { "type": "string" },
+        "file_size": { "type": "string" },
+        "developer": { "type": "string" },
+        "encrypted_download_url": { "type": "string" },
+        "description_html": { "type": "string" },
+        "safety_status": { "type": "string", "enum": ["Verified", "Caution", "Unsafe"] },
+        "serial_number": { "type": "number" },
+        "is_new": { "type": "boolean" },
+        "created_at": { "type": "string", "format": "date-time" }
       },
-      "required": ["items"]
+      "required": ["id", "name", "slug"]
     },
-    "StoreDataSettings": {
+    "GlobalSettings": {
       "title": "Global Settings",
-      "description": "Global application settings",
+      "description": "Overall site configuration",
       "type": "object",
       "properties": {
         "site_title": { "type": "string" },
         "meta_description": { "type": "string" },
         "logo_url": { "type": "string" },
-        "favicon_url": { "type": "string" },
-        "helpline_whatsapp": { "type": "string" },
-        "helpline_telegram": { "type": "string" },
-        "support_email": { "type": "string" },
-        "disclaimer_text": { "type": "string" },
-        "ethics_discrimination_text": { "type": "string" },
-        "ticker_text": { "type": "string" },
-        "animations_enabled": { "type": "boolean" },
-        "categories": { "type": "array" },
-        "banners": { "type": "array" }
-      },
-      "required": ["site_title"]
-    },
-    "StoreDataNews": {
-      "title": "News Collection",
-      "description": "A wrapper for news items",
-      "type": "object",
-      "properties": {
-        "items": { "type": "array" }
-      },
-      "required": ["items"]
-    },
-    "StoreDataBlogs": {
-      "title": "Blog Collection",
-      "description": "A wrapper for blog items",
-      "type": "object",
-      "properties": {
-        "items": { "type": "array" }
-      },
-      "required": ["items"]
-    },
-    "StoreDataVideos": {
-      "title": "Video Collection",
-      "description": "A wrapper for video items",
-      "type": "object",
-      "properties": {
-        "items": { "type": "array" }
-      },
-      "required": ["items"]
+        "categories": { "type": "array", "items": { "type": "string" } }
+      }
     }
   },
   "firestore": {
     "/store_data/apps": {
-      "schema": "StoreDataApps",
-      "description": "Application configurations"
+      "schema": "AppConfig",
+      "description": "List of apps (stored as { items: [] })"
     },
     "/store_data/settings": {
-      "schema": "StoreDataSettings",
-      "description": "Global site settings"
+      "schema": "GlobalSettings",
+      "description": "Site-wide settings"
     },
     "/store_data/news": {
-      "schema": "StoreDataNews",
+      "schema": "object",
       "description": "News items"
     },
     "/store_data/blogs": {
-      "schema": "StoreDataBlogs",
+      "schema": "object",
       "description": "Blog posts"
     },
     "/store_data/videos": {
-      "schema": "StoreDataVideos",
-      "description": "Video gallery"
+      "schema": "object",
+      "description": "Video links"
     }
   }
 }

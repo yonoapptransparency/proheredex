@@ -191,11 +191,22 @@ function Footer() {
           </div>
         )}
 
-        <div className="text-black dark:text-slate-500 text-xs font-black uppercase tracking-tight">
+        <div className="text-black dark:text-slate-500 text-xs font-black uppercase tracking-tight flex items-center gap-2">
           &copy; 2026 {settings.site_title}. All rights reserved.
+          <SyncStatus />
         </div>
       </div>
     </footer>
+  );
+}
+
+function SyncStatus() {
+  const { isConnected } = useData();
+  return (
+    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter ${isConnected === true ? 'bg-green-500/10 text-green-500' : isConnected === false ? 'bg-red-500/10 text-red-500' : 'bg-slate-500/10 text-slate-500'}`}>
+      <div className={`w-1.5 h-1.5 rounded-full ${isConnected === true ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : isConnected === false ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'bg-slate-500 animate-pulse'}`}></div>
+      {isConnected === true ? 'Cloud Active' : isConnected === false ? 'Offline Mode' : 'Syncing...'}
+    </div>
   );
 }
 
