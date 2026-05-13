@@ -356,7 +356,7 @@ export default function AdminDashboard() {
     return <Navigate to="/admin/login" />;
   }
 
-  if (user.email !== 'defentechscholar@gmail.com') {
+  if (user.email?.toLowerCase() !== 'defentechscholar@gmail.com') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center">
         <h1 className="text-2xl font-bold text-rose-500 mb-4">Access Denied</h1>

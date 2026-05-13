@@ -113,23 +113,23 @@
     }
   },
   "firestore": {
-    "apps": {
+    "store_data/apps": {
       "schema": { "$ref": "#/entities/app" },
-      "description": "List of apps"
+      "description": "List of apps (stored as items array in one doc)"
     },
-    "settings": {
+    "store_data/settings": {
       "schema": { "$ref": "#/entities/setting" },
       "description": "Global settings"
     },
-    "news": {
+    "store_data/news": {
       "schema": { "$ref": "#/entities/news" },
-      "description": "List of news"
+      "description": "List of news items"
     },
-    "blogs": {
+    "store_data/blogs": {
       "schema": { "$ref": "#/entities/blog" },
       "description": "List of blogs"
     },
-    "videos": {
+    "store_data/videos": {
       "schema": { "$ref": "#/entities/video" },
       "description": "List of videos"
     }

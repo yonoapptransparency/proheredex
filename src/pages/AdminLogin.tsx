@@ -11,8 +11,20 @@ export default function AdminLogin() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [domainMismatch, setDomainMismatch] = useState(false);
 
   useEffect(() => {
+    // Check if we are on a Netlify preview domain or wrong domain which might cause auth issues
+    const host = window.location.hostname;
+    const isMainDomain = host === 'yonoinfo.netlify.app' || host === 'yonoinfo.in' || host === 'localhost';
+    
+    // Check if we are on an AI Studio preview domain
+    const isAiStudio = host.includes('run.app');
+
+    if ((!isMainDomain && !isAiStudio) || (host.includes('--') && host.includes('netlify.app'))) {
+      setDomainMismatch(true);
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setAuthenticated(true);
@@ -32,9 +44,14 @@ export default function AdminLogin() {
     setMessage(null);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // setAuthenticated will be handled by onAuthStateChanged
     } catch (err: any) {
-      setError(err.message || "Failed to sign in. Please check your credentials.");
+      if (err.code === 'auth/unauthorized-domain') {
+        setError(`Domain Unauthorized: ${window.location.hostname} is not allowed. Please add this domain to "Authorized Domains" in your Firebase Consol Authentication -> Settings.`);
+      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        setError("Invalid email or password. Please use the Google Login if you haven't set an email password yet.");
+      } else {
+        setError(err.message || "Failed to sign in. Please check your credentials.");
+      }
       setIsLoading(false);
     }
   };
@@ -46,9 +63,12 @@ export default function AdminLogin() {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      // setAuthenticated will be handled by onAuthStateChanged
     } catch (err: any) {
-      setError(err.message || "Failed to sign in with Google.");
+      if (err.code === 'auth/unauthorized-domain') {
+        setError(`Domain ${window.location.hostname} is NOT authorized. Add it in Firebase Console -> Authentication -> Settings -> Authorized domains.`);
+      } else {
+        setError(err.message || "Failed to sign in with Google.");
+      }
       setIsLoading(false);
     }
   };
@@ -83,8 +103,24 @@ export default function AdminLogin() {
           </div>
         </div>
         <h1 className="text-2xl font-bold text-center mb-2">Admin Access</h1>
-        <p className="text-xs text-center text-slate-500 mb-8 font-medium">Use your Google Account: defentechscholar@gmail.com</p>
+        <p className="text-xs text-center text-slate-500 mb-6 font-medium">Use your Google Account: defentechscholar@gmail.com</p>
         
+        {domainMismatch && (
+          <div className="mb-6 bg-amber-500/10 border border-amber-500/30 p-4 rounded-lg">
+            <p className="text-xs text-amber-500 font-bold mb-2">AUTH DOMAIN NOTICE</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
+              You are currently on <strong>{window.location.hostname}</strong>. 
+              If login fails, ensure this domain is added to your Firebase Authorized Domains or use the production link.
+            </p>
+            <a 
+              href="https://yonoinfo.netlify.app/admin/login" 
+              className="block w-full text-center bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold py-2 rounded transition-colors"
+            >
+              Go to Production Domain
+            </a>
+          </div>
+        )}
+
         <form onSubmit={handleLogin} className="space-y-6">
           {error && <div className="text-rose-400 text-sm text-center bg-rose-500/10 p-3 rounded">{error}</div>}
           {message && <div className="text-emerald-400 text-sm text-center bg-emerald-500/10 p-3 rounded">{message}</div>}

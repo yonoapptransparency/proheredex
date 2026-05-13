@@ -25,8 +25,9 @@ interface FirestoreErrorInfo {
 }
 
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errorMessage,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -36,12 +37,15 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     operationType,
     path
   }
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  // We alert the error string so the user can see it in the UI and report back
-  if (errInfo.error.includes('permissions')) {
-    console.warn("Permission denied for route: " + path + ". Current user: " + (errInfo.authInfo.email || 'Not logged in'));
+  console.error('Firestore Error Details: ', errInfo);
+  
+  if (errorMessage.includes('permissions')) {
+    const userEmail = errInfo.authInfo.email || 'Anonymous/Not logged in';
+    console.warn(`PERMISSION DENIED: You are logged in as ${userEmail} but don't have write access to ${path}. Ensure your email matches exactly in firestore.rules.`);
+    throw new Error(`Permission Denied: Your account (${userEmail}) does not have permission to modify this data.`);
   }
-  throw new Error(JSON.stringify(errInfo));
+  
+  throw new Error(errorMessage);
 }
 
 // Providing fallback data immediately helps avoid layout shifts
@@ -72,44 +76,53 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // We could read/write individual documents, but since the previous code managed whole arrays,
-    // we'll store the whole array in a single document for each type for simplicity given the current mockup status.
+    let initialCount = 0;
+    const totalListen = 5;
+    const checkLoaded = () => {
+      initialCount++;
+      if (initialCount >= totalListen) {
+        setLoading(false);
+      }
+    };
+
     const unsubs = [
       onSnapshot(doc(db, 'store_data', 'apps'), (snap) => {
         if (snap.exists()) setApps(snap.data().items || []);
+        checkLoaded();
       }, (err) => {
-        if (err.message.includes('permissions')) return; // Ignore permission errors on initial load if not logged in for private docs (though these are public)
+        checkLoaded();
         console.error(err);
       }),
       onSnapshot(doc(db, 'store_data', 'settings'), (snap) => {
         if (snap.exists()) setSettings(snap.data() as GlobalSettings);
+        checkLoaded();
       }, (err) => {
-        if (err.message.includes('permissions')) return;
+        checkLoaded();
         console.error(err);
       }),
       onSnapshot(doc(db, 'store_data', 'news'), (snap) => {
         if (snap.exists()) setNews(snap.data().items || []);
+        checkLoaded();
       }, (err) => {
-        if (err.message.includes('permissions')) return;
+        checkLoaded();
         console.error(err);
       }),
       onSnapshot(doc(db, 'store_data', 'blogs'), (snap) => {
         if (snap.exists()) setBlogs(snap.data().items || []);
+        checkLoaded();
       }, (err) => {
-        if (err.message.includes('permissions')) return;
+        checkLoaded();
         console.error(err);
       }),
       onSnapshot(doc(db, 'store_data', 'videos'), (snap) => {
         if (snap.exists()) setVideos(snap.data().items || []);
+        checkLoaded();
       }, (err) => {
-        if (err.message.includes('permissions')) return;
+        checkLoaded();
         console.error(err);
       })
     ];
     
-    // Simulate loading for UI
-    setTimeout(() => setLoading(false), 500);
-
     return () => unsubs.forEach(u => u());
   }, []);
 

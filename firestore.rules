@@ -1,19 +1,18 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'defentechscholar@gmail.com';
-    }
-
-    // Public site data
-    match /store_data/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // Default deny for others, but admin has god mode
+    
+    // Allow public read on all documents
     match /{document=**} {
-      allow read, write: if isAdmin();
+      allow read: if true;
+    }
+    
+    // Allow write access ONLY for the specific admin email
+    match /{document=**} {
+      allow write: if request.auth != null && 
+                    (request.auth.token.email == 'defentechscholar@gmail.com' ||
+                     request.auth.token.email.lower() == 'defentechscholar@gmail.com');
     }
   }
 }
