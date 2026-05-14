@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useData } from '../contexts/DataContext';
@@ -8,54 +8,50 @@ import { motion } from 'framer-motion';
 import { FlipkartBanner, PlayStoreTabs, TopChartItem, AppListItem } from '../components/PlayStoreUI';
 
 export default function Home() {
-  const { apps: mockApps, settings: mockSettings, news: mockNews, blogs: mockBlogs, videos: mockVideos, saveApps: saveMockApps, saveSettings: saveMockSettings, saveNews: saveMockNews, saveBlogs: saveMockBlogs, saveVideos: saveMockVideos } = useData();
+  const { apps: mockApps, settings: mockSettings } = useData();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || mockSettings.categories?.[0] || 'All Apps');
-  const [apps, setApps] = useState(mockApps);
 
   useEffect(() => {
     const q = searchParams.get('q');
-    if (q && q !== searchTerm) {
+    if (q !== null && q !== searchTerm) {
       setSearchTerm(q);
     }
     const tab = searchParams.get('tab');
     if (tab) {
       setActiveTab(tab);
-    } else {
-      setActiveTab(mockSettings.categories?.[0] || 'All Apps');
-    }
-  }, [searchParams, location, mockSettings]);
-
-  const triggerHaptic = () => {
-    if (window.navigator && window.navigator.vibrate) {
-      window.navigator.vibrate(20);
-    }
-  };
-
-  const filteredApps = mockApps
-    .filter(app => app.name.toLowerCase().includes(searchTerm.toLowerCase()) || app.category.toLowerCase().includes(searchTerm.toLowerCase()))
-    .sort((a, b) => {
-      if (searchTerm) {
-        const cleanSearch = searchTerm.toLowerCase().trim();
-        const aName = a.name.toLowerCase();
-        const bName = b.name.toLowerCase();
-        
-        // Exact match prioritized
-        const aExact = aName === cleanSearch;
-        const bExact = bName === cleanSearch;
-        if (aExact && !bExact) return -1;
-        if (!aExact && bExact) return 1;
-        
-        // Starts with prioritized
-        const aStartsWith = aName.startsWith(cleanSearch);
-        const bStartsWith = bName.startsWith(cleanSearch);
-        if (aStartsWith && !bStartsWith) return -1;
-        if (!aStartsWith && bStartsWith) return 1;
+    } else if (mockSettings.categories && mockSettings.categories.length > 0) {
+      // Default to first category if no tab in search params
+      if (!tab && activeTab === 'All Apps' && !mockSettings.categories.includes('All Apps')) {
+        setActiveTab(mockSettings.categories[0]);
       }
-      return a.serial_number - b.serial_number;
-    });
+    }
+  }, [searchParams, location, mockSettings.categories]);
+
+  const filteredApps = useMemo(() => {
+    return mockApps
+      .filter(app => {
+        const matchesSearch = app.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                             app.category.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesSearch;
+      })
+      .sort((a, b) => {
+        if (searchTerm) {
+          const cleanSearch = searchTerm.toLowerCase().trim();
+          const aName = a.name.toLowerCase();
+          const bName = b.name.toLowerCase();
+          
+          if (aName === cleanSearch && bName !== cleanSearch) return -1;
+          if (aName !== cleanSearch && bName === cleanSearch) return 1;
+          
+          if (aName.startsWith(cleanSearch) && !bName.startsWith(cleanSearch)) return -1;
+          if (!aName.startsWith(cleanSearch) && bName.startsWith(cleanSearch)) return 1;
+        }
+        return (a.serial_number || 0) - (b.serial_number || 0);
+      });
+  }, [mockApps, searchTerm]);
 
   const bannerItems = mockSettings.banners || [];
 

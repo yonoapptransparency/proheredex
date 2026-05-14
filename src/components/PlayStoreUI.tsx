@@ -42,7 +42,7 @@ export function FlipkartBanner({ items }: BannerProps) {
   );
 }
 
-import { mockSettings } from '../lib/supabase';
+import { useData } from '../contexts/DataContext';
 
 interface TabProps {
   activeTab: string;
@@ -50,8 +50,9 @@ interface TabProps {
 }
 
 export function PlayStoreTabs({ activeTab, onTabChange }: TabProps) {
-  const tabs = mockSettings.categories && mockSettings.categories.length > 0 
-    ? mockSettings.categories 
+  const { settings } = useData();
+  const tabs = settings.categories && settings.categories.length > 0 
+    ? settings.categories 
     : ["All", "Yono app", "Sunali", "Jeet"];
   
   return (

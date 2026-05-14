@@ -35,6 +35,7 @@ export interface GlobalSettings {
   important_notice?: string;
   categories: string[];
   banners: Banner[];
+  last_updated?: string;
 }
 
 export interface NewsItem {

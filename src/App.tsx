@@ -201,11 +201,45 @@ function Footer() {
 }
 
 function SyncStatus() {
-  const { isConnected } = useData();
+  const { isConnected, refreshAll } = useData();
+  const [syncing, setSyncing] = useState(false);
+  
+  const handleForceSync = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      await refreshAll();
+      alert("Manual Sync: Your data is now up-to-date with the Cloud Server.");
+    } catch (err: any) {
+      alert("Sync Failed: Failed to reach Cloud Server. " + err.message);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleClearCache = () => {
+    if (window.confirm("Hard Reset: This will clear local memory and reload. Continue?")) {
+      localStorage.clear();
+      window.location.reload();
+    }
+  };
+
   return (
-    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter ${isConnected === true ? 'bg-green-500/10 text-green-500' : isConnected === false ? 'bg-red-500/10 text-red-500' : 'bg-slate-500/10 text-slate-500'}`}>
-      <div className={`w-1.5 h-1.5 rounded-full ${isConnected === true ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : isConnected === false ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'bg-slate-500 animate-pulse'}`}></div>
-      {isConnected === true ? 'Cloud Active' : isConnected === false ? 'Offline Mode' : 'Syncing...'}
+    <div className="flex items-center gap-2">
+      <button 
+        onClick={handleForceSync}
+        disabled={syncing}
+        className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter transition-all hover:scale-105 active:scale-95 ${isConnected === true ? 'bg-green-500/10 text-green-500' : isConnected === false ? 'bg-red-500/10 text-red-500' : 'bg-slate-500/10 text-slate-500'}`}
+      >
+        <div className={`w-1.5 h-1.5 rounded-full ${syncing ? 'bg-blue-500 animate-spin' : isConnected === true ? 'bg-green-500' : isConnected === false ? 'bg-red-500' : 'bg-slate-500 animate-pulse'}`}></div>
+        {syncing ? 'Syncing...' : isConnected === true ? 'Cloud Active' : isConnected === false ? 'Tap to Sync' : 'Connecting...'}
+      </button>
+      <button 
+        onClick={handleClearCache}
+        className="text-[9px] text-slate-500 hover:text-slate-700 underline decoration-slate-500/20"
+      >
+        Reset Cache
+      </button>
     </div>
   );
 }

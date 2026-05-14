@@ -136,10 +136,10 @@ export default function AdminDashboard() {
       
       await saveMockSettings(updatedSettings);
       triggerHaptic();
-      alert('Global Settings Synced! Updates are now live for all users.');
+      alert('Global Settings Synced! Verified on Cloud & Live for all users.');
     } catch (err: any) {
       console.error(err);
-      alert('Error saving settings: ' + (err.message || 'Unknown error'));
+      alert('Sync Failed: ' + (err.message || 'Unknown error. Check internet.'));
     } finally {
       setSaving(false);
     }
@@ -191,13 +191,12 @@ export default function AdminDashboard() {
       }
       
       await saveMockApps(updatedApps);
-      setAppsList(updatedApps);
       triggerHaptic();
       setEditingAppId(null);
-      alert(editingAppId ? 'Application Updated & Synced Live!' : 'New Application Published Successfully!');
+      alert(editingAppId ? 'Success: Application Updated & Verified on Cloud!' : 'Success: New Application Published & Verified on Cloud!');
     } catch (err: any) {
       console.error(err);
-      alert('Error saving app: ' + (err.message || 'Unknown error'));
+      alert('Sync Failed: ' + (err.message || 'Unknown error. Check internet.'));
     } finally {
       setSaving(false);
     }
