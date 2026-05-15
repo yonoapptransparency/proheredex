@@ -198,39 +198,35 @@ export const AppListItem = React.memo(({ app, index }: { app: any; index?: numbe
     <motion.div
       initial={{ opacity: 0, y: 5 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-10px" }}
-      transition={{ duration: 0.3, delay: (index || 0) % 8 * 0.03 }}
+      viewport={{ once: true, margin: "-5px" }}
+      transition={{ duration: 0.2, delay: (index || 0) % 6 * 0.015 }}
       className="will-change-[opacity,transform]"
     >
       <Link 
         to={`/app/${app.slug}`}
-        className="flex items-center gap-4 sm:gap-6 p-4 sm:p-5 mb-4 glass-panel hover:brightness-110 dark:hover:brightness-125 transition-all duration-200 active:scale-[0.98] group rounded-[2.5rem] shadow-[0_15px_40px_rgba(0,0,0,0.05)]"
+        className="flex items-center gap-4 sm:gap-6 p-4 sm:p-5 mb-4 glass-panel hover:brightness-110 dark:hover:brightness-[1.15] transition-all duration-300 active:scale-[0.98] group rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.5)] border-t border-white/20 dark:border-white/5"
       >
-        <div className="w-8 text-base sm:text-lg font-black opacity-30 text-center shrink-0 italic">
+        <div className="w-8 text-base sm:text-lg font-black opacity-30 text-center shrink-0 italic text-slate-400 dark:text-zinc-600">
           {displayIndex}
         </div>
 
         <div className="relative w-16 h-16 sm:w-20 sm:h-20 shrink-0">
-          {app.is_new && (
-            <div className="absolute -top-3 -right-3 z-20 bg-red-600 text-white text-[9px] sm:text-[10px] font-black px-2.5 py-1 rounded-xl uppercase tracking-widest shadow-2xl border-2 border-white italic rotate-12 animate-pulse">
-              New
-            </div>
-          )}
-          <div className="w-full h-full rounded-2xl overflow-hidden bg-white shadow-xl border-2 border-slate-200 relative z-10">
+          <div className="w-full h-full rounded-2xl overflow-hidden bg-white shadow-xl border-2 border-slate-200 dark:border-white/10 relative z-10 transition-transform group-hover:scale-105 duration-700">
             <img 
               src={app.icon_url || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop"} 
               alt={app.name} 
               loading="lazy"
               decoding="async"
               referrerPolicy="no-referrer"
-              className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-700"
+              className="w-full h-full object-cover"
             />
           </div>
+          <div className="absolute -inset-1 blur-xl bg-red-600/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
         </div>
         
         <div className="flex-1 min-w-0 flex flex-col justify-center px-1">
-          <div className="flex items-center gap-2 mb-1.5">
-            <h3 className="font-black text-base sm:text-lg leading-tight uppercase tracking-tighter italic">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <h3 className="font-black text-base sm:text-lg leading-tight uppercase tracking-tighter italic dark:text-zinc-100 break-words w-full">
               {app.name}
             </h3>
             {app.safety_status === 'Verified' && (
@@ -238,25 +234,20 @@ export const AppListItem = React.memo(({ app, index }: { app: any; index?: numbe
             )}
           </div>
 
-          <div className="text-xs sm:text-sm font-black uppercase tracking-widest leading-none opacity-60">{app.category}</div>
+          <div className="text-xs sm:text-sm font-black uppercase tracking-widest leading-none opacity-60 dark:text-zinc-400">{app.category} • {app.file_size}</div>
 
           <div className="flex items-center gap-2.5 leading-none mt-1">
-            <span className="text-xs sm:text-sm font-black opacity-40 tracking-tighter">
+            <span className="text-xs sm:text-sm font-black opacity-40 tracking-tighter dark:text-zinc-500">
               {app.rating ? app.rating.toFixed(1) : '10.0'}
             </span>
             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-            {app.file_size && (
-              <span className="text-xs sm:text-sm font-black opacity-40 tracking-tighter ml-1">
-                • {app.file_size}
-              </span>
-            )}
           </div>
         </div>
         
         <div className="shrink-0 pr-2">
-          <button className="bg-red-600 text-white px-6 py-2 text-xs sm:text-sm font-black rounded-full transition-all uppercase tracking-widest shadow-2xl shadow-red-600/30 active:scale-95 hover:scale-105 hover:brightness-110">
-            Get Now
-          </button>
+          <div className="bg-red-600 text-white px-6 py-2 text-xs sm:text-sm font-black rounded-full transition-all uppercase tracking-widest shadow-2xl shadow-red-600/30 active:scale-95 hover:scale-105 hover:brightness-110">
+            Get
+          </div>
         </div>
       </Link>
     </motion.div>
@@ -266,59 +257,52 @@ export const AppListItem = React.memo(({ app, index }: { app: any; index?: numbe
 export const TopChartItem = React.memo(({ rank, app }: TopChartItemProps) => {
   return (
     <motion.div
-      initial={{ opacity: 0, x: -10 }}
+      initial={{ opacity: 0, x: -5 }}
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.3, delay: (rank % 10) * 0.03 }}
+      transition={{ duration: 0.2, delay: (rank % 8) * 0.015 }}
       className="will-change-[opacity,transform]"
     >
       <Link 
         to={`/app/${app.slug}`}
-        className="flex items-center gap-4 sm:gap-6 p-4 sm:p-5 mb-3 glass-panel hover:brightness-110 dark:hover:brightness-125 transition-all duration-200 active:scale-[0.99] group rounded-[2rem] shadow-2xl shadow-black/[0.05]"
+        className="flex items-center gap-4 sm:gap-6 p-4 sm:p-5 mb-3 glass-panel hover:brightness-110 dark:hover:brightness-[1.15] transition-all duration-300 active:scale-[0.99] group rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.5)] border-t border-white/20 dark:border-white/5"
       >
-        <div className="w-8 text-base sm:text-lg font-black opacity-40 text-center shrink-0 italic">
+        <div className="w-8 text-base sm:text-lg font-black opacity-30 text-center shrink-0 italic text-slate-400 dark:text-zinc-600">
           {rank}
         </div>
         
         <div className="relative w-16 h-16 sm:w-20 sm:h-20 shrink-0">
-          {app.is_new && (
-            <div className="absolute -top-3 -right-3 z-20 bg-red-600 text-white text-[9px] sm:text-[10px] font-black px-2.5 py-1 rounded-xl uppercase tracking-widest shadow-2xl border-2 border-white italic rotate-12 animate-pulse">
-              New
-            </div>
-          )}
-          <div className="w-full h-full rounded-2xl overflow-hidden bg-white shadow-xl border-2 border-slate-200 relative z-10">
+          <div className="w-full h-full rounded-2xl overflow-hidden bg-white shadow-xl border-2 border-slate-200 dark:border-white/10 relative z-10 transition-transform group-hover:scale-105 duration-700">
             <img 
               src={app.icon_url || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop"} 
               alt={app.name} 
               loading="lazy"
               decoding="async"
               referrerPolicy="no-referrer"
-              className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-700"
+              className="w-full h-full object-cover"
             />
           </div>
+          <div className="absolute -inset-1 blur-xl bg-red-600/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
         </div>
         
         <div className="flex-1 min-w-0 flex flex-col justify-center px-1">
-          <div className="flex items-center gap-2 mb-1.5">
-            <h3 className="font-black text-base sm:text-lg leading-tight uppercase tracking-tighter italic">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <h3 className="font-black text-base sm:text-lg leading-tight uppercase tracking-tighter italic dark:text-zinc-100 break-words w-full">
               {app.name}
             </h3>
             {app.safety_status === 'Verified' && <ShieldCheck className="w-4 h-4 shrink-0 text-green-500" />}
           </div>
-          <span className="text-xs sm:text-sm font-black opacity-60 uppercase tracking-widest leading-none">{app.category}</span>
-          <div className="flex items-center gap-2.5 text-xs sm:text-sm font-black opacity-40 mt-1 uppercase tracking-tighter leading-none">
+          <span className="text-xs sm:text-sm font-black opacity-60 uppercase tracking-widest leading-none dark:text-zinc-400">{app.category} • {app.file_size}</span>
+          <div className="flex items-center gap-2.5 text-xs sm:text-sm font-black opacity-40 mt-1 uppercase tracking-tighter leading-none dark:text-zinc-500">
             <span>{app.rating ? app.rating.toFixed(1) : '10.0'}</span>
             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-            {app.file_size && (
-              <span className="ml-1 opacity-70">• {app.file_size}</span>
-            )}
           </div>
         </div>
         
         <div className="shrink-0 pr-2">
-          <button className="bg-red-600 text-white px-6 py-2 text-xs sm:text-sm font-black rounded-full transition-all uppercase tracking-widest shadow-2xl shadow-red-600/30 active:scale-95 hover:scale-105 hover:brightness-110">
-            Get Now
-          </button>
+          <div className="bg-red-600 text-white px-6 py-2 text-xs sm:text-sm font-black rounded-full transition-all uppercase tracking-widest shadow-2xl shadow-red-600/30 active:scale-95 hover:scale-105 hover:brightness-110">
+            Get
+          </div>
         </div>
       </Link>
     </motion.div>

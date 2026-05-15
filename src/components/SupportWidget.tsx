@@ -24,7 +24,7 @@ export default function SupportWidget() {
     <div className="relative inline-block z-50">
       <button
         onClick={toggleWidget}
-        className="flex items-center gap-2 px-4 justify-center min-h-[48px] bg-red-100/30 dark:bg-pink-600/10 rounded-full border border-red-200/50 dark:border-pink-500/20 text-red-600 dark:text-pink-500 hover:bg-red-200/50 dark:hover:bg-pink-600/20 transition-all hover:scale-105 active:scale-95"
+        className="flex items-center gap-2 px-4 justify-center min-h-[48px] glass-panel rounded-full text-red-600 dark:text-red-500 hover:brightness-110 shadow-lg transition-all hover:scale-105 active:scale-95"
         aria-label="Support Widget"
       >
         <MessageCircle className="w-5 h-5 drop-shadow-[0_0_8px_rgba(236,72,153,0.3)]" />
@@ -38,7 +38,7 @@ export default function SupportWidget() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 15 }}
             transition={{ type: "spring", damping: 15, stiffness: 300 }}
-            className="absolute right-0 top-full mt-4 bg-white/40 dark:bg-slate-900/60 backdrop-blur-3xl p-6 w-72 origin-top-right border-2 border-white/20 dark:border-white/10 rounded-[2.5rem] shadow-2xl z-[100]"
+            className="absolute right-0 top-full mt-4 glass-panel p-6 w-72 origin-top-right z-[100] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.3)] dark:shadow-[0_50px_100px_-20px_rgba(0,0,0,1)]"
           >
             <div className="flex justify-between items-center mb-6 border-b-2 border-black/5 dark:border-white/5 pb-4">
               <h3 className="font-black text-xs uppercase tracking-tighter dark:text-white italic">Assistance Flow</h3>

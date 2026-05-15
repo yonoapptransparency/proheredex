@@ -17,7 +17,7 @@ export default function ThemeToggle() {
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
       onClick={() => { triggerHaptic(); toggleTheme(); }}
-      className="flex items-center justify-center min-h-[48px] min-w-[48px] bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-2xl border-2 border-black/5 dark:border-white/10 shadow-lg hover:shadow-pink-500/10 transition-shadow relative overflow-hidden"
+      className="flex items-center justify-center min-h-[48px] min-w-[48px] glass-panel rounded-2xl hover:brightness-110 active:scale-95 transition-all shadow-lg relative overflow-hidden"
       aria-label="Toggle theme"
     >
       <AnimatePresence mode="wait" initial={false}>

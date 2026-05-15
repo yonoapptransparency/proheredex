@@ -108,21 +108,22 @@ export default function DownloadPage() {
       <div className="px-4 mb-6 max-w-4xl mx-auto">
         <Link 
           to={`/app/${app.slug}`} 
-          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-colors group"
+          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-400 hover:text-red-500 dark:hover:text-red-400 transition-colors group"
         >
-          <div className="p-2 rounded-full bg-black/5 border border-black/5 group-hover:scale-110 transition-transform">
+          <div className="p-2 rounded-full bg-black/5 dark:bg-white/10 border border-black/5 dark:border-white/10 group-hover:scale-110 transition-transform">
             <ArrowLeft className="w-3.5 h-3.5" />
           </div>
           Back to details
         </Link>
       </div>
       <Helmet>
-        <title>Download {app.seo_title || `${app.name} - Verified & Safe`}</title>
-        <meta name="description" content={`Download page for ${app.name}. ${app.seo_description || `Completely verified for privacy and security. ${app.safety_status} status.`}`} />
-        {app.seo_keywords && <meta name="keywords" content={app.seo_keywords} />}
-        <meta property="og:title" content={`Download ${app.seo_title || app.name}`} />
-        <meta property="og:description" content={app.seo_description || `Download page for ${app.name}. Completely verified for privacy and security.`} />
+        <title>{`Download ${app.name} - Verified ${app.version} Security Handshake`}</title>
+        <meta name="description" content={`Safe download portal for ${app.name}. Technical size: ${app.file_size}. Verified safety status: ${app.safety_status}. Access secure link after identity verification.`} />
+        {app.seo_keywords && <meta name="keywords" content={`${app.seo_keywords}, download ${app.name}, ${app.name} safe install, secure ${app.name}`} />}
+        <meta property="og:title" content={`Secure Link: ${app.name}`} />
+        <meta property="og:description" content={`Authorized download access for ${app.name}. Verified by Transparency Portal.`} />
         <meta property="og:image" content={app.og_image_url || app.icon_url} />
+        <meta name="robots" content="noindex, follow" />
         {app.canonical_url && <link rel="canonical" href={app.canonical_url} />}
         <script type="application/ld+json">
           {JSON.stringify(softwareSchema)}
@@ -135,71 +136,69 @@ export default function DownloadPage() {
       </Helmet>
       
       {/* Header section */}
-      <div className="text-center mb-10 max-w-2xl mx-auto px-4">
+      <div className="text-center mb-8 max-w-xl mx-auto px-4">
         <div className={cn(
-          "inline-flex items-center gap-2 px-4 py-2 rounded-2xl mb-4 font-black uppercase text-[10px] tracking-widest shadow-xl italic",
-          app.safety_status === 'Verified' ? "bg-green-500/10 text-green-500 border border-green-500/20" :
-          app.safety_status === 'Caution' ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" :
-          "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+          "inline-flex items-center gap-1.5 px-3 py-1 rounded-xl mb-4 font-black uppercase text-[10px] tracking-widest shadow-lg italic",
+          app.safety_status === 'Verified' ? "bg-green-500/10 text-green-500 border border-green-500/10" :
+          app.safety_status === 'Caution' ? "bg-amber-500/10 text-amber-500 border border-amber-500/10" :
+          "bg-rose-500/10 text-rose-500 border border-rose-500/10"
         )}>
-          {app.safety_status === 'Verified' ? <ShieldCheck className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4" />}
+          {app.safety_status === 'Verified' ? <ShieldCheck className="w-3.5 h-3.5" /> : <ShieldAlert className="w-3.5 h-3.5" />}
           Security Status: {app.safety_status}
         </div>
-        <h1 className="text-4xl font-black mb-4 uppercase tracking-tighter dark:text-white italic flex flex-wrap items-center justify-center gap-4">
-          <ShieldCheck className="w-8 h-8 text-pink-600" />
-          <span>Transparency</span>
-          <span className="text-pink-600">Review Portal</span>
-          <Sparkles className="w-8 h-8 text-pink-600 animate-pulse" />
+        <h1 className="text-2xl sm:text-3xl font-black mb-3 uppercase tracking-tighter dark:text-white italic flex flex-wrap items-center justify-center gap-3">
+          <ShieldCheck className="w-6 h-6 text-red-600" />
+          <span>Security</span>
+          <span className="text-red-600">Portal</span>
+          <Sparkles className="w-6 h-6 text-red-600 animate-pulse" />
         </h1>
-        <p className="opacity-60 font-bold uppercase tracking-tight dark:text-white">
-          Decryption in progress. Please verify the technical specifications below for {app.name} before final execution.
+        <p className="font-bold uppercase tracking-tight text-[10px] sm:text-[11px] text-slate-400 dark:text-zinc-500 max-w-md mx-auto leading-relaxed">
+          Technical handshake in progress. Verify <span className="text-red-600 underline decoration-red-600/30 underline-offset-4">{app.name}</span> identity below to authorize final data extraction.
         </p>
       </div>
 
       {/* Main Download Action with Stealth Gate */}
-      <div className="bg-white/80 dark:bg-slate-900/80 p-6 sm:p-10 text-center mb-10 border border-white/20 dark:border-white/10 rounded-[3.5rem] max-w-4xl mx-auto shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] backdrop-blur-2xl overflow-hidden relative">
+      <div className="glass-panel p-6 sm:p-10 text-center mb-10 border border-white/20 dark:border-white/5 rounded-[3rem] max-w-3xl mx-auto shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] dark:shadow-[0_45px_100px_-20px_rgba(0,0,0,0.8)] backdrop-blur-3xl overflow-hidden relative">
         {/* Decorative Glossy Highlight */}
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+        <div className="absolute top-0 left-0 w-full h-[0.5px] bg-gradient-to-r from-transparent via-red-600/40 text-transparent"></div>
         
         {!isVerified ? (
           <div className="flex flex-col items-center gap-10">
             <div className="flex flex-col md:flex-row items-center justify-between w-full gap-8">
               <div className="flex items-center gap-6">
                 <div className="relative group">
-                  <div className="absolute -inset-2 bg-gradient-to-tr from-pink-500 to-red-500 rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
-                  <div className="relative w-24 h-24 bg-white dark:bg-black/40 rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 shrink-0">
+                  <div className="absolute -inset-1.5 bg-gradient-to-tr from-rose-500 to-red-600 rounded-2xl blur-xl opacity-10 group-hover:opacity-20 transition-opacity"></div>
+                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 bg-white dark:bg-black/40 rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 shrink-0">
                     {app.icon_url ? <img src={app.icon_url} alt="" className="w-full h-full object-cover"/> : null}
                   </div>
                 </div>
                 <div className="text-left">
-                  <h2 className="text-2xl font-black uppercase tracking-tighter mb-2 dark:text-white italic leading-none">{app.name}</h2>
+                  <h2 className="text-2xl font-black uppercase tracking-tighter mb-2.5 dark:text-white italic leading-none">{app.name}</h2>
                   <div className="flex flex-wrap gap-2">
-                    <span className="text-[9px] px-2 py-1 bg-black/5 dark:bg-white/5 rounded-lg border border-black/5 dark:border-white/5 font-black uppercase tracking-widest dark:text-white/60">
-                      S-M-N: {app.serial_number}
+                    <span className="text-[8px] px-2 py-1 bg-black/5 dark:bg-white/5 rounded-lg border border-black/5 dark:border-white/5 font-black uppercase tracking-widest text-slate-500 dark:text-zinc-400">
+                      ID: {app.serial_number}
                     </span>
-                    <span className="text-[9px] px-2 py-1 bg-black/5 dark:bg-white/5 rounded-lg border border-black/5 dark:border-white/5 font-black uppercase tracking-widest dark:text-white/60">
+                    <span className="text-[8px] px-2 py-1 bg-black/5 dark:bg-white/5 rounded-lg border border-black/5 dark:border-white/5 font-black uppercase tracking-widest text-slate-500 dark:text-zinc-400">
                       {app.file_size}
                     </span>
-                    <span className="text-[9px] px-2 py-1 bg-black/5 dark:bg-white/5 rounded-lg border border-black/5 dark:border-white/5 font-black uppercase tracking-widest dark:text-white/60">
-                      v{app.version}
+                    <span className="text-[8px] px-2 py-1 bg-black/5 dark:bg-white/5 rounded-lg border border-black/5 dark:border-white/5 font-black uppercase tracking-widest text-slate-500 dark:text-zinc-400">
+                      VER: {app.version}
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="hidden lg:flex items-center gap-3 px-6 py-3 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/10 dark:border-white/10 group">
-                <div className="w-8 h-8 rounded-full bg-pink-500/10 flex items-center justify-center border border-pink-500/20">
-                  <Fingerprint className="w-4 h-4 text-pink-500 animate-pulse" />
-                </div>
+              
+              <div className="hidden lg:flex items-center gap-4 px-5 py-3 bg-red-600/5 rounded-2xl border border-red-600/10 active:scale-95 transition-transform">
+                <Fingerprint className="w-6 h-6 text-red-600 animate-pulse" />
                 <div className="text-left">
-                  <p className="text-[10px] font-black uppercase tracking-tighter dark:text-white">Authorisation Gate</p>
-                  <p className="text-[9px] font-black uppercase tracking-widest opacity-40 dark:text-white">Technical Lock Active</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest dark:text-zinc-200 leading-none mb-1">AUTH PROTOCOL</p>
+                  <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-zinc-600 italic leading-none">SYSTEM LOCK ACTIVE</p>
                 </div>
               </div>
             </div>
 
             <div className="w-full max-w-sm relative" onClick={playSoftClick}>
-              {/* Button Shadow Glow */}
-              <div className="absolute -inset-4 bg-red-600/20 blur-3xl rounded-[3rem] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="absolute -inset-4 bg-red-600/10 blur-[40px] rounded-[4rem] opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
               
               <button
                 onMouseDown={handleVerifyStart}
@@ -207,79 +206,64 @@ export default function DownloadPage() {
                 onMouseLeave={handleVerifyCancel}
                 onTouchStart={handleVerifyStart}
                 onTouchEnd={handleVerifyCancel}
-                className="w-full relative h-[84px] bg-gradient-to-br from-red-500 to-red-700 rounded-[2.5rem] overflow-hidden active:scale-95 transition-all cursor-pointer group/btn shadow-[0_10px_20px_-5px_rgba(220,38,38,0.4)] border-2 border-white/20"
+                className="w-full relative h-[72px] bg-gradient-to-br from-red-600 via-red-700 to-red-800 rounded-[2.5rem] overflow-hidden active:scale-95 transition-all cursor-pointer group/btn shadow-[0_20px_50px_rgba(220,38,38,0.3)] border-t border-white/20"
               >
-                {/* Gloss Effect */}
-                <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none"></div>
-                
-                {/* Hover Reveal */}
-                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/btn:opacity-100 transition-opacity"></div>
-                
-                {/* Progress Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
                 <div 
-                  className="absolute inset-y-0 left-0 bg-black/20 backdrop-blur-sm transition-all duration-75 border-r border-white/30"
-                  style={{ width: `${progress}%` }}
+                   className="absolute inset-y-0 left-0 bg-black/20 backdrop-blur-md transition-all duration-75 border-r border-white/20"
+                   style={{ width: `${progress}%` }}
                 ></div>
 
                 <div className="absolute inset-0 flex items-center justify-center gap-5 px-6">
-                  <div className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md border border-white/30 flex items-center justify-center relative shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-md border border-white/20 flex items-center justify-center relative shrink-0">
                     <Lock className={cn("w-5 h-5 text-white transition-all", isVerifying ? "animate-pulse scale-110" : "")} />
                     {isVerifying && (
                       <svg className="absolute inset-0 w-full h-full -rotate-90">
-                        <circle
-                          cx="24"
-                          cy="24"
-                          r="20"
-                          fill="none"
-                          stroke="white"
-                          strokeWidth="2"
-                          strokeDasharray={126}
-                          strokeDashoffset={126 - (126 * progress) / 100}
-                          className="transition-all duration-75"
-                        />
+                        <circle cx="20" cy="20" r="18" fill="none" stroke="white" strokeWidth="2" strokeDasharray={113} strokeDashoffset={113 - (113 * progress) / 100} className="transition-all duration-75" />
                       </svg>
                     )}
                   </div>
-                  <span className="text-base font-black text-white uppercase tracking-[0.25em] italic drop-shadow-md truncate">
-                    {progress > 0 ? `Decrypting ${progress}%` : "Hold to Unlock"}
+                  <span className="text-[12px] font-black text-white uppercase tracking-[0.3em] italic truncate">
+                    {progress > 0 ? `LINKING ARCHIVE ${progress}%` : "Authorize Secure Extraction"}
                   </span>
                 </div>
               </button>
+              
               <div className="mt-5 flex flex-col items-center gap-2">
-                <div className="flex gap-1">
-                  {[1,2,3].map(i => (
+                <div className="flex gap-1.5">
+                  {[1,2,3,4].map(i => (
                     <div key={i} className={cn("w-1 h-1 rounded-full bg-red-600 transition-all duration-300", isVerifying ? "animate-bounce" : "opacity-20")} style={{ animationDelay: `${i * 0.1}s` }} />
                   ))}
                 </div>
-                <p className="text-[10px] font-black uppercase tracking-widest opacity-40 dark:text-white italic">Biometric Pressure Required for Extraction</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-zinc-600 italic">BIOMETRIC HANDSHAKE REQUIRED TO UNLOCK</p>
               </div>
             </div>
           </div>
         ) : (
           <motion.div 
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col md:flex-row items-center justify-between w-full gap-8 py-2"
+            className="flex flex-col lg:flex-row items-center justify-between w-full gap-10 py-4"
           >
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-8">
               <div className="relative">
-                <div className="absolute -inset-1 bg-green-500 rounded-3xl blur opacity-30 animate-pulse"></div>
+                <div className="absolute -inset-2 bg-green-500 rounded-[2.5rem] blur-2xl opacity-20 animate-pulse"></div>
                 <div className="relative w-24 h-24 bg-white dark:bg-black/20 rounded-[2rem] overflow-hidden shadow-2xl border-2 border-green-500/30 shrink-0">
                   {app.icon_url ? <img src={app.icon_url} alt="" className="w-full h-full object-cover"/> : null}
                 </div>
               </div>
               <div className="text-left">
-                <h2 className="text-2xl font-black uppercase tracking-tighter mb-2 dark:text-white italic leading-none">{app.name}</h2>
-                <div className="flex items-center gap-2 bg-green-500/10 px-3 py-1.5 rounded-xl border border-green-500/20 w-fit">
+                <h2 className="text-3xl font-black uppercase tracking-tighter mb-3 dark:text-white italic leading-none">{app.name}</h2>
+                <div className="flex items-center gap-2.5 bg-green-500/10 px-4 py-2 rounded-2xl border border-green-500/20 w-fit">
                   <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">Protocol Secured</span>
+                  <span className="text-[11px] font-black text-green-500 uppercase tracking-widest italic">Protocol Secured</span>
                 </div>
               </div>
             </div>
             
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-center gap-3">
               <SecureDownloadButton appId={app.id} status={app.safety_status as 'Verified' | 'Caution' | 'Unsafe'} downloadUrl={app.encrypted_download_url} />
-              <p className="text-[9px] font-black uppercase tracking-widest opacity-40 italic">Link active for 15 minutes</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 dark:text-zinc-600 italic animate-pulse">Session Active: 15:00 Remaining</p>
             </div>
           </motion.div>
         )}
@@ -287,21 +271,21 @@ export default function DownloadPage() {
 
       {/* SEO Optimized FAQs - Repositioned below Get Now Button */}
       {app.faqs && app.faqs.length > 0 && (
-        <div className="max-w-4xl mx-auto mb-12 px-2">
-          <div className="bg-white/40 dark:bg-slate-900/40 border-2 border-white/20 dark:border-white/10 rounded-[2.5rem] p-6 sm:p-8 shadow-2xl backdrop-blur-3xl">
-            <h2 className="text-xl font-black mb-8 flex items-center gap-2 uppercase tracking-tight px-2 dark:text-white italic">
-              <Info className="w-6 h-6 text-pink-500" /> Intelligence Query
+        <div className="max-w-3xl mx-auto mb-10 px-2">
+          <div className="bg-white/40 dark:bg-black/60 border border-white/20 dark:border-white/5 rounded-[2rem] p-5 sm:p-6 shadow-2xl backdrop-blur-3xl">
+            <h2 className="text-lg font-black mb-6 flex items-center gap-2 uppercase tracking-tight px-2 dark:text-white italic">
+              <Info className="w-5 h-5 text-pink-500" /> Intelligence Query
             </h2>
-            <div className="space-y-4">
+            <div className="space-y-2">
               {app.faqs.map((faq, idx) => (
-                <div key={idx} className="group bg-white/20 dark:bg-black/20 border border-white/40 dark:border-white/10 rounded-[2rem] overflow-hidden transition-all hover:border-pink-500/30">
+                <div key={idx} className="group bg-white/20 dark:bg-white/5 border border-white/40 dark:border-white/10 rounded-[1.5rem] overflow-hidden transition-all hover:border-pink-500/20">
                   <details className="group">
-                    <summary className="font-black p-6 cursor-pointer select-none flex items-center justify-between group-open:text-pink-500 min-h-[48px] uppercase tracking-tighter text-sm italic dark:text-white">
+                    <summary className="font-black p-4 cursor-pointer select-none flex items-center justify-between group-open:text-pink-500 min-h-[40px] uppercase tracking-tighter text-xs italic dark:text-zinc-100">
                       <span className="flex-1">{faq.question}</span>
-                      <span className="text-2xl leading-none transition-transform group-open:rotate-45 ml-4 bg-pink-500/10 rounded-full w-10 h-10 flex items-center justify-center text-pink-500 border border-pink-500/20 shadow-sm">+</span>
+                      <span className="text-xl leading-none transition-transform group-open:rotate-45 ml-4 bg-pink-500/10 rounded-full w-8 h-8 flex items-center justify-center text-pink-500 border border-pink-500/10 shadow-sm">+</span>
                     </summary>
                     <div 
-                      className="px-6 pb-6 pt-0 opacity-80 prose prose-sm dark:prose-invert max-w-none text-left font-bold border-t border-white/10 dark:border-white/5 mt-2 pt-6 text-[11px] sm:text-xs tracking-tight leading-relaxed"
+                      className="px-5 pb-5 pt-0 prose prose-sm dark:prose-invert max-w-none text-left font-bold border-t border-white/10 dark:border-white/5 mt-1 pt-4 text-[10px] sm:text-[11px] tracking-tight leading-relaxed dark:text-zinc-400"
                       dangerouslySetInnerHTML={{ __html: faq.answer }}
                     />
                   </details>
@@ -342,12 +326,12 @@ export default function DownloadPage() {
           </div>
         )}
         {app.custom_admin_box_html && (
-          <div className="bg-white/40 dark:bg-slate-900/40 border-2 border-white/20 dark:border-white/10 p-8 rounded-[2rem] shadow-2xl backdrop-blur-3xl">
+          <div className="bg-white/40 dark:bg-black/60 border-2 border-white/20 dark:border-white/5 p-8 rounded-[2rem] shadow-2xl backdrop-blur-3xl">
             <h3 className="font-black flex items-center gap-3 mb-6 uppercase tracking-[0.2em] italic text-xs dark:text-white">
               <Info className="w-5 h-5 text-pink-500" /> {app.custom_admin_box_heading || 'App Encryption Details'}
             </h3>
             <div 
-              className="prose prose-pink dark:prose-invert max-w-none text-xs font-bold leading-relaxed opacity-80"
+              className="prose prose-pink dark:prose-invert max-w-none text-xs font-bold leading-relaxed dark:text-zinc-300"
               dangerouslySetInnerHTML={{ __html: app.custom_admin_box_html }}
             />
           </div>
@@ -355,10 +339,10 @@ export default function DownloadPage() {
       </div>
 
       {/* Strict Section Order 2: Massive Description */}
-      <div className="bg-white/40 dark:bg-slate-900/40 border-2 border-white/20 dark:border-white/10 p-8 sm:p-12 mb-12 max-w-4xl mx-auto backdrop-blur-3xl rounded-[3rem] shadow-2xl">
+      <div className="bg-white/40 dark:bg-black/60 border-2 border-white/20 dark:border-white/5 p-8 sm:p-12 mb-12 max-w-4xl mx-auto backdrop-blur-3xl rounded-[3rem] shadow-2xl">
         <h2 className="text-2xl font-black mb-8 border-b-4 border-pink-500/20 pb-4 uppercase tracking-tighter dark:text-white italic">Technical Analysis</h2>
         <div 
-          className="prose prose-pink dark:prose-invert max-w-none opacity-80 leading-relaxed font-bold text-sm"
+          className="prose prose-pink dark:prose-invert max-w-none leading-relaxed font-bold text-sm dark:text-zinc-300"
           dangerouslySetInnerHTML={{ __html: app.description_html || `<p>${app.seo_description}</p>` }}
         />
       </div>
@@ -369,8 +353,8 @@ export default function DownloadPage() {
           <MessageSquare className="w-6 h-6 text-pink-500" /> Transmission Reviews
         </h2>
         
-        <form onSubmit={handleReviewSubmit} className="bg-white/40 dark:bg-slate-900/40 border-2 border-white/20 dark:border-white/10 p-8 rounded-[2.5rem] mb-12 backdrop-blur-3xl shadow-2xl">
-          <h3 className="font-black mb-6 uppercase tracking-widest text-[10px] opacity-40 dark:text-white italic">Open Channel Feedback</h3>
+        <form onSubmit={handleReviewSubmit} className="bg-white/40 dark:bg-black/60 border-2 border-white/20 dark:border-white/5 p-8 rounded-[2.5rem] mb-12 backdrop-blur-3xl shadow-2xl">
+          <h3 className="font-black mb-6 uppercase tracking-widest text-[10px] text-slate-400 dark:text-zinc-500 italic">Open Channel Feedback</h3>
           
           <input type="text" name="honeypot" className="hidden" tabIndex={-1} autoComplete="off" />
           
@@ -429,12 +413,12 @@ export default function DownloadPage() {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           {mockApps.filter(a => a.is_new && a.id !== app.id).slice(0, 4).map(discoverApp => (
-            <Link key={discoverApp.id} to={`/app/${discoverApp.slug}`} className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl p-6 flex flex-col items-center text-center hover:-translate-y-2 transition-transform border-2 border-white/20 dark:border-white/10 rounded-[2.5rem] shadow-2xl">
+            <Link key={discoverApp.id} to={`/app/${discoverApp.slug}`} className="bg-white/40 dark:bg-black/60 backdrop-blur-3xl p-6 flex flex-col items-center text-center hover:-translate-y-2 transition-transform border-2 border-white/20 dark:border-white/5 rounded-[2.5rem] shadow-2xl">
               <div className="w-20 h-20 rounded-[1.8rem] overflow-hidden mb-4 bg-white/20 shadow-2xl border-4 border-white-10">
                  {discoverApp.icon_url && <img src={discoverApp.icon_url} alt="" className="w-full h-full object-cover"/>}
               </div>
-              <h4 className="font-black text-xs uppercase tracking-tighter truncate w-full dark:text-white">{discoverApp.name}</h4>
-              <div className="text-[10px] font-black opacity-40 mt-1 uppercase tracking-widest dark:text-white">{discoverApp.developer}</div>
+              <h4 className="font-black text-xs uppercase tracking-tighter w-full dark:text-zinc-100">{discoverApp.name}</h4>
+              <div className="text-[10px] font-black text-slate-400 dark:text-zinc-500 mt-1 uppercase tracking-widest">{discoverApp.developer}</div>
             </Link>
           ))}
         </div>

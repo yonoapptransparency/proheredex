@@ -144,7 +144,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     // Safety fallback only if no cache
     const timeout = !hasCache ? setTimeout(() => {
       setLoading(false);
-    }, 2000) : null;
+    }, 1000) : null;
 
     const checkConnection = async () => {
       try {
@@ -152,7 +152,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         await getDocFromServer(testDoc);
         setIsConnected(true);
       } catch (err: any) {
-        if (isConnected !== false) setIsConnected(false);
+        // Only set disconnected if we are sure
+        if (err.message?.includes('offline') || err.code === 'unavailable') {
+          setIsConnected(false);
+        }
       }
     };
 

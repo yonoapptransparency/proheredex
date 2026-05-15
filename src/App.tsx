@@ -74,7 +74,7 @@ function Header() {
         initial="hidden"
         animate="visible"
         variants={navVariants}
-        className={`glass-nav ${scrolled ? 'glass-nav-scrolled' : 'bg-transparent py-2'}`}
+        className={`glass-nav ${scrolled ? 'glass-nav-scrolled bg-white/30 dark:bg-black/30 backdrop-blur-xl' : 'bg-transparent py-2'}`}
       >
         <div className="max-w-5xl mx-auto px-4 sm:px-6 relative flex justify-between items-center">
           <Link to="/" onClick={triggerHaptic} className="flex items-center gap-2 group">
@@ -87,21 +87,21 @@ function Header() {
           </Link>
           
           <nav className="hidden md:flex items-center gap-4 lg:gap-8 text-sm font-medium">
-            <Link to="/" onClick={triggerHaptic} className={`magic-text transition-all p-2 font-bold uppercase tracking-tight relative ${pathname === '/' ? 'text-red-600' : ''}`}>
+            <Link to="/" onClick={triggerHaptic} className={`transition-all p-2 font-bold uppercase tracking-tight relative ${pathname === '/' ? 'text-red-600' : ''}`}>
               Home
               {pathname === '/' && <motion.div layoutId="header-active" className="absolute bottom-0 left-2 right-2 h-0.5 bg-red-600" />}
             </Link>
-            <Link to="/new-apps" onClick={triggerHaptic} className={`magic-text transition-all p-2 font-bold uppercase tracking-tight flex items-center gap-1 relative ${pathname === '/new-apps' ? 'text-red-600' : ''}`}>
+            <Link to="/new-apps" onClick={triggerHaptic} className={`transition-all p-2 font-bold uppercase tracking-tight flex items-center gap-1 relative ${pathname === '/new-apps' ? 'text-red-600' : ''}`}>
               New App <span className="flex w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
               {pathname === '/new-apps' && <motion.div layoutId="header-active" className="absolute bottom-0 left-2 right-2 h-0.5 bg-red-600" />}
             </Link>
-            <Link to="/news" onClick={triggerHaptic} className={`magic-text transition-all p-2 font-bold uppercase tracking-tight relative ${pathname === '/news' ? 'text-red-600' : ''}`}>
+            <Link to="/news" onClick={triggerHaptic} className={`transition-all p-2 font-bold uppercase tracking-tight relative ${pathname === '/news' ? 'text-red-600' : ''}`}>
               News
               {pathname === '/news' && <motion.div layoutId="header-active" className="absolute bottom-0 left-2 right-2 h-0.5 bg-red-600" />}
             </Link>
             <div className="relative group/more" onMouseEnter={() => setMoreOpen(true)} onMouseLeave={() => setMoreOpen(false)}>
               <button 
-                className={`magic-text transition-all p-2 font-bold uppercase tracking-tight flex items-center gap-1 relative ${['/videos', '/blogs', '/contact', '/privacy', '/terms', '/about', '/responsibility'].includes(pathname) ? 'text-red-600' : ''}`}
+                className={`transition-all p-2 font-bold uppercase tracking-tight flex items-center gap-1 relative ${['/videos', '/blogs', '/contact', '/privacy', '/terms', '/about', '/responsibility'].includes(pathname) ? 'text-red-600' : ''}`}
                 onClick={triggerHaptic}
               >
                 More <MoreHorizontal className="w-4 h-4" />
@@ -188,11 +188,11 @@ function Header() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[60] bg-transparent backdrop-blur-3xl flex flex-col px-6 py-8"
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-[60] bg-transparent backdrop-blur-xl flex flex-col px-6 py-8"
           >
             <div className="flex justify-between items-center mb-12">
-              <span className="text-xl font-black flex items-center gap-2 magic-text uppercase tracking-tighter">
+              <span className="text-xl font-black flex items-center gap-2 uppercase tracking-tighter">
                 {settings.logo_url ? <img src={settings.logo_url} width={24} height={24} className="w-6 h-6 object-contain" alt="Logo" /> : <Shield className="w-6 h-6 text-red-600" />} {settings.site_title}
               </span>
               <button 
