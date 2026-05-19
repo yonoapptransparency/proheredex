@@ -4,45 +4,52 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 export default function About() {
-  const { apps: mockApps, settings: mockSettings, news: mockNews, blogs: mockBlogs, videos: mockVideos, saveApps: saveMockApps, saveSettings: saveMockSettings, saveNews: saveMockNews, saveBlogs: saveMockBlogs, saveVideos: saveMockVideos } = useData();
+  const { settings: mockSettings } = useData();
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4">
-      <div className="mb-6">
+    <div className="max-w-5xl mx-auto plain-content px-4 animate-fade-in">
+      <div className="mb-20">
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-colors group"
+          className="inline-flex items-center gap-2 premium-subheading opacity-100 hover:text-red-600 transition-colors"
         >
-          <div className="p-2 rounded-full bg-black/5 border border-black/5 group-hover:scale-110 transition-transform">
-            <ArrowLeft className="w-3.5 h-3.5" />
-          </div>
-          Back to storefront
+          <ArrowLeft className="w-3 h-3" />
+          Gateway Protocol
         </Link>
       </div>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass-panel p-8"
-      >
-        <h1 className="text-3xl font-bold mb-8">About {mockSettings.site_title}</h1>
+      <motion.div>
+        <h1 className="text-6xl sm:text-[10rem] premium-heading mb-16">
+          <span className="text-slate-200">The</span><br/>Mission
+        </h1>
         
-        <div 
-          className="space-y-6 text-lg leading-relaxed opacity-80 markdown-body font-medium"
-          dangerouslySetInnerHTML={{ __html: mockSettings.about_content || '' }}
-        />
+        <div className="grid lg:grid-cols-2 gap-20 items-start mb-32">
+          <div className="space-y-10">
+            <h2 className="premium-subheading">Core Objective</h2>
+            <div 
+              className="text-2xl sm:text-3xl leading-snug font-semibold text-slate-800 italic"
+              dangerouslySetInnerHTML={{ __html: (mockSettings.about_content || '').split('\n\n')[0].replace(/\n/g, '<br/>') }}
+            />
+          </div>
+          <div className="p-12 bg-slate-50 rounded-[3rem] border border-black/5">
+            <h2 className="premium-subheading mb-8">System Intel</h2>
+            <div 
+              className="space-y-6 text-lg leading-relaxed text-slate-600 font-medium"
+              dangerouslySetInnerHTML={{ __html: (mockSettings.about_content || '').split('\n\n').slice(1).join('<br/><br/>').replace(/\n/g, '<br/>') }}
+            />
+          </div>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-12">
-          <div className="text-center p-6 bg-black/5 rounded-2xl border border-black/5">
-            <div className="text-3xl font-bold text-pink-500 mb-2">100%</div>
-            <div className="text-sm font-semibold">Verified Safe</div>
-          </div>
-          <div className="text-center p-6 bg-black/5 rounded-2xl border border-black/5">
-            <div className="text-3xl font-bold text-blue-500 mb-2">50k+</div>
-            <div className="text-sm font-semibold">Active Users</div>
-          </div>
-          <div className="text-center p-6 bg-black/5 rounded-2xl border border-black/5">
-            <div className="text-3xl font-bold text-purple-500 mb-2">24/7</div>
-            <div className="text-sm font-semibold">Security Monitoring</div>
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-32">
+          {[
+            { val: '100%', label: 'Verified Safe' },
+            { val: 'Elite', label: 'Security Grade' },
+            { val: 'Realtime', label: 'Threat Monitoring' },
+            { val: 'Stable', label: 'Node Status' },
+          ].map((stat, i) => (
+            <div key={i} className="p-8 border border-black/5 rounded-[2rem] flex flex-col items-center text-center">
+              <span className="text-4xl font-black tracking-tighter text-red-600 mb-2 italic">{stat.val}</span>
+              <span className="premium-subheading text-[8px]">{stat.label}</span>
+            </div>
+          ))}
         </div>
       </motion.div>
     </div>

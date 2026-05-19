@@ -2,34 +2,41 @@ import { motion } from 'framer-motion';
 import { useData } from '../contexts/DataContext';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export default function Terms() {
-  const { apps: mockApps, settings: mockSettings, news: mockNews, blogs: mockBlogs, videos: mockVideos, saveApps: saveMockApps, saveSettings: saveMockSettings, saveNews: saveMockNews, saveBlogs: saveMockBlogs, saveVideos: saveMockVideos } = useData();
+  const { settings: mockSettings } = useData();
+  
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4">
-      <div className="mb-6 px-1">
+    <div className="max-w-5xl mx-auto plain-content px-4 animate-fade-in">
+      <div className="mb-20">
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-colors group"
+          className="inline-flex items-center gap-2 premium-subheading opacity-100 hover:text-red-600 transition-colors"
         >
-          <div className="p-2 rounded-full bg-black/5 border border-black/5 group-hover:scale-110 transition-transform">
-            <ArrowLeft className="w-3.5 h-3.5" />
-          </div>
-          Back to storefront
+          <ArrowLeft className="w-3 h-3" />
+          Gateway Protocol
         </Link>
       </div>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass-panel p-8 prose prose-slate max-w-none opacity-80 font-medium"
-      >
-        <h1 className="text-3xl font-black mb-6 uppercase tracking-tight">Terms & Conditions</h1>
-        <p className="text-sm opacity-50 mb-8 font-bold">Last updated: May 11, 2026</p>
+      <Helmet>
+        <title>Terms & Conditions | {mockSettings.site_title}</title>
+      </Helmet>
 
-        <div 
-          className="markdown-body"
-          dangerouslySetInnerHTML={{ __html: mockSettings.terms_content || '' }}
-        />
+      <motion.div>
+        <h1 className="text-6xl sm:text-[10rem] premium-heading mb-16">
+          <span className="text-slate-200">Legal</span><br/>Charter
+        </h1>
+        
+        <div className="bg-slate-50 rounded-[4rem] p-12 sm:p-24 border border-black/5">
+          <div 
+            className="space-y-10 text-xl font-medium leading-relaxed text-slate-700"
+            dangerouslySetInnerHTML={{ __html: (mockSettings.terms_content || '').replace(/\n/g, '<br/>') }}
+          />
+        </div>
+        
+        <div className="mt-20 text-center">
+          <p className="premium-subheading">End of Charter</p>
+        </div>
       </motion.div>
     </div>
   );

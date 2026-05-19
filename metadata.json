@@ -1,6 +1,6 @@
 {
   "name": "YonoStore",
-  "description": "A Play Store-inspired application index with Flipkart-style banners and AdBrain-compliant legal pages.",
+  "description": "A high-speed, light-themed premium application index with a focus on transparency, speed, and non-boxed content layout.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

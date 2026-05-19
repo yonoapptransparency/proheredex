@@ -14,7 +14,7 @@ interface Comment {
 }
 
 export default function NewsDetailPage() {
-  const { apps: mockApps, settings: mockSettings, news: mockNews, blogs: mockBlogs, videos: mockVideos, saveApps: saveMockApps, saveSettings: saveMockSettings, saveNews: saveMockNews, saveBlogs: saveMockBlogs, saveVideos: saveMockVideos } = useData();
+  const { news: mockNews, settings: mockSettings } = useData();
   const { slug } = useParams();
   const newsItem = mockNews.find(n => n.slug === slug);
   const [commentText, setCommentText] = useState('');
@@ -58,7 +58,7 @@ export default function NewsDetailPage() {
   }
 
   return (
-    <div className="animate-fade-in max-w-4xl mx-auto px-4 sm:px-6 mb-20">
+    <div className="animate-fade-in max-w-4xl mx-auto px-4 plain-content mb-20">
       <Helmet>
         <title>{newsItem.seo_title || newsItem.title} - {mockSettings.site_title}</title>
         <meta name="description" content={newsItem.seo_description || newsItem.description} />
@@ -74,169 +74,117 @@ export default function NewsDetailPage() {
         <meta property="og:image" content={newsItem.og_image_url || newsItem.logo_url} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={window.location.href} />
-        <meta property="article:published_time" content={new Date().toISOString()} />
+        <meta property="article:published_time" content={newsItem.published_at || new Date().toISOString()} />
         <meta property="article:author" content={newsItem.ceo_name} />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={newsItem.seo_title || newsItem.title} />
         <meta name="twitter:description" content={newsItem.seo_description || newsItem.description} />
         <meta name="twitter:image" content={newsItem.og_image_url || newsItem.logo_url} />
-
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "NewsArticle",
-            "headline": newsItem.title,
-            "description": newsItem.description,
-            "image": [newsItem.logo_url],
-            "datePublished": new Date().toISOString(),
-            "author": [{
-              "@type": "Person",
-              "name": newsItem.ceo_name || "Admin",
-              "jobTitle": newsItem.ceo_description || "Chief Intelligence Officer"
-            }]
-          })}
-        </script>
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "BreadcrumbList",
-            "itemListElement": [
-              {
-                "@type": "ListItem",
-                "position": 1,
-                "name": "Home",
-                "item": window.location.origin
-              },
-              {
-                "@type": "ListItem",
-                "position": 2,
-                "name": "News",
-                "item": window.location.origin + "/news"
-              },
-              {
-                "@type": "ListItem",
-                "position": 3,
-                "name": newsItem.title,
-                "item": window.location.href
-              }
-            ]
-          })}
-        </script>
       </Helmet>
       
-      <div className="mb-6">
+      <div className="mb-10">
         <Link 
           to="/news" 
-          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-colors group"
+          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] opacity-40 hover:opacity-100 transition-opacity"
         >
-          <div className="p-2 rounded-full bg-black/5 border border-black/5 group-hover:scale-110 transition-transform">
-            <ArrowLeft className="w-3.5 h-3.5" />
-          </div>
-          Back to news index
+          <ArrowLeft className="w-3 h-3" />
+          News Index
         </Link>
       </div>
 
-      <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl overflow-hidden border-2 border-white/20 dark:border-white/10 rounded-[3rem] shadow-2xl">
-        {newsItem.logo_url && (
-            <div className="w-full h-80 md:h-[450px] relative">
-                <img src={newsItem.logo_url} alt={newsItem.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent"></div>
-                <div className="absolute bottom-10 left-10 right-10">
-                   <div className="flex items-center gap-2 mb-4">
-                      <span className="bg-pink-600 text-white text-[8px] font-black px-3 py-1 rounded uppercase tracking-[0.3em] italic">Official Transmission</span>
-                      <span className="text-white/40 text-[8px] font-black uppercase tracking-[0.3em]">Code: NT-{newsItem.id}</span>
-                   </div>
-                   <h1 className="text-3xl sm:text-5xl font-black text-white uppercase tracking-tighter italic leading-tight drop-shadow-2xl">
-                    {newsItem.title}
-                   </h1>
-                </div>
+      <motion.article 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <header className="mb-12">
+            <div className="flex items-center gap-2 mb-6">
+                <span className="bg-red-600 text-white text-[8px] font-black px-3 py-1 rounded uppercase tracking-[0.3em] italic shadow-lg shadow-red-600/20">Official Transmission</span>
+                <span className="text-slate-400 text-[8px] font-black uppercase tracking-[0.3em]">Code: NT-{newsItem.id}</span>
             </div>
-        )}
-        
-        <div className="p-8 sm:p-14">
-            {!newsItem.logo_url && (
-              <h1 className="text-3xl sm:text-5xl font-black mb-10 uppercase tracking-tighter dark:text-white italic leading-tight">
+            <h1 className="text-4xl sm:text-7xl font-black mb-8 uppercase tracking-tighter italic leading-none text-slate-900">
                 {newsItem.title}
-              </h1>
-            )}
+            </h1>
             
-            <div className="flex items-center gap-6 mb-12 pb-10 border-b-2 border-black/5 dark:border-white/5">
-                <div className="w-20 h-20 rounded-full bg-pink-600 text-white flex items-center justify-center font-black text-3xl italic shadow-2xl shadow-pink-500/30 border-4 border-white dark:border-white/10">
+            <div className="flex items-center gap-6 pb-8 border-b border-black/5">
+                <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center font-black text-2xl italic shadow-lg shadow-red-600/20 m-0">
                    {newsItem.ceo_name ? newsItem.ceo_name.charAt(0) : 'C'}
                 </div>
                 <div>
-                    <p className="font-black text-2xl uppercase tracking-tighter dark:text-white italic">{newsItem.ceo_name}</p>
-                    <p className="text-xs font-black uppercase tracking-widest opacity-40 dark:text-white/60">{newsItem.ceo_description || 'Chief Intelligence Officer'}</p>
+                    <p className="font-black text-xl uppercase tracking-tighter italic leading-none">{newsItem.ceo_name}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mt-1">{newsItem.ceo_description || 'Chief Intelligence Officer'}</p>
                 </div>
             </div>
+        </header>
 
-            <div className="prose prose-pink dark:prose-invert max-w-none mb-12">
-                <p className="text-xl sm:text-2xl font-black mb-10 dark:text-white leading-relaxed italic opacity-90">{newsItem.description}</p>
-                <div className="font-bold leading-relaxed opacity-80 text-sm sm:text-base">
-                  <ReactMarkdown>{newsItem.content}</ReactMarkdown>
-                </div>
+        {newsItem.logo_url && (
+            <div className="w-full aspect-video mb-12 rounded-3xl overflow-hidden shadow-lg">
+                <img src={newsItem.logo_url} alt={newsItem.title} className="w-full h-full object-cover" />
             </div>
+        )}
+        
+        <div className="prose prose-slate max-w-none mb-16">
+            <p className="text-xl sm:text-2xl font-black mb-12 text-slate-900 leading-relaxed italic opacity-90">{newsItem.description}</p>
+            <div className="font-medium text-lg text-slate-600 leading-relaxed">
+              <ReactMarkdown>{newsItem.content}</ReactMarkdown>
+            </div>
+        </div>
 
-            {newsItem.link && (
-                <div className="mt-14 pt-10 border-t-2 border-black/5 dark:border-white/5">
-                    <a href={newsItem.link} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center min-h-[64px] px-12 bg-pink-500 text-white font-black uppercase tracking-widest text-[10px] rounded-[1.5rem] hover:bg-pink-600 transition-all shadow-2xl shadow-pink-500/30 italic active:scale-95">
-                        Access External Feed
-                    </a>
-                </div>
-            )}
+        {newsItem.link && (
+            <div className="mb-20">
+                <a href={newsItem.link} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center min-h-[56px] px-10 bg-slate-900 text-white font-black uppercase tracking-widest text-[9px] rounded-xl hover:bg-black transition-all italic active:scale-95 shadow-xl">
+                    Access External Feed
+                </a>
+            </div>
+        )}
 
-            <div className="mt-20 pt-14 border-t-4 border-pink-500/20">
-              <h3 className="text-2xl font-black flex items-center gap-4 mb-10 uppercase tracking-tighter dark:text-white italic">
-                <MessageSquare className="w-8 h-8 text-pink-500" />
-                Intelligence Feed ({comments.length})
-              </h3>
-              
-              <form onSubmit={handleAddComment} className="mb-14">
-                <div className="relative group">
+        <footer className="border-t border-black/5 pt-12">
+            <div className="flex items-center gap-4 mb-10">
+                <MessageSquare className="w-5 h-5 text-red-600" />
+                <h3 className="text-xs font-black uppercase tracking-widest italic">Intelligence Feed ({comments.length})</h3>
+            </div>
+            
+            <form onSubmit={handleAddComment} className="mb-14">
+                <div className="relative">
                   <textarea
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     placeholder="Broadcast your thoughts..."
-                    className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-[2.5rem] p-6 pr-20 focus:border-pink-500 transition-all min-h-[150px] resize-none outline-none font-bold dark:text-white"
+                    className="w-full bg-slate-50 border border-black/5 rounded-3xl p-6 pr-20 transition-all min-h-[120px] resize-none outline-none font-bold text-slate-900 focus:bg-white focus:border-red-600/20"
                   />
                   <button
                     type="submit"
                     disabled={!commentText.trim()}
-                    className="absolute bottom-6 right-6 w-14 h-14 bg-pink-500 text-white rounded-2xl flex items-center justify-center hover:bg-pink-600 transition-all shadow-xl shadow-pink-500/20 disabled:opacity-20 disabled:grayscale active:scale-90"
-                    aria-label="Submit comment"
+                    className="absolute bottom-6 right-6 w-12 h-12 bg-red-600 text-white rounded-xl flex items-center justify-center hover:bg-red-700 transition-all shadow-lg shadow-red-600/20 disabled:opacity-20 active:scale-90"
                   >
-                    <Send className="w-6 h-6" />
+                    <Send className="w-5 h-5" />
                   </button>
                 </div>
-              </form>
+            </form>
 
-              <div className="space-y-8">
+            <div className="space-y-6">
                 {comments.map((comment) => (
                   <motion.div 
-                    initial={{ opacity: 0, x: -10 }}
-                    whileInView={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     key={comment.id} 
-                    className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-8 border-2 border-white/20 dark:border-white/10 shadow-xl group hover:border-pink-500/30 transition-all"
+                    className="p-8 border border-black/5 rounded-3xl"
                   >
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-pink-500/10 text-pink-500 flex items-center justify-center font-black text-xl italic border-2 border-pink-500/20">
-                          {comment.author.charAt(0)}
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-sm italic">
+                            {comment.author.charAt(0)}
                         </div>
                         <div>
-                          <p className="font-black uppercase tracking-tighter dark:text-white italic text-lg">{comment.author}</p>
-                          <p className="text-[10px] font-black uppercase tracking-widest opacity-30 dark:text-white">{comment.date}</p>
+                            <p className="font-black uppercase tracking-tighter italic text-sm">{comment.author}</p>
+                            <p className="text-[9px] font-black uppercase tracking-widest opacity-30">{comment.date}</p>
                         </div>
-                      </div>
                     </div>
-                    <p className="font-bold opacity-70 dark:text-white leading-relaxed text-sm">{comment.content}</p>
+                    <p className="font-bold text-slate-600 leading-relaxed text-sm">{comment.content}</p>
                   </motion.div>
                 ))}
-              </div>
             </div>
-        </div>
-      </div>
+        </footer>
+      </motion.article>
     </div>
   );
 }

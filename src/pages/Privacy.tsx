@@ -1,38 +1,51 @@
 import { motion } from 'framer-motion';
 import { useData } from '../contexts/DataContext';
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ShieldCheck } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export default function Privacy() {
-  const { apps: mockApps, settings: mockSettings, news: mockNews, blogs: mockBlogs, videos: mockVideos, saveApps: saveMockApps, saveSettings: saveMockSettings, saveNews: saveMockNews, saveBlogs: saveMockBlogs, saveVideos: saveMockVideos } = useData();
+  const { settings: mockSettings } = useData();
+  
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4">
-      <div className="mb-6 px-1">
+    <div className="max-w-5xl mx-auto plain-content px-4 animate-fade-in">
+      <div className="mb-20">
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-colors group"
+          className="inline-flex items-center gap-2 premium-subheading opacity-100 hover:text-red-600 transition-colors"
         >
-          <div className="p-2 rounded-full bg-black/5 border border-black/5 group-hover:scale-110 transition-transform">
-            <ArrowLeft className="w-3.5 h-3.5" />
-          </div>
-          Back to storefront
+          <ArrowLeft className="w-3 h-3" />
+          Gateway Protocol
         </Link>
       </div>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass-panel p-8 prose prose-slate max-w-none opacity-80 font-medium"
-      >
-        <h1 className="text-3xl font-black mb-6 uppercase tracking-tight">Privacy Policy</h1>
-        <p className="text-sm opacity-50 mb-8 font-bold">Last updated: May 11, 2026</p>
+      <Helmet>
+        <title>Privacy Policy | {mockSettings.site_title}</title>
+      </Helmet>
 
-        <div 
-          className="markdown-body"
-          dangerouslySetInnerHTML={{ __html: mockSettings.privacy_content || '' }}
-        />
-
-        <div className="mt-12 p-4 bg-pink-500/5 rounded-xl border border-pink-500/10">
-          <p className="text-sm">For any privacy-related inquiries, please contact us at {mockSettings.support_email}</p>
+      <motion.div>
+        <h1 className="text-6xl sm:text-[10rem] premium-heading mb-16">
+          <span className="text-slate-200">Data</span><br/>Privacy
+        </h1>
+        
+        <div className="grid lg:grid-cols-[1fr,2fr] gap-12 sm:gap-20">
+          <aside className="space-y-8 sticky top-32">
+            <div className="p-8 bg-slate-50 rounded-3xl border border-black/5">
+              <ShieldCheck className="w-8 h-8 text-red-600 mb-4" />
+              <h3 className="premium-subheading mb-2">Security Status</h3>
+              <p className="text-xl font-black italic">Active</p>
+            </div>
+            <div className="px-4">
+              <h3 className="premium-subheading mb-4">Support Email</h3>
+              <p className="text-sm font-black uppercase tracking-widest text-red-600 italic underline">{mockSettings.support_email}</p>
+            </div>
+          </aside>
+          
+          <article className="p-12 sm:p-20 bg-white border border-black/5 rounded-[4rem] shadow-sm">
+            <div 
+              className="space-y-10 text-lg sm:text-xl leading-relaxed text-slate-600 font-medium"
+              dangerouslySetInnerHTML={{ __html: (mockSettings.privacy_content || '').replace(/\n/g, '<br/>') }}
+            />
+          </article>
         </div>
       </motion.div>
     </div>

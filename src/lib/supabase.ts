@@ -24,7 +24,11 @@ export interface GlobalSettings {
   helpline_telegram: string;
   support_email: string;
   disclaimer_text: string;
+  disclaimer_heading?: string;
   ethics_discrimination_text: string;
+  ethics_heading?: string;
+  portal_heading?: string;
+  important_notice_heading?: string;
   ticker_text: string;
   animations_enabled: boolean;
   seo_keywords?: string;
@@ -54,6 +58,7 @@ export interface NewsItem {
   canonical_url?: string;
   target_region?: string;
   content: string;
+  published_at?: string;
   link: string;
 }
 
@@ -256,7 +261,11 @@ export const mockSettings: GlobalSettings = savedSettings ? JSON.parse(savedSett
   helpline_telegram: '@yonostore',
   support_email: 'support@yonostore.com',
   disclaimer_text: 'YonoStore provides transparency reviews. Download applications at your own risk. We strictly verify safety, but you remain responsible for your device security.',
+  disclaimer_heading: 'PLATFORM DISCLAIMER',
   ethics_discrimination_text: 'We are committed to providing equal access to safe applications without discrimination.',
+  ethics_heading: 'ETHICS & DISCRIMINATION',
+  portal_heading: 'Transparency <br/><span class="text-red-600">Review Portal</span>',
+  important_notice_heading: 'IMPORTANT NOTICE',
   ticker_text: 'LIVE: Instagram SafeMod updated to v2.4.1 • All apps verified by the Transparency Team • Join our Telegram for updates •',
   animations_enabled: true,
   seo_keywords: 'app store, safe apps, secure download, verified apps, yonostore, app privacy',
@@ -292,6 +301,7 @@ export const mockNews: NewsItem[] = savedNews ? JSON.parse(savedNews) : [
     seo_title: 'Tech Innovations 2026 - Latest News',
     seo_description: 'Read the latest updates about tech innovations in 2026.',
     content: 'A comprehensive guide to digital transformations this year...',
+    published_at: new Date().toISOString(),
     link: 'https://example.com/news/1'
   }
 ];

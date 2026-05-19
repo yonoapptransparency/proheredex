@@ -392,6 +392,42 @@ const SettingsTab = React.memo(({ mockSettings, handleSaveSettings, saving }: an
       </div>
 
       <div className="space-y-6">
+        <h3 className="font-black text-pink-500 border-b border-pink-500/10 pb-2 uppercase tracking-widest text-xs italic">Transparency Portal & Disclaimers</h3>
+        <div className="grid gap-6">
+          <div>
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Portal Main Heading</label>
+            <input type="text" name="portal_heading" defaultValue={mockSettings.portal_heading} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-bold" />
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div>
+              <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Disclaimer Heading</label>
+              <input type="text" name="disclaimer_heading" defaultValue={mockSettings.disclaimer_heading} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-bold" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Ethics Heading</label>
+              <input type="text" name="ethics_heading" defaultValue={mockSettings.ethics_heading} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-bold" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Disclaimer Text (HTML supported)</label>
+            <textarea name="disclaimer_text" rows={3} defaultValue={mockSettings.disclaimer_text} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-medium"></textarea>
+          </div>
+          <div>
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Ethics Text (HTML supported)</label>
+            <textarea name="ethics_discrimination_text" rows={3} defaultValue={mockSettings.ethics_discrimination_text} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-medium"></textarea>
+          </div>
+          <div>
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Important Notice Heading (Download Page)</label>
+            <input type="text" name="important_notice_heading" defaultValue={mockSettings.important_notice_heading} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-bold" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Important Notice Content (Download Page Body)</label>
+            <textarea name="important_notice" rows={2} defaultValue={mockSettings.important_notice} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-medium"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
         <h3 className="font-black text-pink-500 border-b border-pink-500/10 pb-2 uppercase tracking-widest text-xs italic">Support & Ticker</h3>
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
@@ -754,6 +790,14 @@ export default function AdminDashboard() {
         privacy_content: formData.get('privacy_content') as string || mockSettings.privacy_content,
         terms_content: formData.get('terms_content') as string || mockSettings.terms_content,
         responsibility_content: formData.get('responsibility_content') as string || mockSettings.responsibility_content,
+        
+        portal_heading: formData.get('portal_heading') as string || mockSettings.portal_heading,
+        disclaimer_heading: formData.get('disclaimer_heading') as string || mockSettings.disclaimer_heading,
+        ethics_heading: formData.get('ethics_heading') as string || mockSettings.ethics_heading,
+        disclaimer_text: formData.get('disclaimer_text') as string || mockSettings.disclaimer_text,
+        ethics_discrimination_text: formData.get('ethics_discrimination_text') as string || mockSettings.ethics_discrimination_text,
+        important_notice_heading: formData.get('important_notice_heading') as string || mockSettings.important_notice_heading,
+        important_notice: formData.get('important_notice') as string || mockSettings.important_notice,
         
         ticker_text: formData.get('ticker_text') as string || mockSettings.ticker_text,
         support_email: formData.get('support_email') as string || mockSettings.support_email,

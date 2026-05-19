@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useData } from '../contexts/DataContext';
-import { LayoutGrid, Sparkles, Filter, ArrowLeft } from 'lucide-react';
+import { LayoutGrid, Sparkles, Search, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { AppListItem } from '../components/PlayStoreUI';
 import { Link } from 'react-router-dom';
@@ -25,16 +25,14 @@ export default function VideosPage() {
   }, [mockApps, searchTerm]);
 
   return (
-    <div className="animate-fade-in max-w-5xl mx-auto py-4 px-2">
-      <div className="px-2 mb-6">
+    <div className="animate-fade-in min-h-screen plain-content px-4">
+      <div className="mb-10">
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-colors group"
+          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] opacity-40 hover:opacity-100 transition-opacity"
         >
-          <div className="p-2 rounded-full bg-black/5 border border-black/5 group-hover:scale-110 transition-transform">
-            <ArrowLeft className="w-3.5 h-3.5" />
-          </div>
-          Back to storefront
+          <ArrowLeft className="w-3 h-3" />
+          Gateway
         </Link>
       </div>
       <Helmet>
@@ -42,68 +40,36 @@ export default function VideosPage() {
         <meta name="description" content="Explore our complete collection of verified premium applications. Vetted for security and performance." />
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href={window.location.origin + "/videos"} />
-        
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content={`All Premium Apps - ${mockSettings.site_title}`} />
-        <meta property="og:description" content="Explore our complete collection of verified premium applications. Vetted for security and performance." />
-        <meta property="og:image" content={mockSettings.logo_url} />
-        <meta property="og:url" content={window.location.origin + "/videos"} />
-
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`All Premium Apps - ${mockSettings.site_title}`} />
-        <meta name="twitter:description" content="Explore our complete collection of verified premium applications. Vetted for security and performance." />
-        <meta name="twitter:image" content={mockSettings.logo_url} />
-
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "CollectionPage",
-            "name": "All Premium Apps",
-            "description": "Comprehensive list of our premium apps.",
-            "url": window.location.origin + "/videos"
-          })}
-        </script>
       </Helmet>
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-6 px-2">
-        <div className="space-y-1">
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tighter flex items-center gap-3 uppercase italic leading-none dark:text-white">
-            {mockSettings.logo_url ? <img src={mockSettings.logo_url} className="w-10 h-10 object-contain brightness-110" alt="" /> : <LayoutGrid className="w-8 h-8 text-pink-600" />}
-            All <span className="text-pink-600">Premium</span> Apps
-          </h1>
-          <p className="opacity-40 font-black uppercase tracking-[0.4em] text-[8px] sm:text-[10px] flex items-center gap-3 dark:text-white italic">
-            <Sparkles className="w-4 h-4 text-pink-500 animate-pulse" />
-            Vetted & Verified Intelligence Index
-          </p>
+      <div className="mb-12">
+        <div className="flex items-center gap-4 mb-8">
+          <LayoutGrid className="w-10 h-10 text-red-600" />
+          <h1 className="text-4xl sm:text-6xl font-black uppercase tracking-tighter italic leading-none m-0">Premium<br/>Apps</h1>
         </div>
         
-        <div className="relative w-full sm:w-80 group">
-          <div className="absolute left-5 top-1/2 -translate-y-1/2 z-10">
-            <Filter className="w-4 h-4 text-pink-500 opacity-40 group-focus-within:opacity-100 transition-opacity" />
-          </div>
-          <input 
-            type="search" 
-            placeholder="DECRYPT FEED..." 
+        <div className="relative max-w-xl">
+          <input
+            type="text"
+            className="block w-full py-4 bg-transparent border-b-2 border-black/10 placeholder-slate-400 focus:outline-none focus:border-red-600 transition-all font-black text-xl uppercase italic"
+            placeholder="Search Premium Index..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl border-2 border-white/20 dark:border-white/10 rounded-[1.5rem] pl-14 pr-6 py-4 text-slate-900 dark:text-white placeholder-slate-400 text-xs font-black focus:ring-4 focus:ring-pink-500/10 transition-all outline-none uppercase tracking-[0.2em] shadow-2xl"
           />
+          <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
         </div>
       </div>
 
-      <div className="grid gap-2 px-1">
+      <div className="space-y-4">
         {allCategoryApps.map((app, index) => (
           <AppListItem key={app.id} app={app} index={index + 1} />
         ))}
       </div>
       
       {allCategoryApps.length === 0 && (
-        <div className="text-center py-40 bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl border-4 border-dashed border-white/20 dark:border-white/10 m-4 rounded-[4rem] shadow-inner">
-          <div className="bg-pink-600/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl border-2 border-pink-500/20">
-            <LayoutGrid className="w-10 h-10 text-pink-600 opacity-50" />
-          </div>
-          <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-3 dark:text-white">Feed Interrupted</h3>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] max-w-[250px] mx-auto opacity-70 italic">
+        <div className="text-center py-40 border-2 border-dashed border-black/5 rounded-3xl">
+          <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-3">Feed Interrupted</h3>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] max-w-[250px] mx-auto italic">
             {searchTerm ? "Search query returned zero matches" : "Syncing newly verified applications. Stand by."}
           </p>
         </div>

@@ -1,8 +1,7 @@
 import { DataProvider, useData } from './contexts/DataContext';
-import { ThemeProvider } from './contexts/ThemeContext';
 import { useLocation, BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
-import { Menu, Search, Shield, ShieldCheck, Info, Download, ArrowRight, X, Gamepad2, LayoutGrid, Search as SearchIcon, Newspaper, Sparkles, Send, MoreHorizontal } from 'lucide-react';
+import { Menu, Shield, ShieldCheck, Info, ArrowRight, X, LayoutGrid, Newspaper, Sparkles, Send, MoreHorizontal, Search } from 'lucide-react';
 import { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -27,7 +26,7 @@ const VideoDetailPage = lazy(() => import('./pages/VideoDetailPage'));
 
 import Ticker from './components/Ticker';
 import SupportWidget from './components/SupportWidget';
-import ThemeToggle from './components/ThemeToggle';
+import GlobalSearch from './components/GlobalSearch';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -45,6 +44,7 @@ function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -74,7 +74,7 @@ function Header() {
         initial="hidden"
         animate="visible"
         variants={navVariants}
-        className={`glass-nav ${scrolled ? 'glass-nav-scrolled bg-white/30 dark:bg-black/30 backdrop-blur-xl' : 'bg-transparent py-2'}`}
+        className={`glass-nav ${scrolled ? 'glass-nav-scrolled bg-white/95' : 'bg-transparent py-2'}`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-8 relative flex justify-between items-center">
           <Link to="/" onClick={triggerHaptic} className="flex items-center gap-2 sm:gap-3 group">
@@ -110,10 +110,10 @@ function Header() {
               <AnimatePresence>
                 {moreOpen && (
                   <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden py-2"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="absolute top-full right-0 mt-2 w-48 bg-white border border-black/5 rounded-2xl shadow-xl overflow-hidden py-2"
                   >
                     {[
                       { to: '/videos', label: 'All App', icon: LayoutGrid },
@@ -140,6 +140,13 @@ function Header() {
             </div>
 
             <div className="flex items-center gap-2 ml-4 border-l border-black/10 pl-4">
+              <button 
+                onClick={() => { triggerHaptic(); setSearchOpen(true); }}
+                className="flex items-center justify-center min-h-[48px] min-w-[48px] hover:bg-slate-50 rounded-full transition-colors group"
+                aria-label="Search"
+              >
+                <Search className="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:text-red-600 transition-all" />
+              </button>
               {settings.helpline_telegram && (
                 <a 
                   href={settings.helpline_telegram.startsWith('http') ? settings.helpline_telegram : `https://t.me/${settings.helpline_telegram.replace('@', '')}`}
@@ -152,11 +159,17 @@ function Header() {
                 </a>
               )}
               <SupportWidget />
-              <ThemeToggle />
             </div>
           </nav>
 
           <div className="md:hidden flex items-center gap-2.5">
+            <button 
+              onClick={() => { triggerHaptic(); setSearchOpen(true); }}
+              className="flex items-center justify-center min-h-[44px] min-w-[44px] hover:bg-slate-50 rounded-full transition-colors"
+              aria-label="Search"
+            >
+              <Search className="w-4 h-4 opacity-40" />
+            </button>
             {settings.helpline_telegram && (
               <a 
                 href={settings.helpline_telegram.startsWith('http') ? settings.helpline_telegram : `https://t.me/${settings.helpline_telegram.replace('@', '')}`}
@@ -169,7 +182,6 @@ function Header() {
               </a>
             )}
             <SupportWidget />
-            <ThemeToggle />
             <button 
               className="flex items-center justify-center min-h-[44px] min-w-[44px] bg-red-600 rounded-full shadow-lg active:scale-95"
               onClick={() => { triggerHaptic(); setMenuOpen(true); }}
@@ -205,70 +217,38 @@ function Header() {
             </div>
             
             <nav className="flex flex-col gap-2 text-lg font-medium">
-              <Link onClick={() => { triggerHaptic(); setMenuOpen(false); }} to="/" className={`px-4 py-3 rounded-2xl transition-all ${pathname === '/' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-black/5'}`}>
-                <div className="flex items-center gap-3 font-black uppercase tracking-tight">
-                  <LayoutGrid className="w-5 h-5" /> Home
-                </div>
-              </Link>
-              <Link onClick={() => { triggerHaptic(); setMenuOpen(false); }} to="/new-apps" className={`px-4 py-3 rounded-2xl transition-all ${pathname === '/new-apps' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-black/5'}`}>
-                <div className="flex items-center gap-3 font-black uppercase tracking-tight">
-                  <Sparkles className="w-5 h-5" /> New App
-                  <span className="flex w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                </div>
-              </Link>
-              <Link onClick={() => { triggerHaptic(); setMenuOpen(false); }} to="/news" className={`px-4 py-3 rounded-2xl transition-all ${pathname === '/news' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-black/5'}`}>
-                <div className="flex items-center gap-3 font-black uppercase tracking-tight">
-                  <Newspaper className="w-5 h-5" /> News
-                </div>
-              </Link>
-              <Link onClick={() => { triggerHaptic(); setMenuOpen(false); }} to="/videos" className={`px-4 py-3 rounded-2xl transition-all ${pathname === '/videos' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-black/5'}`}>
-                <div className="flex items-center gap-3 font-black uppercase tracking-tight">
-                  <LayoutGrid className="w-5 h-5" /> All App
-                </div>
-              </Link>
-              <Link onClick={() => { triggerHaptic(); setMenuOpen(false); }} to="/blogs" className={`px-4 py-3 rounded-2xl transition-all ${pathname === '/blogs' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-black/5'}`}>
-                <div className="flex items-center gap-3 font-black uppercase tracking-tight">
-                  <Menu className="w-5 h-5" /> Blogs
-                </div>
-              </Link>
-              <Link onClick={() => { triggerHaptic(); setMenuOpen(false); }} to="/responsibility" className={`px-4 py-3 rounded-2xl transition-all ${pathname === '/responsibility' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-black/5'}`}>
-                <div className="flex items-center gap-3 font-black uppercase tracking-tight">
-                  <ShieldCheck className="w-5 h-5" /> Responsibility
-                </div>
-              </Link>
-              <Link onClick={() => { triggerHaptic(); setMenuOpen(false); }} to="/about" className={`px-4 py-3 rounded-2xl transition-all ${pathname === '/about' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-black/5'}`}>
-                <div className="flex items-center gap-3 font-black uppercase tracking-tight">
-                  <Info className="w-5 h-5" /> About Us
-                </div>
-              </Link>
-              <Link onClick={() => { triggerHaptic(); setMenuOpen(false); }} to="/contact" className={`px-4 py-3 rounded-2xl transition-all ${pathname === '/contact' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-black/5'}`}>
-                <div className="flex items-center gap-3 font-black uppercase tracking-tight">
-                  <Send className="w-5 h-5" /> Contact
-                </div>
-              </Link>
-              <Link onClick={() => { triggerHaptic(); setMenuOpen(false); }} to="/privacy" className={`px-4 py-3 rounded-2xl transition-all ${pathname === '/privacy' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-black/5'}`}>
-                <div className="flex items-center gap-3 font-black uppercase tracking-tight">
-                  <ShieldCheck className="w-5 h-5" /> Privacy
-                </div>
-              </Link>
-              <Link onClick={() => { triggerHaptic(); setMenuOpen(false); }} to="/terms" className={`px-4 py-3 rounded-2xl transition-all ${pathname === '/terms' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-black/5'}`}>
-                <div className="flex items-center gap-3 font-black uppercase tracking-tight">
-                  <ShieldCheck className="w-5 h-5" /> Terms
-                </div>
-              </Link>
+              {[
+                { to: '/', label: 'Home', icon: LayoutGrid },
+                { to: '/new-apps', label: 'New App', icon: Sparkles, hot: true },
+                { to: '/news', label: 'News', icon: Newspaper },
+                { to: '/videos', label: 'All App', icon: LayoutGrid },
+                { to: '/blogs', label: 'Blogs', icon: Menu },
+                { to: '/responsibility', label: 'Safety', icon: ShieldCheck },
+                { to: '/about', label: 'About Us', icon: Info },
+                { to: '/contact', label: 'Contact', icon: Send },
+                { to: '/privacy', label: 'Privacy', icon: ShieldCheck },
+                { to: '/terms', label: 'Terms', icon: ShieldCheck },
+              ].map((item) => (
+                <Link 
+                  key={item.to}
+                  onClick={() => { triggerHaptic(); setMenuOpen(false); }} 
+                  to={item.to} 
+                  className={`px-4 py-3 rounded-2xl transition-all ${pathname === item.to ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-black/5'}`}
+                >
+                  <div className="flex items-center gap-3 font-black uppercase tracking-tight">
+                    <item.icon className="w-5 h-5" /> {item.label}
+                    {item.hot && <span className="flex w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>}
+                  </div>
+                </Link>
+              ))}
               
-              <div className="mt-4 p-4 rounded-3xl bg-black/5 flex flex-col gap-4">
-                <div className="flex justify-between items-center px-2">
-                  <span className="font-bold text-sm uppercase opacity-60">Dark Mode</span>
-                  <ThemeToggle />
-                </div>
-              </div>
-              
-              <Link onClick={() => { triggerHaptic(); setMenuOpen(false); }} to="/admin/login" className="text-center text-xs font-bold opacity-40 mt-6 hover:text-red-500 transition-colors">Admin Portal &copy; 2026</Link>
+              <Link onClick={() => { triggerHaptic(); setMenuOpen(false); }} to="/admin/login" className="text-center text-xs font-bold opacity-40 mt-10 hover:text-red-500 transition-colors">Admin Portal &copy; 2026</Link>
             </nav>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
 }
@@ -299,7 +279,7 @@ function Footer() {
         <p className="text-sm mb-6 max-w-md font-black uppercase tracking-widest leading-relaxed opacity-60">
           {settings.meta_description}
         </p>
-        <div className="flex flex-wrap justify-center gap-6 text-[10px] font-black mb-8 uppercase tracking-[0.2em]">
+        <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-[10px] font-black mb-12 uppercase tracking-[0.25em] opacity-60">
           <Link to="/" className="hover:text-red-600 transition-colors">Home</Link>
           <Link to="/about" className="hover:text-red-600 transition-colors">About Us</Link>
           <Link to="/contact" className="hover:text-red-600 transition-colors">Contact</Link>
@@ -311,27 +291,36 @@ function Footer() {
         </div>
         
         {(settings.disclaimer_text || settings.ethics_discrimination_text) && (
-          <div className="max-w-3xl text-center space-y-4 mb-8">
+          <div className="max-w-4xl w-full flex flex-col gap-6 mb-12">
             {settings.disclaimer_text && (
-              <div className="bg-black/5 border border-black/10 rounded-lg p-4">
-                <h4 className="text-[10px] font-black mb-1 uppercase tracking-widest opacity-80">Platform Disclaimer</h4>
-                <p className="text-[10px] font-bold opacity-60">{settings.disclaimer_text}</p>
+              <div className="bg-slate-50 border border-black/5 rounded-[2.5rem] p-10 sm:p-14">
+                <h4 className="text-[11px] font-black mb-4 uppercase tracking-[0.3em] text-slate-900">{settings.disclaimer_heading || 'Platform Disclaimer'}</h4>
+                <div 
+                  className="text-sm font-black opacity-40 leading-relaxed max-w-2xl mx-auto"
+                  dangerouslySetInnerHTML={{ __html: settings.disclaimer_text }}
+                />
               </div>
             )}
             {settings.ethics_discrimination_text && (
-              <div className="bg-black/5 border border-black/10 rounded-lg p-4">
-                <h4 className="text-[10px] font-black mb-1 uppercase tracking-widest opacity-80">Ethics & Discrimination</h4>
-                <p className="text-[10px] font-bold opacity-60">{settings.ethics_discrimination_text}</p>
+              <div className="bg-slate-50 border border-black/5 rounded-[2.5rem] p-10 sm:p-14">
+                <h4 className="text-[11px] font-black mb-4 uppercase tracking-[0.3em] text-slate-900">{settings.ethics_heading || 'Ethics & Discrimination'}</h4>
+                <div 
+                  className="text-sm font-black opacity-40 leading-relaxed max-w-2xl mx-auto"
+                  dangerouslySetInnerHTML={{ __html: settings.ethics_discrimination_text }}
+                />
               </div>
             )}
           </div>
         )}
 
         {settings.important_notice && (
-          <div className="max-w-3xl w-full text-center mb-8">
-            <div className="bg-red-600/5 border border-red-600/10 rounded-2xl p-6">
-              <h4 className="text-[10px] font-black text-red-600 mb-2 uppercase tracking-[0.3em]">Important Notice</h4>
-              <p className="text-xs font-black whitespace-pre-wrap opacity-70">{settings.important_notice}</p>
+          <div className="max-w-4xl w-full mb-12">
+            <div className="bg-red-50/50 border border-red-600/10 rounded-[2.5rem] p-10 sm:p-14">
+              <h4 className="text-[11px] font-black text-red-600 mb-4 uppercase tracking-[0.4em]">{settings.important_notice_heading || 'Important Notice'}</h4>
+              <div 
+                className="text-lg font-black text-slate-900 opacity-70 italic leading-snug max-w-2xl mx-auto"
+                dangerouslySetInnerHTML={{ __html: settings.important_notice }}
+              />
             </div>
           </div>
         )}
@@ -540,19 +529,19 @@ function AppContent() {
   );
 }
 
-export default function App() {
+function App() {
   return (
     <HelmetProvider>
-      <ThemeProvider>
-        <DataProvider>
-          <Router>
-            <AppContent />
-          </Router>
-        </DataProvider>
-      </ThemeProvider>
+      <DataProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </DataProvider>
     </HelmetProvider>
   );
 }
+
+export default App;
 
 function BottomNav() {
   const { pathname } = useLocation();

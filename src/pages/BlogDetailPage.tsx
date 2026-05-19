@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useData } from '../contexts/DataContext';
-import { ArrowLeft, MessageSquare, Send, Calendar, User, Clock } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Calendar, Clock } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 
@@ -10,7 +10,6 @@ export default function BlogDetailPage() {
   const { blogs: mockBlogs, settings: mockSettings } = useData();
   const { slug } = useParams();
   const blog = mockBlogs.find(b => b.slug === slug);
-  const [commentText, setCommentText] = useState('');
   
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -21,7 +20,7 @@ export default function BlogDetailPage() {
   }
 
   return (
-    <div className="animate-fade-in max-w-4xl mx-auto px-4 sm:px-6 mb-20">
+    <div className="animate-fade-in max-w-4xl mx-auto px-4 plain-content mb-20">
       <Helmet>
         <title>{blog.seo_title || blog.title} - {mockSettings.site_title}</title>
         <meta name="description" content={blog.seo_description || blog.content.substring(0, 160)} />
@@ -44,124 +43,65 @@ export default function BlogDetailPage() {
         <meta name="twitter:title" content={blog.seo_title || blog.title} />
         <meta name="twitter:description" content={blog.seo_description || blog.content.substring(0, 160)} />
         <meta name="twitter:image" content={blog.cover_url} />
-
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "BlogPosting",
-            "headline": blog.title,
-            "description": blog.content.substring(0, 160),
-            "image": [blog.cover_url],
-            "datePublished": new Date(blog.published_at).toISOString(),
-            "author": [{
-              "@type": "Person",
-              "name": blog.author || "Admin"
-            }]
-          })}
-        </script>
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "BreadcrumbList",
-            "itemListElement": [
-              {
-                "@type": "ListItem",
-                "position": 1,
-                "name": "Home",
-                "item": window.location.origin
-              },
-              {
-                "@type": "ListItem",
-                "position": 2,
-                "name": "Blogs",
-                "item": window.location.origin + "/blogs"
-              },
-              {
-                "@type": "ListItem",
-                "position": 3,
-                "name": blog.title,
-                "item": window.location.href
-              }
-            ]
-          })}
-        </script>
       </Helmet>
       
-      <div className="mb-8">
+      <div className="mb-10">
         <Link 
           to="/blogs" 
-          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-colors group"
+          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] opacity-40 hover:opacity-100 transition-opacity"
         >
-          <div className="p-2 rounded-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 group-hover:scale-110 transition-transform">
-            <ArrowLeft className="w-3.5 h-3.5" />
-          </div>
-          Back to logs
+          <ArrowLeft className="w-3 h-3" />
+          Intelligence Logs
         </Link>
       </div>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl overflow-hidden border-2 border-white/20 dark:border-white/10 rounded-[3rem] shadow-2xl"
+      <motion.article 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
       >
-        {blog.cover_url && (
-            <div className="w-full h-80 md:h-[450px] relative">
-                <img src={blog.cover_url} alt={blog.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent"></div>
-                <div className="absolute bottom-10 left-10 right-10">
-                   <div className="flex items-center gap-4 mb-4">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-pink-500" />
-                        <span className="text-white text-[8px] font-black uppercase tracking-[0.3em] italic">{new Date(blog.published_at).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-pink-500" />
-                        <span className="text-white text-[8px] font-black uppercase tracking-[0.3em] italic">Extraction Time: 5 min</span>
-                      </div>
-                   </div>
-                   <h1 className="text-3xl sm:text-5xl font-black text-white uppercase tracking-tighter italic leading-tight drop-shadow-2xl">
-                    {blog.title}
-                   </h1>
+        <header className="mb-12">
+            <h1 className="text-4xl sm:text-7xl font-black mb-8 uppercase tracking-tighter italic leading-none text-slate-900">
+                {blog.title}
+            </h1>
+            
+            <div className="flex flex-wrap items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em] opacity-40">
+                <div className="flex items-center gap-2">
+                    <Calendar className="w-3 h-3" />
+                    {new Date(blog.published_at).toLocaleDateString()}
                 </div>
+                <div className="flex items-center gap-2">
+                    <Clock className="w-3 h-3" />
+                    5 min read
+                </div>
+                <div className="flex items-center gap-2 py-1 px-3 border border-black/10 rounded-full">
+                    {blog.author}
+                </div>
+            </div>
+        </header>
+
+        {blog.cover_url && (
+            <div className="w-full aspect-video mb-12 rounded-3xl overflow-hidden shadow-lg">
+                <img src={blog.cover_url} alt={blog.title} className="w-full h-full object-cover" />
             </div>
         )}
         
-        <div className="p-8 sm:p-14">
-            {!blog.cover_url && (
-              <h1 className="text-3xl sm:text-5xl font-black mb-10 uppercase tracking-tighter dark:text-white italic leading-tight">
-                {blog.title}
-              </h1>
-            )}
-            
-            <div className="flex items-center gap-6 mb-12 pb-10 border-b-2 border-black/5 dark:border-white/5">
-                <div className="w-16 h-16 rounded-2xl bg-pink-600 text-white flex items-center justify-center font-black text-2xl italic shadow-2xl shadow-pink-500/30 border-2 border-white dark:border-white/10">
-                   {blog.author ? blog.author.charAt(0) : 'A'}
-                </div>
-                <div>
-                    <p className="font-black text-xl uppercase tracking-tighter dark:text-white italic">Administrator: {blog.author}</p>
-                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40 dark:text-white/60">Intelligence & Strategy Wing</p>
-                </div>
-            </div>
-
-            <div className="prose prose-pink dark:prose-invert max-w-none mb-12 font-bold opacity-80 leading-relaxed text-sm sm:text-base">
-                <ReactMarkdown>{blog.content}</ReactMarkdown>
-            </div>
-
-            <div className="mt-20 pt-14 border-t-4 border-pink-500/20">
-              <h3 className="text-2xl font-black flex items-center gap-4 mb-10 uppercase tracking-tighter dark:text-white italic">
-                <MessageSquare className="w-8 h-8 text-pink-500" />
-                Transmission Feed
-              </h3>
-              
-              <div className="bg-black/5 dark:bg-white/5 p-8 rounded-[2.5rem] border-2 border-dashed border-black/10 dark:border-white/10 text-center">
-                 <p className="text-xs font-black uppercase tracking-widest opacity-40 dark:text-white mb-6 italic">Secure Channel Awaiting Input</p>
-                 <div className="flex justify-center">
-                   <button className="bg-pink-500 text-white px-10 py-4 rounded-[1.5rem] font-black uppercase text-[10px] tracking-[0.3em] italic shadow-2xl shadow-pink-500/30 active:scale-95">Open Channel</button>
-                 </div>
-              </div>
-            </div>
+        <div className="prose prose-slate max-w-none mb-20 font-medium text-lg leading-relaxed text-slate-600">
+            <ReactMarkdown>{blog.content}</ReactMarkdown>
         </div>
-      </motion.div>
+
+        <footer className="border-t border-black/5 pt-12">
+            <div className="flex items-center gap-4 mb-8">
+                <MessageSquare className="w-5 h-5 text-red-600" />
+                <h3 className="text-xs font-black uppercase tracking-widest italic">Transmission Feed</h3>
+            </div>
+            <div className="bg-slate-50 p-8 rounded-3xl text-center border border-black/5">
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-6 italic">Secure Channel Awaiting Input</p>
+                <button className="bg-red-600 text-white px-8 py-3 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] italic active:scale-95 transition-transform">
+                    Authorize Transmission
+                </button>
+            </div>
+        </footer>
+      </motion.article>
     </div>
   );
 }
