@@ -65,7 +65,16 @@ export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onC
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             className="w-full max-w-2xl mx-auto relative z-10"
           >
-            <div className="relative group">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (results.length > 0) {
+                  navigate(`/app/${results[0].slug}`);
+                  onClose();
+                }
+              }}
+              className="relative group block"
+            >
               <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
                 {query.length > 0 ? (
                   <Zap className="w-6 h-6 text-red-600 animate-pulse" />
@@ -75,20 +84,21 @@ export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onC
               </div>
               <input
                 ref={inputRef}
-                type="text"
+                type="search"
+                enterKeyHint="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
                 placeholder="Find anything... (Apps, Tools, Games)"
-                className="w-full h-20 pl-16 pr-20 bg-white border-2 border-black/5 rounded-[2.5rem] shadow-2xl text-2xl font-black uppercase italic tracking-tighter focus:outline-none focus:border-red-600/20 transition-all placeholder:text-slate-200"
+                className="w-full h-20 pl-16 pr-20 bg-white border-2 border-black/5 rounded-[2.5rem] shadow-2xl text-2xl font-black uppercase italic tracking-tighter focus:outline-none focus:border-red-600/20 transition-all placeholder:text-slate-200 font-bold"
               />
               <button 
+                type="button"
                 onClick={onClose}
                 className="absolute inset-y-4 right-4 w-12 h-12 bg-slate-50 flex items-center justify-center rounded-2xl hover:bg-red-600 hover:text-white transition-all active:scale-90"
               >
                 <X className="w-5 h-5" />
               </button>
-            </div>
+            </form>
 
             <AnimatePresence>
               {query.length > 0 && (

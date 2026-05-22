@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 import SecureDownloadButton from '../components/SecureDownloadButton';
 
 export default function DownloadPage() {
-  const { apps: mockApps, settings: mockSettings, news: mockNews, blogs: mockBlogs, videos: mockVideos, saveApps: saveMockApps, saveSettings: saveMockSettings, saveNews: saveMockNews, saveBlogs: saveMockBlogs, saveVideos: saveMockVideos } = useData();
+  const { apps: mockApps, settings: mockSettings, loading } = useData();
   const { slug } = useParams();
   const app = mockApps.find(a => a.slug === slug);
   const [downloading, setDownloading] = useState(false);
@@ -50,6 +50,15 @@ export default function DownloadPage() {
       setProgress(0);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 min-h-[40vh]">
+        <div className="w-10 h-10 border-3 border-red-600/20 border-t-red-600 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(220,38,38,0.2)]"></div>
+        <p className="text-[10px] font-black uppercase tracking-[0.6em] text-red-600 italic animate-pulse">Loading download configurations...</p>
+      </div>
+    );
+  }
 
   if (!app) {
     return <Navigate to="/" />;

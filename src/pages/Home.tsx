@@ -13,7 +13,6 @@ export default function Home() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
-  const deferredSearchTerm = useDeferredValue(searchTerm);
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || mockSettings.categories?.[0] || 'All Apps');
 
   useEffect(() => {
@@ -34,7 +33,7 @@ export default function Home() {
   }, [searchParams, location, mockSettings.categories]);
 
   const filteredApps = useMemo(() => {
-    const term = deferredSearchTerm.toLowerCase().trim();
+    const term = searchTerm.toLowerCase().trim();
     if (!term) return [...mockApps].sort((a, b) => (a.serial_number || 0) - (b.serial_number || 0));
 
     const scored = mockApps
@@ -139,26 +138,30 @@ export default function Home() {
 
         {/* Compact Search */}
         <div className="max-w-md mx-auto mb-1">
-          <div className="relative group">
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (filteredApps.length > 0) {
+                navigate(`/app/${filteredApps[0].slug}`);
+              }
+            }}
+            className="relative group block"
+          >
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none z-10">
               <Search className="h-4 w-4 text-slate-400 group-focus-within:text-red-500 transition-colors" />
             </div>
             <input
-              type="text"
-              className="block w-full pl-10 pr-4 py-2.5 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-full placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-4 focus:ring-red-500/5 transition-all shadow-sm dark:text-white"
+              type="search"
+              enterKeyHint="search"
+              className="block w-full pl-10 pr-4 py-2.5 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-full placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-4 focus:ring-red-500/5 transition-all shadow-sm dark:text-white font-bold"
               placeholder="SEARCH PREMIUM CONTENT"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && filteredApps.length > 0) {
-                  navigate(`/app/${filteredApps[0].slug}`);
-                }
-              }}
             />
-          </div>
+          </form>
           {searchTerm && filteredApps.length > 0 && (
             <div className="mt-2 text-[10px] font-black text-red-600 uppercase tracking-widest animate-pulse">
-              Press Enter to view direct match: {filteredApps[0].name}
+              Press Enter/Go to view direct match: {filteredApps[0].name}
             </div>
           )}
         </div>

@@ -14,7 +14,7 @@ interface Comment {
 }
 
 export default function NewsDetailPage() {
-  const { news: mockNews, settings: mockSettings } = useData();
+  const { news: mockNews, settings: mockSettings, loading } = useData();
   const { slug } = useParams();
   const newsItem = mockNews.find(n => n.slug === slug);
   const [commentText, setCommentText] = useState('');
@@ -52,6 +52,15 @@ export default function NewsDetailPage() {
     localStorage.setItem(`comments_${slug}`, JSON.stringify(newCommentsList));
     setCommentText('');
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 min-h-[40vh]">
+        <div className="w-10 h-10 border-3 border-red-600/20 border-t-red-600 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(220,38,38,0.2)]"></div>
+        <p className="text-[10px] font-black uppercase tracking-[0.6em] text-red-600 italic animate-pulse">Loading intel feed...</p>
+      </div>
+    );
+  }
 
   if (!newsItem) {
     return <Navigate to="/news" />;
