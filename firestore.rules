@@ -22,6 +22,10 @@ service cloud.firestore {
     }
     
     // Support for metadata or other collections if they exist
+    match /secure_git_config/{docId} {
+      allow read, write: if isAdmin();
+    }
+
     match /apps/{appId} {
       allow read: if true;
       allow write: if isAdmin();

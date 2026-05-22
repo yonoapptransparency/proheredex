@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, setDoc, getDoc, getDocFromServer } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { AppConfig, GlobalSettings, NewsItem, BlogPost, VideoItem } from '../lib/supabase';
+import { GitConfig, generateSupabaseFileCode, commitFileToGitHub } from '../lib/githubSync';
 
 enum OperationType {
   CREATE = 'create',
@@ -40,7 +41,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     },
     operationType,
     path
-  }
+  };
   console.error('Firestore Error Details: ', errInfo);
   
   if (errorMessage.includes('permissions') || errorMessage.includes('permission-denied')) {
@@ -91,6 +92,12 @@ interface DataContextType {
   saveVideos: (videos: VideoItem[]) => Promise<void>;
   isConnected: boolean | null;
   isLive: boolean;
+  
+  // GitHub Integration States & Methods
+  gitConfig: GitConfig | null;
+  gitConfigLoading: boolean;
+  saveGitConfig: (config: GitConfig) => Promise<void>;
+  pushAllToGitHub: (customConfig?: GitConfig) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -139,6 +146,34 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [isLive, setIsLive] = useState(false);
   const [syncVersion, setSyncVersion] = useState(0);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(new Date().toLocaleTimeString());
+
+  // GitHub Integration States
+  const [gitConfig, setGitConfig] = useState<GitConfig | null>(null);
+  const [gitConfigLoading, setGitConfigLoading] = useState(false);
+
+  // Load GitHub config on admin session auth
+  useEffect(() => {
+    const unsubAuth = auth.onAuthStateChanged(async (user) => {
+      if (user && user.email?.toLowerCase() === 'defentechscholar@gmail.com') {
+        setGitConfigLoading(true);
+        try {
+          const configDoc = doc(db, 'secure_git_config', 'config');
+          const snap = await getDoc(configDoc);
+          if (snap.exists()) {
+            setGitConfig(snap.data() as GitConfig);
+          }
+        } catch (err) {
+          console.warn("Secure GitHub configuration read bypassed or not initialized:", err);
+        } finally {
+          setGitConfigLoading(false);
+        }
+      } else {
+        setGitConfig(null);
+      }
+    });
+
+    return () => unsubAuth();
+  }, []);
 
   // Helper to ensure writes hit the server
   const withServerConfirmation = React.useCallback(async (operation: () => Promise<any>, timeoutMs: number = 20000) => {
@@ -355,11 +390,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setApps(newApps);
       localStorage.setItem('yonostore_apps', JSON.stringify(newApps));
       console.log("Cloud: Apps update acknowledged by server.");
+
+      if (gitConfig?.autoSync) {
+        console.log("GitHub Sync: AutoSync engaged. Triggering compile and commit...");
+        const updatedCode = generateSupabaseFileCode(newApps, settings, news, blogs, videos);
+        commitFileToGitHub({
+          owner: gitConfig.owner,
+          repo: gitConfig.repo,
+          token: gitConfig.token,
+          branch: gitConfig.branch || 'main',
+          path: 'src/lib/supabase.ts',
+          content: updatedCode,
+          message: `Admin Release Auto-Update: Added/Updated applications`
+        }).catch(err => console.error("Background auto-sync commit failed:", err));
+      }
     } catch (err) {
       console.error("Save Apps Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/apps');
     }
-  }, []);
+  }, [gitConfig, settings, news, blogs, videos, withServerConfirmation]);
 
   const saveSettings = React.useCallback(async (newSettings: GlobalSettings) => {
     try {
@@ -373,11 +422,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setSettings(settingsWithTime);
       localStorage.setItem('yonostore_settings', JSON.stringify(settingsWithTime));
       console.log("Cloud: Settings update acknowledged by server.");
+
+      if (gitConfig?.autoSync) {
+        console.log("GitHub Sync: AutoSync engaged for Settings updates...");
+        const updatedCode = generateSupabaseFileCode(apps, settingsWithTime, news, blogs, videos);
+        commitFileToGitHub({
+          owner: gitConfig.owner,
+          repo: gitConfig.repo,
+          token: gitConfig.token,
+          branch: gitConfig.branch || 'main',
+          path: 'src/lib/supabase.ts',
+          content: updatedCode,
+          message: `Admin Release Auto-Update: Updated platform configurations`
+        }).catch(err => console.error("Background auto-sync commit failed:", err));
+      }
     } catch (err) {
       console.error("Save Settings Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/settings');
     }
-  }, []);
+  }, [gitConfig, apps, news, blogs, videos, withServerConfirmation]);
 
   const saveNews = React.useCallback(async (newNews: NewsItem[]) => {
     try {
@@ -388,11 +451,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setNews(newNews);
       localStorage.setItem('yonostore_news', JSON.stringify(newNews));
       console.log("Cloud: News update acknowledged by server.");
+
+      if (gitConfig?.autoSync) {
+        console.log("GitHub Sync: AutoSync engaged for News updates...");
+        const updatedCode = generateSupabaseFileCode(apps, settings, newNews, blogs, videos);
+        commitFileToGitHub({
+          owner: gitConfig.owner,
+          repo: gitConfig.repo,
+          token: gitConfig.token,
+          branch: gitConfig.branch || 'main',
+          path: 'src/lib/supabase.ts',
+          content: updatedCode,
+          message: `Admin Release Auto-Update: Added/Updated news indexes`
+        }).catch(err => console.error("Background auto-sync commit failed:", err));
+      }
     } catch (err) {
       console.error("Save News Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/news');
     }
-  }, []);
+  }, [gitConfig, apps, settings, blogs, videos, withServerConfirmation]);
 
   const saveBlogs = React.useCallback(async (newBlogs: BlogPost[]) => {
     try {
@@ -403,11 +480,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setBlogs(newBlogs);
       localStorage.setItem('yonostore_blogs', JSON.stringify(newBlogs));
       console.log("Cloud: Blogs update acknowledged by server.");
+
+      if (gitConfig?.autoSync) {
+        console.log("GitHub Sync: AutoSync engaged for Blogs updates...");
+        const updatedCode = generateSupabaseFileCode(apps, settings, news, newBlogs, videos);
+        commitFileToGitHub({
+          owner: gitConfig.owner,
+          repo: gitConfig.repo,
+          token: gitConfig.token,
+          branch: gitConfig.branch || 'main',
+          path: 'src/lib/supabase.ts',
+          content: updatedCode,
+          message: `Admin Release Auto-Update: Added/Updated blog posts`
+        }).catch(err => console.error("Background auto-sync commit failed:", err));
+      }
     } catch (err) {
       console.error("Save Blogs Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/blogs');
     }
-  }, []);
+  }, [gitConfig, apps, settings, news, videos, withServerConfirmation]);
 
   const saveVideos = React.useCallback(async (newVideos: VideoItem[]) => {
     try {
@@ -418,11 +509,57 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setVideos(newVideos);
       localStorage.setItem('yonostore_videos', JSON.stringify(newVideos));
       console.log("Cloud: Videos update acknowledged by server.");
+
+      if (gitConfig?.autoSync) {
+        console.log("GitHub Sync: AutoSync engaged for Videos updates...");
+        const updatedCode = generateSupabaseFileCode(apps, settings, news, blogs, newVideos);
+        commitFileToGitHub({
+          owner: gitConfig.owner,
+          repo: gitConfig.repo,
+          token: gitConfig.token,
+          branch: gitConfig.branch || 'main',
+          path: 'src/lib/supabase.ts',
+          content: updatedCode,
+          message: `Admin Release Auto-Update: Added/Updated video listings`
+        }).catch(err => console.error("Background auto-sync commit failed:", err));
+      }
     } catch (err) {
       console.error("Save Videos Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/videos');
     }
+  }, [gitConfig, apps, settings, news, blogs, withServerConfirmation]);
+
+  const saveGitConfig = React.useCallback(async (newConfig: GitConfig) => {
+    try {
+      const docRef = doc(db, 'secure_git_config', 'config');
+      console.log("Cloud: Pushing Git Configuration update...");
+      await setDoc(docRef, newConfig);
+      setGitConfig(newConfig);
+      console.log("Cloud: Git Configuration saved successfully.");
+    } catch (err) {
+      console.error("Save Git Config Error:", err);
+      handleFirestoreError(err, OperationType.WRITE, 'secure_git_config/config');
+    }
   }, []);
+
+  const pushAllToGitHub = React.useCallback(async (customConfig?: GitConfig) => {
+    const configToUse = customConfig || gitConfig;
+    if (!configToUse || !configToUse.token || !configToUse.owner || !configToUse.repo) {
+      throw new Error("GitHub synchronization is not fully configured. Please configure GitHub Repository Sync under your admin panel first.");
+    }
+
+    const code = generateSupabaseFileCode(apps, settings, news, blogs, videos);
+    await commitFileToGitHub({
+      owner: configToUse.owner,
+      repo: configToUse.repo,
+      token: configToUse.token,
+      branch: configToUse.branch || 'main',
+      path: 'src/lib/supabase.ts',
+      content: code,
+      message: `Admin Manual Sync: Recompiled and updated static store fallbacks`
+    });
+    console.log("GitHub Manual Sync complete: Repository updated with live databases!");
+  }, [gitConfig, apps, settings, news, blogs, videos]);
 
   const testCloudConnection = React.useCallback(async () => {
     console.log("Connectivity Test: Starting...");
@@ -517,14 +654,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     saveBlogs, 
     saveVideos,
     isConnected,
-    isLive
+    isLive,
+    gitConfig,
+    gitConfigLoading,
+    saveGitConfig,
+    pushAllToGitHub
   }), [
     apps, settings, news, blogs, videos, loading, loadedFromServer,
     appsSyncedWithServer, settingsSyncedWithServer, newsSyncedWithServer, blogsSyncedWithServer, videosSyncedWithServer,
     serverAppsFetched, serverNewsFetched, serverBlogsFetched, serverVideosFetched,
     syncVersion, lastSyncTime,
     refreshAll, testCloudConnection, saveApps, saveSettings, saveNews, saveBlogs, saveVideos,
-    isConnected, isLive
+    isConnected, isLive, gitConfig, gitConfigLoading, saveGitConfig, pushAllToGitHub
   ]);
 
   return (
