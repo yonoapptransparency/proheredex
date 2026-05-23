@@ -191,6 +191,22 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">Serial Number (Sort Order)</label>
               <input type="number" name="serial_number" defaultValue={editApp?.serial_number || ''} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
             </div>
+            <div>
+              <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">App Version</label>
+              <input type="text" name="version" defaultValue={editApp?.version || '1.0'} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">File Size</label>
+              <input type="text" name="file_size" defaultValue={editApp?.file_size || 'Unknown'} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">Developer</label>
+              <input type="text" name="developer" defaultValue={editApp?.developer || 'Admin'} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">App Rating (0.0 to 10.0)</label>
+              <input type="number" step="0.1" min="0.0" max="10.0" name="rating" defaultValue={editApp?.rating !== undefined ? editApp.rating : 5.0} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" required />
+            </div>
           </div>
 
           <div className="flex items-center gap-4 bg-black/5 dark:bg-white/5 p-4 rounded-xl border border-pink-500/30">
@@ -666,13 +682,33 @@ const GithubSyncTab = React.memo(({ gitConfig, saveGitConfig, pushAllToGitHub, g
           </div>
 
           <h3 className="font-black text-pink-500 border-b border-pink-500/10 pb-2 uppercase tracking-widest text-xs italic mt-6">How to get a Token</h3>
-          <ol className="list-decimal list-inside text-xs space-y-3 dark:text-gray-300">
-            <li>Open <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-pink-500 underline font-bold">GitHub Token Settings</a></li>
-            <li>Click <strong>Generate new token (classic)</strong></li>
-            <li>Set note (e.g. "YonoStore Sync Engine")</li>
-            <li>Check the <strong>repo</strong> checkbox scope (Full control of private/public repositories)</li>
-            <li>Generate token, copy, and paste it here!</li>
-          </ol>
+          
+          <div className="space-y-4 text-xs dark:text-gray-300">
+            <div>
+              <p className="font-black uppercase tracking-wider text-[10px] text-pink-400 mb-1">Option A: Fine-Grained Token (Recommended)</p>
+              <ol className="list-decimal list-inside space-y-1 pl-1">
+                <li>Go to <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer" className="text-pink-500 underline font-bold">New Fine-Grained Token</a></li>
+                <li>Under <strong>Repository access</strong>, select your repository (<code>Yonotransparency-</code>)</li>
+                <li>Under <strong>Permissions</strong>, click <strong>Repository permissions</strong></li>
+                <li>Scroll to <strong>Contents</strong>, and set it to <strong>Read and write</strong></li>
+                <li>Generate and copy the token!</li>
+              </ol>
+            </div>
+
+            <div className="border-t border-white/5 pt-3">
+              <p className="font-black uppercase tracking-wider text-[10px] text-pink-400 mb-1">Option B: Classic Token</p>
+              <ol className="list-decimal list-inside space-y-1 pl-1">
+                <li>Go to <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-pink-500 underline font-bold">Classic Token Settings</a></li>
+                <li>Click <strong>Generate new token (classic)</strong></li>
+                <li>Check the <strong>repo</strong> checkbox scope (Full control of repositories)</li>
+                <li>Generate and copy the token!</li>
+              </ol>
+            </div>
+            
+            <p className="border-l-2 border-indigo-500 pl-2 italic text-[10px] text-indigo-400">
+              Note: If GitHub Sync fails with "Not Found", it almost always means the token is missing "Contents: Read/Write" or "repo" permission!
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -1141,9 +1177,9 @@ export default function AdminDashboard() {
           const combinedCats = Array.from(new Set([...checkedCats, ...customCats]));
           return combinedCats.length > 0 ? combinedCats.join(', ') : mockSettings.categories?.[0] || 'General';
         })(),
-        version: '1.0',
-        file_size: 'Unknown',
-        developer: 'Admin',
+        version: (formData.get('version') as string) || '1.0',
+        file_size: (formData.get('file_size') as string) || 'Unknown',
+        developer: (formData.get('developer') as string) || 'Admin',
         screenshots: [],
         encrypted_download_url: formData.get('download_url') as string,
         description_html: formData.get('description_html') as string || '<p>A new application.</p>',
@@ -1157,7 +1193,7 @@ export default function AdminDashboard() {
         is_featured: false,
         is_new: formData.get('is_new') === 'on',
         release_notes: formData.get('release_notes') as string,
-        rating: 5.0,
+        rating: parseFloat(formData.get('rating') as string) || 5.0,
         created_at: new Date().toISOString(),
         faqs: JSON.parse((formData.get('faqs_json') as string) || '[]')
       };

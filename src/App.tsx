@@ -86,7 +86,7 @@ function Header() {
         initial="hidden"
         animate="visible"
         variants={navVariants}
-        className={`glass-nav ${scrolled ? 'glass-nav-scrolled bg-white/95' : 'bg-transparent py-2'}`}
+        className={`glass-nav ${scrolled ? 'glass-nav-scrolled bg-transparent' : 'bg-transparent py-2'}`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-8 relative flex justify-between items-center">
           <Link to="/" onClick={triggerHaptic} className="flex items-center gap-2 sm:gap-3 group">

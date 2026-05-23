@@ -240,7 +240,7 @@ export default function DownloadPage() {
                 </div>
                 <div className="text-left">
                   <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tighter mb-2 italic leading-none">{app.name}</h2>
-                  <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.2em] opacity-40">
+                  <div className="flex flex-wrap gap-2 text-[11px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-zinc-400">
                     <span>ID: {app.serial_number}</span>
                     <span>•</span>
                     <span>{app.file_size}</span>

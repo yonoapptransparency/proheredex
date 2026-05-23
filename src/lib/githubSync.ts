@@ -261,17 +261,74 @@ export async function commitFileToGitHub({
 }) {
   const cleanBranch = branch ? branch.trim() : 'main';
   const cleanPath = path.replace(/^\/+/g, ''); // strip leading slashes
+  const cleanOwner = owner.trim();
+  const cleanToken = token.trim();
+  let cleanRepo = repo.trim();
 
-  console.log(`GitHub Sync: Fetching SHA of ${cleanPath} on repo ${owner}/${repo} [branch: ${cleanBranch}]...`);
+  // 1. High-reliability pre-emptive repository casing alignment (cater for case mismatches e.g. Yonotransparency- vs yonotransparency-)
+  try {
+    const headerAuth = cleanToken.toLowerCase().startsWith('ghp_') 
+      ? `token ${cleanToken}` 
+      : `Bearer ${cleanToken}`;
+
+    const resolveRes = await fetch(
+      `https://api.github.com/users/${cleanOwner}/repos?per_page=100`,
+      {
+        headers: {
+          'Authorization': headerAuth,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      }
+    );
+    if (resolveRes.ok) {
+      const repos = await resolveRes.json();
+      if (Array.isArray(repos)) {
+        const matching = repos.find(r => r.name?.toLowerCase() === cleanRepo.toLowerCase());
+        if (matching && matching.name !== cleanRepo) {
+          console.log(`GitHub Sync: Correcting repository casing alignment from "${cleanRepo}" to "${matching.name}"`);
+          cleanRepo = matching.name;
+        }
+      }
+    } else {
+      // Attempt Org repositories endpoint in case owner is an Org
+      const orgResolveRes = await fetch(
+        `https://api.github.com/orgs/${cleanOwner}/repos?per_page=100`,
+        {
+          headers: {
+            'Authorization': headerAuth,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        }
+      );
+      if (orgResolveRes.ok) {
+        const repos = await orgResolveRes.json();
+        if (Array.isArray(repos)) {
+          const matching = repos.find(r => r.name?.toLowerCase() === cleanRepo.toLowerCase());
+          if (matching && matching.name !== cleanRepo) {
+            console.log(`GitHub Sync: Correcting Organization repository casing alignment from "${cleanRepo}" to "${matching.name}"`);
+            cleanRepo = matching.name;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("GitHub Repo casing alignment query not completed:", e);
+  }
+
+  const authHeader = cleanToken.toLowerCase().startsWith('ghp_') 
+    ? `token ${cleanToken}` 
+    : `Bearer ${cleanToken}`;
+
+  console.log(`GitHub Sync: Fetching SHA of ${cleanPath} on repo ${cleanOwner}/${cleanRepo} [branch: ${cleanBranch}]...`);
   
   let sha: string | undefined = undefined;
 
   try {
     const res = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${cleanPath}?ref=${cleanBranch}`,
+      `https://api.github.com/repos/${cleanOwner}/${cleanRepo}/contents/${cleanPath}?ref=${cleanBranch}`,
       {
         headers: {
-          'Authorization': `Bearer ${token.trim()}`,
+          'Authorization': authHeader,
           'Accept': 'application/vnd.github.v3+json'
         }
       }
@@ -303,11 +360,11 @@ export async function commitFileToGitHub({
   console.log(`GitHub Sync: Initiating commit for ${cleanPath}...`);
 
   const saveRes = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/contents/${cleanPath}`,
+    `https://api.github.com/repos/${cleanOwner}/${cleanRepo}/contents/${cleanPath}`,
     {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${token.trim()}`,
+        'Authorization': authHeader,
         'Content-Type': 'application/json',
         'Accept': 'application/vnd.github.v3+json'
       },
@@ -322,7 +379,16 @@ export async function commitFileToGitHub({
       const errJSON = JSON.parse(errText);
       errMsg = errJSON.message || errText;
     } catch (_) {}
-    throw new Error(errMsg);
+
+    // Add smart troubleshooting context to common Github API errors
+    let enhancedTip = "";
+    if (errMsg.toLowerCase().includes("not found")) {
+      enhancedTip = "\n\n💡 Try these checks:\n1. Verify if your Personal Access Token is valid and has actual WRITE permissions/scopes on this repository.\n- Fine-Grained Token: Repository Permissions -> 'Contents' -> set to 'Read and write'\n- Classic Token: Ensure 'repo' checkbox is fully checked.\n2. Verify the repository name is exact: '" + cleanRepo + "' (casing-correct).\n3. Verify if your token has access to this organization or account.";
+    } else if (errMsg.toLowerCase().includes("credentials") || saveRes.status === 401) {
+      enhancedTip = "\n\n💡 Token is invalid or expired. Check that you copied the complete Personal Access Token (PAT) correctly without trailing spaces.";
+    }
+
+    throw new Error(errMsg + enhancedTip);
   }
 
   const result = await saveRes.json();

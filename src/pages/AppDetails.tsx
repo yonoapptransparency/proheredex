@@ -5,6 +5,7 @@ import { ShieldCheck, ShieldAlert, ArrowRight, ArrowLeft, Star, Sparkles, Info, 
 import { cn } from '../lib/utils';
 import { useEffect, useMemo, useState } from 'react';
 import { AppListItem } from '../components/PlayStoreUI';
+import { motion } from 'framer-motion';
 
 export default function AppDetails() {
   const { apps: mockApps, settings: mockSettings, loading, appsSyncedWithServer, serverAppsFetched, refreshAll } = useData();
@@ -206,18 +207,18 @@ export default function AppDetails() {
         )}
       </Helmet>
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        <div className="py-6 sm:py-12 mb-8 flex flex-col items-center text-center relative transition-all duration-300 border-b border-black/5">
-          <div className="relative mb-8">
-            <div className="relative w-24 h-24 sm:w-40 sm:h-40 rounded-2xl sm:rounded-[3rem] overflow-hidden shrink-0 shadow-2xl bg-white border-2 border-slate-200 group">
+        <div className="pt-2 pb-6 sm:pt-4 sm:pb-10 mb-6 flex flex-col items-center text-center relative transition-all duration-300 border-b border-black/5">
+          <div className="relative mb-6">
+            <div className="relative w-20 h-20 sm:w-32 sm:h-32 rounded-xl sm:rounded-[1.75rem] overflow-hidden shrink-0 shadow-xl bg-white border border-slate-200 group">
               {app.icon_url ? (
-                <img src={app.icon_url || undefined} alt={app.name} width={160} height={160} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                <img src={app.icon_url || undefined} alt={app.name} width={128} height={128} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-4xl sm:text-6xl font-black bg-slate-800 text-slate-500 uppercase">
+                <div className="w-full h-full flex items-center justify-center text-3xl sm:text-5xl font-black bg-slate-800 text-slate-500 uppercase">
                   {app.name.substring(0, 1)}
                 </div>
               )}
             </div>
-            <div className="absolute -inset-4 blur-3xl bg-red-600/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="absolute -inset-3 blur-2xl bg-red-600/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
           </div>
           
           <div className="flex flex-col items-center w-full max-w-2xl px-2">
@@ -241,29 +242,36 @@ export default function AppDetails() {
               </div>
             </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 w-full mb-10">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 w-full max-w-[340px] mb-8">
               {[
                 { label: 'VERSION', value: app.version },
                 { label: 'SIZE', value: app.file_size },
                 { label: 'TYPE', value: app.category.split(',')[0] },
-                { label: 'RATING', value: app.rating ? app.rating.toFixed(1) : '10.0', icon: Star },
+                { label: 'RATING', value: app.rating ? app.rating.toFixed(1) : '5.0', icon: Star },
               ].map((item, i) => (
-                <div key={i} className="text-center group transition-all">
-                  <div className="text-[8px] sm:text-[10px] mb-1.5 font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-red-500 transition-colors">{item.label}</div>
-                  <div className="font-black text-xl sm:text-2xl leading-none text-slate-900 flex items-center justify-center gap-1 tracking-tighter italic">
-                    {item.icon && <item.icon className="w-4 h-4 text-amber-500 fill-amber-500" />}
+                <div key={i} className="text-center group py-1 px-1.5 rounded-md bg-black/[0.015] dark:bg-white/[0.015] border border-black/[0.03] dark:border-white/[0.03] hover:border-red-500/10 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-all duration-300">
+                  <div className="text-[7.5px] mb-0.5 font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500 group-hover:text-red-500 transition-colors">{item.label}</div>
+                  <div className="font-extrabold text-[10.5px] sm:text-xs text-slate-800 dark:text-zinc-200 flex items-center justify-center gap-0.5 tracking-tight">
+                    {item.icon && <item.icon className="w-2.5 h-2.5 text-amber-500 fill-amber-500 shrink-0" />}
                     <span className="truncate max-w-full">{item.value}</span>
                   </div>
                 </div>
               ))}
             </div>
   
-            <Link 
-              to={`/download/${app.slug}`} 
-              className="w-full sm:w-auto min-w-[280px] sm:min-w-[400px] bg-red-600 hover:bg-red-700 text-white font-black py-5 px-12 rounded-2xl sm:rounded-3xl flex items-center justify-center gap-3 transition-all active:scale-95 text-[12px] sm:text-[14px] uppercase tracking-[0.2em] italic shadow-2xl shadow-red-600/30 relative overflow-hidden group"
+            <motion.div
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 15 }}
+              className="w-full sm:w-auto min-w-[280px] sm:min-w-[400px] flex justify-center cursor-pointer select-none"
             >
-              SECURE DOWNLOAD <ArrowRight className="w-5 h-5" />
-            </Link>
+              <Link 
+                to={`/download/${app.slug}`} 
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-5 px-12 rounded-2xl sm:rounded-3xl flex items-center justify-center gap-3 transition-all text-[12px] sm:text-[14px] uppercase tracking-[0.2em] italic shadow-2xl shadow-red-600/30 relative overflow-hidden group"
+              >
+                READ MORE <ArrowRight className="w-5 h-5" />
+              </Link>
+            </motion.div>
           </div>
         </div>
 
