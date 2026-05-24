@@ -19,7 +19,7 @@ export default function AdminLogin() {
   useEffect(() => {
     // Check if we are on a Netlify preview domain or wrong domain which might cause auth issues
     const host = window.location.hostname;
-    const isMainDomain = host === 'yonoinfo.netlify.app' || host === 'yonoinfo.in' || host === 'localhost' || host === '127.0.0.1' || host.includes('vercel.app');
+    const isMainDomain = host === 'yonostored.netlify.app' || host === 'yonostored.in' || host === 'localhost' || host === '127.0.0.1' || host.includes('vercel.app');
     
     // Check if we are on an AI Studio preview domain
     const isAiStudio = host.includes('run.app');
@@ -134,16 +134,16 @@ export default function AdminLogin() {
             </p>
             <div className="space-y-2">
               <a 
-                href="https://yonoinfo.netlify.app/admin/login" 
+                href="https://yonostored.netlify.app/admin/login" 
                 className="block w-full text-center bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold py-2 rounded transition-colors"
               >
                 Go to Netlify Domain
               </a>
               <a 
-                href="http://yonoinfo.in/admin/login" 
+                href="http://yonostored.in/admin/login" 
                 className="block w-full text-center bg-black/5 hover:bg-black/10 text-black text-xs font-bold py-2 rounded transition-colors"
               >
-                Go to Main Domain (yonoinfo.in)
+                Go to Main Domain (yonostored.in)
               </a>
             </div>
           </div>
