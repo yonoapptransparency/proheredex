@@ -560,9 +560,16 @@ function AppContent() {
     }
   }, [settings, location.pathname]);
 
-  if (!isAgeVerified && !isAdminPath) {
-    return <AgeVerificationGate onVerify={() => setIsAgeVerified(true)} />;
-  }
+  useEffect(() => {
+    if (!isAgeVerified && !isAdminPath) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isAgeVerified, isAdminPath]);
 
   return (
     <div className="flex flex-col min-h-screen selection:bg-red-600/20">
@@ -609,6 +616,10 @@ function AppContent() {
       {memoizedFooter}
       {memoizedBottomNav}
       <BackToTop />
+
+      {!isAgeVerified && !isAdminPath && (
+        <AgeVerificationGate onVerify={() => setIsAgeVerified(true)} />
+      )}
     </div>
   );
 }

@@ -33,7 +33,7 @@ export const AgeVerificationGate: React.FC<AgeVerificationGateProps> = ({ onVeri
   };
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-50/95 backdrop-blur-md overflow-y-auto select-none">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/15 backdrop-blur-[4px] overflow-y-auto select-none">
       {/* Absolute ambient light rose/crimson gradient */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-rose-600/5 rounded-full blur-[140px]" />
