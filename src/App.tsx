@@ -485,6 +485,19 @@ function AppContent() {
   const location = useLocation();
   const [isAgeVerified, setIsAgeVerified] = useState(() => {
     try {
+      if (typeof window !== 'undefined' && navigator.userAgent) {
+        const botUserAgents = [
+          'googlebot', 'bingbot', 'yandex', 'baidu', 'duckduck', 'yahoo',
+          'lighthouse', 'chrome-lighthouse', 'gptbot', 'chatgpt', 'claudebot', 
+          'anthropic', 'google-extended', 'gemini', 'perplexity', 'cohere', 
+          'facebookexternalhit', 'twitterbot', 'linkedinbot', 'bot', 'crawl',
+          'spider', 'slurp', 'archiver'
+        ];
+        const ua = navigator.userAgent.toLowerCase();
+        if (botUserAgents.some(bot => ua.includes(bot))) {
+          return true;
+        }
+      }
       return localStorage.getItem('yonostore_age_verified') === 'true';
     } catch {
       return false;

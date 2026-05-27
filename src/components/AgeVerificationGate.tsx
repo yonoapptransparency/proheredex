@@ -1,14 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, ShieldAlert, ArrowRight } from 'lucide-react';
+import { useData } from '../contexts/DataContext';
 
 interface AgeVerificationGateProps {
   onVerify: () => void;
 }
 
 export const AgeVerificationGate: React.FC<AgeVerificationGateProps> = ({ onVerify }) => {
+  const { settings } = useData();
   const [denied, setDenied] = useState(false);
   const [countdown, setCountdown] = useState(5);
+
+  // Auto-verify if the user-agent is a parser / bot / crawler
+  useEffect(() => {
+    if (typeof window !== 'undefined' && navigator.userAgent) {
+      const botUserAgents = [
+        'googlebot', 'bingbot', 'yandex', 'baidu', 'duckduck', 'yahoo',
+        'lighthouse', 'chrome-lighthouse', 'gptbot', 'chatgpt', 'claudebot', 
+        'anthropic', 'google-extended', 'gemini', 'perplexity', 'cohere', 
+        'facebookexternalhit', 'twitterbot', 'linkedinbot', 'bot', 'crawl',
+        'spider', 'slurp', 'archiver'
+      ];
+      const ua = navigator.userAgent.toLowerCase();
+      if (botUserAgents.some(bot => ua.includes(bot))) {
+        onVerify();
+      }
+    }
+  }, [onVerify]);
 
   const handleVerify = () => {
     try {
@@ -49,12 +68,22 @@ export const AgeVerificationGate: React.FC<AgeVerificationGateProps> = ({ onVeri
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className="relative w-full max-w-lg bg-white border border-slate-200/80 rounded-[2.5rem] p-8 sm:p-12 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.08)] text-center text-slate-800"
           >
-            {/* Regulatory Crest Header */}
+            {/* Website Logo Header (from admin / settings) */}
             <div className="flex justify-center mb-6">
               <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-rose-500/10 blur-md animate-pulse" />
-                <div className="relative p-5 bg-rose-50 border border-rose-200 rounded-full text-rose-600">
-                  <ShieldAlert className="w-9 h-9" />
+                <div className="absolute inset-0 rounded-full bg-rose-500/10 blur-xl animate-pulse" />
+                <div className="relative p-2.5 bg-white border border-slate-100/80 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-center">
+                  {settings?.logo_url ? (
+                    <img 
+                      src={settings.logo_url} 
+                      alt="Logo" 
+                      className="w-16 h-16 sm:w-20 sm:h-20 object-contain" 
+                    />
+                  ) : (
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-tr from-rose-500 to-amber-500 rounded-3xl flex items-center justify-center text-white font-black text-2xl italic">
+                      {settings?.site_title?.substring(0, 1) || 'Y'}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
