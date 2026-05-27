@@ -28,6 +28,7 @@ const FallbackRouteMatcher = lazy(() => import('./components/FallbackRouteMatche
 import Ticker from './components/Ticker';
 import SupportWidget from './components/SupportWidget';
 import GlobalSearch from './components/GlobalSearch';
+import { AgeVerificationGate } from './components/AgeVerificationGate';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -482,6 +483,16 @@ function LoadingScreen() {
 function AppContent() {
   const { settings } = useData();
   const location = useLocation();
+  const [isAgeVerified, setIsAgeVerified] = useState(() => {
+    try {
+      return localStorage.getItem('yonostore_age_verified') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const isAdminPath = location.pathname.startsWith('/admin');
+
   const triggerHaptic = () => {
     if (window.navigator && window.navigator.vibrate) {
       setTimeout(() => {
@@ -548,6 +559,10 @@ function AppContent() {
       }
     }
   }, [settings, location.pathname]);
+
+  if (!isAgeVerified && !isAdminPath) {
+    return <AgeVerificationGate onVerify={() => setIsAgeVerified(true)} />;
+  }
 
   return (
     <div className="flex flex-col min-h-screen selection:bg-red-600/20">
