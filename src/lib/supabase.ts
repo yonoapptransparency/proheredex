@@ -278,40 +278,7 @@ export const mockApps: AppConfig[] = [
     "og_image_url": "",
     "developer": "Admin",
     "canonical_url": "",
-    "faqs": [
-      {
-        "answer": "Answer: Jaiho 91 is a real-money gaming application that features a variety of casual, prediction, and traditional Indian card games on a single platform. Players register an account, navigate the multi-game dashboard, and compete against other real players online to earn cash rewards.",
-        "question": "1. What is Jaiho 91 and how does it work?"
-      },
-      {
-        "question": "3. Is Jaiho 91 a real or fake application?",
-        "answer": "Answer: Jaiho 91 is a functional real-money gaming application with active gameplay rooms and live transaction processing systems. However, because it is a relatively new software platform in the market, the Yonoinfo team continuously tracks its withdrawal fulfillment rates and security certificates to keep our readers updated on its overall reliability."
-      },
-      {
-        "question": "5. What games are packed inside the Jaiho 91 app?",
-        "answer": "Answer: The application updates its catalog frequently, featuring popular categories such as:\nPrediction Formats: Color prediction and high-speed matching modules.\nClassic Card Games: Point Rummy, Pool Rummy, and Teen Patti variations.\nArcade/Slots: High-engagement casual games, crash games, and themed virtual slot machines."
-      },
-      {
-        "answer": "Answer: No. While skill-based card gaming is permitted in many regions, several states enforce strict prohibitions on all cash-stakes gaming networks. Residents living in Assam, Telangana, Odisha, Andhra Pradesh, Sikkim, Nagaland, Arunachal Pradesh, and Tamil Nadu are legally restricted from downloading the APK or participating in real-money rooms.",
-        "question": "6. Can players from all Indian states legally join Jaiho 91?"
-      },
-      {
-        "answer": "Answer: Yonoinfo is an independent informational directory and technical review platform. We do not host or develop games. Our mission is to test, audit, and analyze popular mobile applications in India—especially real-money gaming apps—to give users an honest breakdown of their security, withdrawal reliability, and hidden operational risks before they choose to download them.",
-        "question": "7. What is Yonoinfo and why do you review apps like Jaiho 91?"
-      },
-      {
-        "question": "8. Why does Yonoinfo emphasize \"Transparency\" so much in these reviews?",
-        "answer": "Answer: The internet is flooded with fake download links and heavily biased reviews that hide the financial dangers of gaming apps just to get signups. At Yonoinfo, we believe players deserve absolute transparency. We openly share the technical integrity of the APK files, document genuine player feedback, and highlight the financial risks so you can make highly informed, safe decisions."
-      },
-      {
-        "question": "9. Does Yonoinfo receive money or commissions from Jaiho 91?",
-        "answer": "Answer: No. Yonoinfo maintains a strict corporate firewall and operates with 100% independence. We have zero business partnerships, shared investments, or commercial integrations with the developers of Jaiho 91. Because we are completely unaligned, we can freely expose app glitches, withdrawal delays, or safety concerns without any outside censorship."
-      },
-      {
-        "question": "10. Can Yonoinfo help me recover lost money or unfreeze my Jaiho 91 account?",
-        "answer": "Answer: No, we cannot. Because we are an independent review platform and have no access to Jaiho 91's backend database, our team has no administrative power over their software. We cannot reverse transactions or modify account statuses. We strongly advise using the direct link to the verified APK files provided here to avoid security issues, and to play with strict, responsible budgets."
-      }
-    ]
+    "faqs": []
   },
   {
     "seo_title": "Bingo 101 Honest Review & Safety Analysis | Yonoinfo",
