@@ -332,48 +332,7 @@ export const mockApps: AppConfig[] = [
     "og_image_url": "https://13eehe59cj.ucarecd.net/97512d34-f561-4ede-8517-2112440079eb/-/preview/554x554/",
     "category": "All App, Yono",
     "seo_title": "OK RUMMY",
-    "faqs": [
-      {
-        "answer": "Answer: Ok Rummy is a mobile gaming client that aggregates classic Indian card matching variants, primarily 13-Card Points Rummy, Pool Rummy, and Deal Rummy. Players join digital lobbies, compete against real online opponents by creating valid sequences and sets, and secure reward points based on skill rules.",
-        "question": "1. What is Ok Rummy and how does the game system operate?"
-      },
-      {
-        "answer": "Answer: Yes, playing card games like Rummy for real stakes is constitutionally legal in the majority of Indian states. The Supreme Court of India has established that Rummy is predominantly a \"game of skill\" rather than a game of chance, meaning it is protected under Article 19(1)(g) as a valid business activity and is exempt from central anti-gambling statutes. ",
-        "question": "2. Is playing Ok Rummy legal in India?"
-      },
-      {
-        "question": "3. What states explicitly prohibit or ban Ok Rummy real-stakes lobbies?",
-        "answer": "Answer: While central law protects skill games, individual state regulations vary. Due to localized legal bans and strict enforcement, residents of the following states are completely blocked from playing real-money matches or adding funds:  \nRestricted Territories: Andhra Pradesh, Arunachal Pradesh, Assam, Nagaland, Odisha, Sikkim, Tamil Nadu, and Telangana."
-      },
-      {
-        "answer": "Answer: Yonoinfo is an autonomous, independent mobile application directory and technical review database. We do not design apps, run gaming software, or handle lobby matchmaking. Our team tests popular third-party APK packages to deliver unbiased security audits, download files, and withdrawal speed verifications for consumer awareness.",
-        "question": "4. What is Yonoinfo and what is its role?"
-      },
-      {
-        "question": "5. Why does Yonoinfo emphasize \"Transparency FAQs\" and strict disclaimers?",
-        "answer": "Answer: The online space is filled with deceptive, sponsored marketing materials that omit the risks of real-money gaming apps to secure quick referral signups. Yonoinfo enforces an absolute transparency policy—freely highlighting application bugs, withdrawal delays, legal state restrictions, and capital risks—so players have access to data that is objective and balanced."
-      },
-      {
-        "answer": "Answer: The core Ok Rummy app package file is safe and free from security vulnerabilities when obtained through the original source paths. Because the file is distributed as an independent Android APK outside mainstream storefronts, your device may display a standard \"Unknown Sources\" alert. Yonoinfo analyzes and hosts only unedited, signed source files to ensure a clean setup.",
-        "question": "6. Is the Ok Rummy APK package safe to install on Android?"
-      },
-      {
-        "answer": "Answer: No. Yonoinfo operates behind a strict corporate firewall and maintains zero commercial partnerships, shared assets, or operational ties with the management of Ok Rummy. This unaligned status ensures our technical reviews and reliability grades remain independent and uninfluenced by outside developers.",
-        "question": "7. Does Yonoinfo receive payment or maintain partnerships with Ok Rummy?"
-      },
-      {
-        "answer": "Answer: Payout thresholds generally initiate between ₹100 and ₹200 depending on the current platform version. Under stable banking hours, automated payment paths process cashouts directly to your linked UPI handle or IMPS account within 5 to 30 minutes. However, heavy bank traffic or network maintenance can push settlements into a temporary verification delay of 24 to 72 hours.",
-        "question": "8. What are the minimum withdrawal limits and processing times?"
-      },
-      {
-        "question": "9. Can Yonoinfo help resolve pending withdrawals or account freezes?",
-        "answer": "Answer: No, we cannot. Because Yonoinfo is entirely independent and has no administrative rights or database access to the Ok Rummy server infrastructure, we cannot modify player files or reverse transactions. If a transaction goes pending or your account faces a freeze, you must open the app's internal live customer service desk and supply your Game UID and bank UTR numbers."
-      },
-      {
-        "answer": "Answer: Access to the real-stakes tournament pools is restricted by two strict criteria:\nAge Requirement: Users must be a minimum age of 18 or older to register.\nGeographic Location: Players must reside outside the legally restricted Indian states listed above.\nNote: Real-money gaming carries financial risk; participants are strongly urged to establish strict limits and treat it strictly as a form of casual recreation.",
-        "question": "10. Who is legally permitted to download and play on Ok Rummy?"
-      }
-    ],
+    "faqs": [],
     "is_new": false,
     "created_at": "2026-05-20T03:50:33.674Z",
     "serial_number": 6,
