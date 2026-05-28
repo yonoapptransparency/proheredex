@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { LayoutDashboard, Users, FileText, Settings, ShieldAlert, Shield, LogOut, Save, Upload, Type, Link as LinkIcon, ToggleLeft, Layers, Newspaper, Plus, Trash2, Video as VideoIcon, Github, GitBranch } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Settings, ShieldAlert, Shield, LogOut, Save, Upload, Type, Link as LinkIcon, ToggleLeft, Layers, Newspaper, Plus, Trash2, Video as VideoIcon, Github, GitBranch, RefreshCw } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { auth, db } from '../lib/firebase';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
@@ -265,7 +265,7 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
           </div>
 
           <div className="border border-black/10 dark:border-white/10 rounded-xl p-4 bg-black/5 dark:bg-white/5">
-            <FaqEditor initialFaqs={editApp?.faqs || []} />
+            <FaqEditor key={editApp?.id || 'new'} initialFaqs={editApp?.faqs || []} />
           </div>
           <button type="submit" disabled={saving} className="min-h-[48px] w-full sm:w-auto px-8 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-lg transition-all flex justify-center items-center gap-2 shadow-lg shadow-pink-500/20">
             {saving ? 'Saving...' : <><Save className="w-5 h-5"/> Save Application</>}
@@ -979,6 +979,8 @@ export default function AdminDashboard() {
     saveNews: saveMockNews, 
     saveBlogs: saveMockBlogs, 
     saveVideos: saveMockVideos,
+    loading,
+    refreshAll,
     gitConfig,
     gitConfigLoading,
     saveGitConfig,
@@ -997,6 +999,10 @@ export default function AdminDashboard() {
   const [user, setUser] = useState<any>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isAdminUser, setIsAdminUser] = useState<boolean | null>(null);
+
+  // Use a ref to initialize state exactly once on first load
+  // This shields active typed text fields from being silently discarded by background snapshots
+  const isInitializedRef = React.useRef(false);
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -1043,15 +1049,31 @@ export default function AdminDashboard() {
     return unsubscribe;
   }, []);
 
-  // Performance Optimization: Batch sync effect
+  // Initialize local states once from loaded cloud data
   React.useEffect(() => {
-    setAppsList(mockApps);
-    setNewsList(mockNews);
-    setBanners(mockSettings.banners || []);
-    setBlogs(mockBlogs);
-    setVideosList(mockVideos);
-    setCategoriesList(mockSettings.categories || []);
-  }, [mockApps, mockNews, mockSettings, mockBlogs, mockVideos]);
+    if (!loading && !isInitializedRef.current) {
+      setAppsList(mockApps);
+      setNewsList(mockNews);
+      setBanners(mockSettings.banners || []);
+      setBlogs(mockBlogs);
+      setVideosList(mockVideos);
+      setCategoriesList(mockSettings.categories || []);
+      isInitializedRef.current = true;
+    }
+  }, [loading, mockApps, mockNews, mockSettings, mockBlogs, mockVideos]);
+
+  const handleReloadCloudData = async () => {
+    setSaving(true);
+    try {
+      isInitializedRef.current = false;
+      await refreshAll();
+      alert('GLOBAL WORKSPACE SYNC SUCCESSFUL: All local editors and visual configurations updated from Live cloud.');
+    } catch (err: any) {
+      alert('Cloud Sync Failed: ' + (err.message || 'Check network connection.'));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Auto-seed missing Firestore collections under admin auth!
   React.useEffect(() => {
@@ -1187,6 +1209,8 @@ export default function AdminDashboard() {
       };
       
       await saveMockSettings(updatedSettings);
+      setBanners(updatedSettings.banners || []);
+      setCategoriesList(updatedSettings.categories || []);
       triggerHaptic();
       alert('GLOBAL SYSTEM SYNC COMPLETE: All Identity & Legal configurations published to Live.');
     } catch (err: any) {
@@ -1254,6 +1278,7 @@ export default function AdminDashboard() {
       }
       
       await saveMockApps(updatedApps);
+      setAppsList(updatedApps);
       triggerHaptic();
       setEditingAppId(null);
       alert(editingAppId ? 'Success: Application Updated & Verified on Cloud!' : 'Success: New Application Published & Verified on Cloud!');
@@ -1462,9 +1487,19 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-          <button onClick={handleLogout} className="mt-4 md:mt-0 flex items-center gap-2 px-8 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl transition-all font-black uppercase tracking-widest italic shadow-xl shadow-rose-500/20 active:scale-95">
-            <LogOut className="w-5 h-5" /> Sign Out Authority
-          </button>
+          <div className="flex gap-4 items-center flex-wrap mt-4 md:mt-0">
+            <button 
+              onClick={handleReloadCloudData} 
+              disabled={saving}
+              className="flex items-center gap-2 px-6 py-3 bg-pink-500/10 hover:bg-pink-500/20 text-pink-500 border border-pink-500/30 rounded-2xl transition-all font-black uppercase tracking-widest italic shadow-lg hover:scale-105 active:scale-95 disabled:opacity-50"
+              title="Reload and pull latest configurations directly from the Cloud database"
+            >
+              <RefreshCw className={`w-5 h-5 ${saving ? 'animate-spin' : ''}`} /> Reload Cloud Data
+            </button>
+            <button onClick={handleLogout} className="flex items-center gap-2 px-8 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl transition-all font-black uppercase tracking-widest italic shadow-xl shadow-rose-500/20 active:scale-95">
+              <LogOut className="w-5 h-5" /> Sign Out Authority
+            </button>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-[280px_1fr] gap-10">
@@ -1680,7 +1715,7 @@ export default function AdminDashboard() {
                 </div>
               )}
               {activeTab === 'settings' && (
-                <SettingsTab mockSettings={mockSettings} handleSaveSettings={handleSaveSettings} saving={saving} />
+                <SettingsTab key={mockSettings.site_title || 'settings'} mockSettings={mockSettings} handleSaveSettings={handleSaveSettings} saving={saving} />
               )}
               {activeTab === 'github' && (
                 <GithubSyncTab 
