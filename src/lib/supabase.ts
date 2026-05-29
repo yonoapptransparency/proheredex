@@ -1128,13 +1128,24 @@ export const saveMockBlogs = (blogs: BlogPost[]) => {
 export const mockVideos: VideoItem[] = [
   {
     "id": "1",
-    "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    "seo_description": "Watch the YonoStore introduction video.",
+    "youtube_url": "",
+    "seo_description": "",
     "created_at": "2026-05-22T12:22:35.244Z",
-    "description": "A brief introduction to the YonoStore platform and its offerings.",
-    "seo_title": "YonoStore Introduction Video",
-    "slug": "intro-video",
-    "title": "Intro to YonoStore"
+    "description": "",
+    "seo_title": "",
+    "slug": "",
+    "title": ""
+  },
+  {
+    "id": "73jeeqtsr",
+    "slug": "",
+    "title": "",
+    "description": "",
+    "youtube_url": "",
+    "seo_title": "",
+    "seo_description": "",
+    "seo_keywords": "",
+    "created_at": "2026-05-29T14:26:28.226Z"
   }
 ];
 
