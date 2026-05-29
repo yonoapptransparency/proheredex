@@ -23,9 +23,9 @@ export function b64EncodeUnicode(str: string): string {
 }
 
 /**
- * Dynamically generates the content of `src/lib/supabase.ts` based on current state
+ * Dynamically generates the content of `src/lib/staticData.ts` based on current state
  */
-export function generateSupabaseFileCode(
+export function generateStaticDataFileCode(
   apps: any[],
   settings: any,
   news: any[],
@@ -39,16 +39,7 @@ export function generateSupabaseFileCode(
   const cleanBlogs = JSON.parse(JSON.stringify(blogs));
   const cleanVideos = JSON.parse(JSON.stringify(videos));
 
-  return `import { createClient } from '@supabase/supabase-js';
-
-// @ts-ignore
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
-// @ts-ignore
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-export interface Banner {
+  return `export interface Banner {
   id: string;
   title: string;
   subtitle: string;

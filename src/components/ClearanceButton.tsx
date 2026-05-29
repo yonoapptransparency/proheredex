@@ -93,10 +93,9 @@ function sha256_sync(ascii: string): string {
 interface ClearanceButtonProps {
   appId: string;
   status: 'Verified' | 'Caution' | 'Unsafe';
-  clearanceUrl?: string;
 }
 
-export default function ClearanceButton({ appId, status, clearanceUrl }: ClearanceButtonProps) {
+export default function ClearanceButton({ appId, status }: ClearanceButtonProps) {
   const [isVerifying, setIsVerifying] = useState(false);
   const [ready, setReady] = useState(false);
   const [countdown, setCountdown] = useState(0); // For initial 3-second gateway handshake
@@ -215,17 +214,6 @@ export default function ClearanceButton({ appId, status, clearanceUrl }: Clearan
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
     audio.volume = 0.4;
     audio.play().catch(e => console.log("Audio play blocked", e));
-  };
-
-  // Encodes URL to base64 to hide from standard static scraper regex searches with non-ASCII safety
-  const getObfuscatedUrl = () => {
-    const rawUrl = clearanceUrl && clearanceUrl.trim() !== '' ? clearanceUrl : `https://example.com/mock-file-${appId}`;
-    const cleanUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
-    try {
-      return btoa(unescape(encodeURIComponent(cleanUrl)));
-    } catch {
-      return btoa(cleanUrl);
-    }
   };
 
     // Build generic device profile
@@ -415,8 +403,7 @@ export default function ClearanceButton({ appId, status, clearanceUrl }: Clearan
       const { token } = await tokenResponse.json();
 
       // Step 4: Configure dynamic transient link URL
-      const base64Url = getObfuscatedUrl();
-      const finalClearanceUrl = `/api/v1/file-payload?t=${token}&url=${encodeURIComponent(base64Url)}&id=${appId}${sid ? `&sid=${encodeURIComponent(sid)}` : ''}`;
+      const finalClearanceUrl = `/api/v1/file-payload?t=${token}&id=${appId}${sid ? `&sid=${encodeURIComponent(sid)}` : ''}`;
 
       setDynamicLink(finalClearanceUrl);
       setReady(true);

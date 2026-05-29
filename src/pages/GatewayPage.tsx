@@ -190,19 +190,6 @@ export default function GatewayPage() {
     }
   };
 
-  const handleClearance = () => {
-    setIsClearing(true);
-    // Ping API route which will do redirect, here we just mock that delay
-    setTimeout(() => {
-      if (app.encrypted_download_url) {
-        window.location.href = app.encrypted_download_url;
-      } else {
-        alert("Access key not configured for " + app.name);
-      }
-      setIsClearing(false);
-    }, 1500);
-  };
-
   const handleReviewSubmit = (e: FormEvent) => {
     e.preventDefault();
     alert("Review submitted and awaiting moderation.");
@@ -284,7 +271,7 @@ export default function GatewayPage() {
 
             {/* Right side: Dynamic Button */}
             <div className="flex flex-col items-center gap-3 w-full lg:w-auto shrink-0">
-              <ClearanceButton appId={app.id} status={app.safety_status as 'Verified' | 'Caution' | 'Unsafe'} clearanceUrl={app.encrypted_download_url} />
+              <ClearanceButton appId={app.id} status={app.safety_status as 'Verified' | 'Caution' | 'Unsafe'} />
             </div>
           </div>
         </div>

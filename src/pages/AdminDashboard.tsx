@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { LayoutDashboard, Users, FileText, Settings, ShieldAlert, Shield, LogOut, Save, Upload, Type, Link as LinkIcon, ToggleLeft, Layers, Newspaper, Plus, Trash2, Video as VideoIcon, Github, GitBranch, RefreshCw } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { auth, db } from '../lib/firebase';
+
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -227,8 +228,8 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
 
           <div className="border border-black/10 dark:border-white/10 rounded-xl p-4 bg-black/5 dark:bg-white/5 space-y-4">
              <h3 className="font-bold text-lg dark:text-white flex items-center gap-2"><LinkIcon className="w-4 h-4 text-pink-500"/> File Access Config</h3>
-             <label className="block text-sm font-medium opacity-60 dark:text-white">Access Content Link</label>
-             <input type="url" name="download_url" defaultValue={editApp?.encrypted_download_url} className="w-full bg-white dark:bg-slate-900 border border-pink-500/30 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
+             <label className="block text-sm font-medium opacity-60 dark:text-white">Secure Download Link (Ciphertext shown - input new http URL to change)</label>
+             <input type="text" name="download_url" defaultValue={editApp?.encrypted_download_url} placeholder="https://..." className="w-full bg-white dark:bg-slate-900 border border-pink-500/30 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
           </div>
 
           {/* RESTORED UI ADMIN BOXES */}
@@ -1066,16 +1067,33 @@ export default function AdminDashboard() {
 
   // Initialize local states once from loaded cloud data
   React.useEffect(() => {
-    if (!loading && !isInitializedRef.current) {
-      setAppsList(mockApps);
+    if (!loading && !isInitializedRef.current && isAdminUser !== null) {
+      if (isAdminUser) {
+        getDoc(doc(db, 'store_data', 'secure_links')).then(snap => {
+          let secureMap = new Map();
+          if (snap.exists() && snap.data().items) {
+            snap.data().items.forEach((it: any) => secureMap.set(it.id, it.url));
+          }
+          const mergedApps = mockApps.map(a => ({...a, encrypted_download_url: secureMap.get(a.id) || a.encrypted_download_url }));
+          setAppsList(mergedApps);
+        }).catch(err => {
+          console.error("Failed to load secure references:", err);
+          setAppsList(mockApps);
+        }).finally(() => {
+          isInitializedRef.current = true;
+        });
+      } else {
+        setAppsList(mockApps);
+        isInitializedRef.current = true;
+      }
+      
       setNewsList(mockNews);
       setBanners(mockSettings.banners || []);
       setBlogs(mockBlogs);
       setVideosList(mockVideos);
       setCategoriesList(mockSettings.categories || []);
-      isInitializedRef.current = true;
     }
-  }, [loading, mockApps, mockNews, mockSettings, mockBlogs, mockVideos]);
+  }, [loading, mockApps, mockNews, mockSettings, mockBlogs, mockVideos, isAdminUser]);
 
   const handleReloadCloudData = async () => {
     setSaving(true);
@@ -1253,6 +1271,27 @@ export default function AdminDashboard() {
       const slug = customSlugInput?.trim() 
         ? customSlugInput.trim().toLowerCase().replace(/[^a-z0-9-_]+/g, '-') 
         : name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        
+      const editApp = editingAppId ? appsList.find(a => a.id === editingAppId) : null;
+      let encryptedUrlVal = editApp?.encrypted_download_url || '';
+      const inputUrl = formData.get('download_url') as string;
+      if (inputUrl && !inputUrl.startsWith('U2FsdGVkX1') && !inputUrl.startsWith('B64__')) {
+         try {
+            const res = await fetch('/api/v1/admin/encrypt', {
+               method: 'POST',
+               headers: {'Content-Type': 'application/json'},
+               body: JSON.stringify({ url: inputUrl })
+            });
+            if (res.ok) {
+               encryptedUrlVal = (await res.json()).encrypted;
+            }
+         } catch (err) {
+            console.error("Failed to encrypt URL", err);
+         }
+      } else if (inputUrl) {
+         encryptedUrlVal = inputUrl;
+      }
+      
       const appData = {
         id: Math.random().toString(36).substr(2, 9),
         name,
@@ -1275,7 +1314,7 @@ export default function AdminDashboard() {
         file_size: (formData.get('file_size') as string) || 'Unknown',
         developer: (formData.get('developer') as string) || 'Admin',
         screenshots: [],
-        encrypted_download_url: formData.get('download_url') as string,
+        encrypted_download_url: encryptedUrlVal,
         description_html: formData.get('description_html') as string || '<p>A new application.</p>',
         custom_admin_box_heading: formData.get('custom_admin_box_heading') as string,
         custom_admin_box_html: formData.get('custom_admin_box_html') as string,

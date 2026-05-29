@@ -9,9 +9,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Home from './pages/Home';
 import AppDetails from './pages/AppDetails';
 import GatewayPage from './pages/GatewayPage';
-import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
 import About from './pages/About';
+
+// Lazy load admin pages to keep admin code out of public bundle
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 import Contact from './pages/Contact';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
@@ -262,7 +264,7 @@ function Header() {
             </nav>
             
             <div className="mt-auto pt-6 border-t border-black/5 dark:border-white/5 text-center shrink-0">
-              <Link onClick={() => { triggerHaptic(); setMenuOpen(false); }} to="/x9k2m7-admin/login" className="text-xs font-semibold text-zinc-400 hover:text-zinc-600 transition-colors">Admin Portal &copy; 2026</Link>
+              <span className="text-xs text-zinc-400 font-medium">&copy; {new Date().getFullYear()} {settings.site_title || 'Rummy Store'}</span>
             </div>
           </motion.div>
         )}
@@ -586,6 +588,7 @@ function AppContent() {
                 <Route path="/new-apps" element={<NewApps />} />
                 <Route path="/app/:slug" element={<AppDetails />} />
                 <Route path="/info/:slug" element={<GatewayPage />} />
+                <Route path="/gateway/:slug" element={<GatewayPage />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/privacy" element={<Privacy />} />
@@ -601,8 +604,8 @@ function AppContent() {
                 <Route path="/wp-admin" element={<Navigate to="/" replace />} />
                 <Route path="/dashboard" element={<Navigate to="/" replace />} />
                 <Route path="/panel" element={<Navigate to="/" replace />} />
-                <Route path="/x9k2m7-admin/login" element={<AdminLogin />} />
-                <Route path="/x9k2m7-admin/*" element={<AdminDashboard />} />
+                <Route path="/x9k2m7-admin/login" element={<Suspense fallback={<div className="flex h-screen items-center justify-center p-8"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>}><AdminLogin /></Suspense>} />
+                <Route path="/x9k2m7-admin/*" element={<Suspense fallback={<div className="flex h-screen items-center justify-center p-8"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>}><AdminDashboard /></Suspense>} />
                 <Route path="*" element={<FallbackRouteMatcher />} />
               </Routes>
             </motion.div>

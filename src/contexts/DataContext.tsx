@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, setDoc, getDoc, getDocFromServer } from 'firebase/firestore';
-import { db, auth } from '../lib/firebase';
-import { AppConfig, GlobalSettings, NewsItem, BlogPost, VideoItem } from '../lib/supabase';
-import { GitConfig, generateSupabaseFileCode, commitFileToGitHub } from '../lib/githubSync';
+import { db, auth, isFirebaseConfigured } from '../lib/firebase';
+import { AppConfig, GlobalSettings, NewsItem, BlogPost, VideoItem } from '../lib/staticData';
+import { GitConfig, generateStaticDataFileCode, commitFileToGitHub } from '../lib/githubSync';
 
 enum OperationType {
   CREATE = 'create',
@@ -62,7 +62,7 @@ Raw Error: ${errorMessage}`;
 }
 
 // Providing fallback data immediately helps avoid layout shifts
-import { mockApps, mockSettings, mockNews, mockBlogs, mockVideos } from '../lib/supabase';
+import { mockApps, mockSettings, mockNews, mockBlogs, mockVideos } from '../lib/staticData';
 
 interface DataContextType {
   apps: AppConfig[];
@@ -252,6 +252,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }, 3000);
 
     const checkConnection = async () => {
+      if (!isFirebaseConfigured) {
+          setIsConnected(false);
+          setLoadedFromServer(true);
+          return;
+      }
       try {
         if (typeof navigator !== 'undefined' && !navigator.onLine) {
           setIsConnected(false);
@@ -298,6 +303,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     checkConnection();
     const connInterval = setInterval(checkConnection, 60000);
+
+    if (!isFirebaseConfigured) {
+        return () => {
+            if (timeout) clearTimeout(timeout);
+            clearTimeout(syncTimeout);
+            clearInterval(connInterval);
+        };
+    }
 
     const unsubs = [
       onSnapshot(doc(db, 'store_data', 'apps_meta'), async (snap) => {
@@ -468,24 +481,30 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const now = new Date().toISOString();
       
       for (let i = 0; i < numChunks; i++) {
-        const chunk = newApps.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+        const chunk = JSON.parse(JSON.stringify(newApps.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE)));
+        // Mistake 6 Fix: Never expose URLs in the public client database chunks
+        chunk.forEach((app: any) => { delete app.encrypted_download_url; });
         await setDoc(doc(db, 'store_data', `apps_chunk_${i}`), { items: chunk });
       }
       
       const metaRef = doc(db, 'store_data', 'apps_meta');
       await setDoc(metaRef, { numChunks, last_updated: now });
       
+      // Save secure links mapping separately
+      const secureLinks = newApps.map(a => ({ id: a.id, url: a.encrypted_download_url || '' }));
+      await setDoc(doc(db, 'store_data', 'secure_links'), { items: secureLinks });
+      
       console.log("Cloud: Apps update acknowledged by server.");
 
       if (gitConfig?.autoSync) {
         console.log("GitHub Sync: AutoSync engaged. Triggering compile and commit...");
-        const updatedCode = generateSupabaseFileCode(newApps, settings, news, blogs, videos);
+        const updatedCode = generateStaticDataFileCode(newApps, settings, news, blogs, videos);
         commitFileToGitHub({
           owner: gitConfig.owner,
           repo: gitConfig.repo,
           token: gitConfig.token,
           branch: gitConfig.branch || 'main',
-          path: 'src/lib/supabase.ts',
+          path: 'src/lib/staticData.ts',
           content: updatedCode,
           message: `Admin Release Auto-Update: Added/Updated applications`
         }).catch(err => console.error("Background auto-sync commit failed:", err));
@@ -512,13 +531,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
       if (gitConfig?.autoSync) {
         console.log("GitHub Sync: AutoSync engaged for Settings updates...");
-        const updatedCode = generateSupabaseFileCode(apps, settingsWithTime, news, blogs, videos);
+        const updatedCode = generateStaticDataFileCode(apps, settingsWithTime, news, blogs, videos);
         commitFileToGitHub({
           owner: gitConfig.owner,
           repo: gitConfig.repo,
           token: gitConfig.token,
           branch: gitConfig.branch || 'main',
-          path: 'src/lib/supabase.ts',
+          path: 'src/lib/staticData.ts',
           content: updatedCode,
           message: `Admin Release Auto-Update: Updated platform configurations`
         }).catch(err => console.error("Background auto-sync commit failed:", err));
@@ -542,13 +561,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
       if (gitConfig?.autoSync) {
         console.log("GitHub Sync: AutoSync engaged for News updates...");
-        const updatedCode = generateSupabaseFileCode(apps, settings, newNews, blogs, videos);
+        const updatedCode = generateStaticDataFileCode(apps, settings, newNews, blogs, videos);
         commitFileToGitHub({
           owner: gitConfig.owner,
           repo: gitConfig.repo,
           token: gitConfig.token,
           branch: gitConfig.branch || 'main',
-          path: 'src/lib/supabase.ts',
+          path: 'src/lib/staticData.ts',
           content: updatedCode,
           message: `Admin Release Auto-Update: Added/Updated news indexes`
         }).catch(err => console.error("Background auto-sync commit failed:", err));
@@ -572,13 +591,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
       if (gitConfig?.autoSync) {
         console.log("GitHub Sync: AutoSync engaged for Blogs updates...");
-        const updatedCode = generateSupabaseFileCode(apps, settings, news, newBlogs, videos);
+        const updatedCode = generateStaticDataFileCode(apps, settings, news, newBlogs, videos);
         commitFileToGitHub({
           owner: gitConfig.owner,
           repo: gitConfig.repo,
           token: gitConfig.token,
           branch: gitConfig.branch || 'main',
-          path: 'src/lib/supabase.ts',
+          path: 'src/lib/staticData.ts',
           content: updatedCode,
           message: `Admin Release Auto-Update: Added/Updated blog posts`
         }).catch(err => console.error("Background auto-sync commit failed:", err));
@@ -602,13 +621,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
       if (gitConfig?.autoSync) {
         console.log("GitHub Sync: AutoSync engaged for Videos updates...");
-        const updatedCode = generateSupabaseFileCode(apps, settings, news, blogs, newVideos);
+        const updatedCode = generateStaticDataFileCode(apps, settings, news, blogs, newVideos);
         commitFileToGitHub({
           owner: gitConfig.owner,
           repo: gitConfig.repo,
           token: gitConfig.token,
           branch: gitConfig.branch || 'main',
-          path: 'src/lib/supabase.ts',
+          path: 'src/lib/staticData.ts',
           content: updatedCode,
           message: `Admin Release Auto-Update: Added/Updated video listings`
         }).catch(err => console.error("Background auto-sync commit failed:", err));
@@ -638,7 +657,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       throw new Error("GitHub synchronization is not fully configured. Please configure GitHub Repository Sync under your admin panel first.");
     }
 
-    const code = generateSupabaseFileCode(apps, settings, news, blogs, videos);
+    const code = generateStaticDataFileCode(apps, settings, news, blogs, videos);
     
     // Obfuscate standard content strings for bots to avoid indexing the plain-text
     const obfuscatedCode = code;
@@ -648,7 +667,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       repo: configToUse.repo,
       token: configToUse.token,
       branch: configToUse.branch || 'main',
-      path: 'src/lib/supabase.ts',
+      path: 'src/lib/staticData.ts',
       content: code,
       message: `Admin Manual Sync: Recompiled and updated static store fallbacks`
     });
@@ -656,6 +675,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [gitConfig, apps, settings, news, blogs, videos]);
 
   const testCloudConnection = React.useCallback(async () => {
+    if (!isFirebaseConfigured) return false;
     console.log("Connectivity Test: Starting...");
     const testDoc = doc(db, 'store_data', 'connectivity_test');
     
@@ -674,6 +694,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshAll = React.useCallback(async (silent = false) => {
+    if (!isFirebaseConfigured) {
+        setIsConnected(false);
+        setLoading(false);
+        return;
+    }
     console.log("Manual Refresh: Fetching latest data from Cloud...");
     if (!silent) setLoading(true);
     try {
