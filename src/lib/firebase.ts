@@ -8,6 +8,6 @@ export const auth = getAuth(app);
 
 // EXPERIMENTAL FORCE LONG POLLING IS REQUIRED for Indian Mobile ISPs!
 export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true
+  experimentalAutoDetectLongPolling: true
 }, firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId);
 

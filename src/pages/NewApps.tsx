@@ -7,8 +7,7 @@ export default function NewApps() {
   const { apps: mockApps, settings: mockSettings } = useData();
   const newApps = mockApps
     .filter(app => app.is_new)
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 15);
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const triggerNewAppHaptic = () => {
     if (window.navigator && window.navigator.vibrate) {
@@ -30,19 +29,19 @@ export default function NewApps() {
       <div className="px-1 mb-2 pt-4">
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-colors group"
+          className="inline-flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors group"
         >
-          <div className="p-2 rounded-full bg-black/5 border border-black/5 group-hover:scale-110 transition-transform">
-            <ArrowLeft className="w-3.5 h-3.5" />
+          <div className="p-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 group-hover:-translate-x-1 transition-transform">
+            <ArrowLeft className="w-4 h-4" />
           </div>
-          Back to storefront
+          Home
         </Link>
       </div>
       <div className="text-center mb-8 pt-8">
-        <h1 className="text-2xl font-black tracking-tighter mb-1 flex items-center justify-center gap-2 uppercase italic">
-          <Sparkles className="w-6 h-6 text-red-600" /> New Arrivals
+        <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center justify-center gap-2 text-zinc-900 dark:text-zinc-100">
+          <Sparkles className="w-6 h-6 text-blue-500" /> New Arrivals
         </h1>
-        <p className="opacity-50 font-black uppercase tracking-widest text-[10px]">Hand-checked software added this week</p>
+        <p className="text-zinc-500 font-medium text-sm">Recently added to the store</p>
       </div>
 
       <motion.div 
@@ -56,38 +55,38 @@ export default function NewApps() {
             <Link 
               onClick={triggerNewAppHaptic} 
               to={`/app/${app.slug}`} 
-              className="glass-panel p-3 hover:brightness-110 transition-all group flex gap-4 items-center relative overflow-hidden block border border-white/60 shadow-sm"
+              className="bg-white dark:bg-zinc-900 p-4 rounded-[20px] transition-all group flex gap-4 items-center relative overflow-hidden block border border-black/5 dark:border-white/5 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 shadow-sm"
             >
-              <div className="w-16 h-16 shrink-0 rounded-2xl overflow-hidden bg-white/40 border border-white/20 shadow-sm relative z-10">
-                <img src={app.icon_url || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop"} alt={app.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="w-16 h-16 shrink-0 rounded-2xl overflow-hidden bg-white dark:bg-zinc-800 border border-black/5 dark:border-white/5 shadow-sm relative z-10">
+                <img src={app.icon_url || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop"} alt={app.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
 
               <div className="flex-1 min-w-0 relative z-10">
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <h3 className="text-sm font-black truncate group-hover:text-red-600 transition-colors uppercase tracking-tight italic">{app.name}</h3>
-                  <span className="bg-red-600 text-white text-[7px] font-black px-1 py-0.5 rounded-[1px] uppercase tracking-widest shrink-0">NEW</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-base font-semibold truncate group-hover:text-blue-500 transition-colors text-zinc-900 dark:text-zinc-100">{app.name}</h3>
+                  <span className="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">New</span>
                 </div>
-                <div className="text-[10px] font-black opacity-60 mb-1 uppercase tracking-tight">{app.category}</div>
+                <div className="text-xs font-medium text-zinc-500 mb-1.5 truncate">{app.category}</div>
                 <div className="flex items-center gap-2">
                    <div className="flex items-center">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className={`w-2.5 h-2.5 ${i < Math.floor(app.rating || 0) ? 'fill-amber-400 text-amber-400' : 'opacity-20'}`} />
+                      <Star key={i} className={`w-3 h-3 ${i < Math.floor(app.rating || 0) ? 'fill-orange-400 text-orange-400' : 'text-zinc-200 dark:text-zinc-700 fill-zinc-200 dark:fill-zinc-700'}`} />
                     ))}
                   </div>
-                  <span className="text-[9px] font-black opacity-40 uppercase">{app.file_size}</span>
+                  <span className="text-xs font-medium text-zinc-400">{app.file_size}</span>
                 </div>
               </div>
               
-              <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                 <ShieldCheck className="w-12 h-12 text-red-600" />
+              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                 <ShieldCheck className="w-12 h-12 text-blue-500" />
               </div>
             </Link>
           </motion.div>
         ))}
 
         {newApps.length === 0 && (
-          <div className="col-span-full text-center py-20 text-slate-400 glass-panel">
-            <p className="text-sm font-bold uppercase tracking-widest">No new applications at this time.</p>
+          <div className="col-span-full text-center py-20 text-zinc-500 bg-white dark:bg-zinc-900 rounded-3xl border border-black/5 dark:border-white/5 shadow-sm">
+            <p className="text-sm font-medium">No new apps available.</p>
           </div>
         )}
       </motion.div>

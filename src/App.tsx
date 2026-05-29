@@ -86,46 +86,46 @@ function Header() {
         initial="hidden"
         animate="visible"
         variants={navVariants}
-        className={`glass-nav ${scrolled ? 'glass-nav-scrolled bg-transparent' : 'bg-transparent py-2'}`}
+        className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-transparent py-2' : 'bg-transparent py-3'}`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-8 relative flex justify-between items-center">
           <Link to="/" onClick={triggerHaptic} className="flex items-center gap-2 sm:gap-3 group">
-            <div className="p-0 transition-transform group-hover:scale-105 duration-500">
-              {settings.logo_url ? <img src={settings.logo_url} width={48} height={48} className="w-10 h-10 sm:w-14 sm:h-14 object-contain drop-shadow-xl brightness-110" alt="Logo" /> : <div className="w-10 h-10 sm:w-14 sm:h-14 bg-red-600 rounded-lg sm:rounded-xl flex items-center justify-center text-white font-black italic">{settings.site_title?.substring(0, 1)}</div>}
+            <div className="p-0 transition-transform group-hover:scale-[1.02] duration-300">
+              {settings.logo_url ? <img src={settings.logo_url} width={48} height={48} className="w-10 h-10 sm:w-14 sm:h-14 object-contain" alt="Logo" /> : <div className="w-10 h-10 sm:w-14 sm:h-14 bg-blue-500 rounded-lg sm:rounded-2xl flex items-center justify-center text-white font-semibold">{settings.site_title?.substring(0, 1)}</div>}
             </div>
             <div className="flex flex-col leading-none">
-              <span className="text-base sm:text-2xl font-black tracking-tighter uppercase italic drop-shadow-md">{settings.site_title}</span>
+              <span className="text-base sm:text-[22px] font-bold tracking-tight text-zinc-900 dark:text-white">{settings.site_title}</span>
             </div>
           </Link>
           
           <nav className="hidden md:flex items-center gap-4 lg:gap-8 text-sm font-medium">
-            <Link to="/" onClick={triggerHaptic} className={`transition-all p-2 font-bold uppercase tracking-tight relative ${pathname === '/' ? 'text-red-600' : ''}`}>
+            <Link to="/" onClick={triggerHaptic} className={`transition-all p-2 tracking-wide relative ${pathname === '/' ? 'text-blue-600' : 'text-zinc-600 hover:text-blue-500 dark:text-zinc-300'}`}>
               Home
-              {pathname === '/' && <motion.div layoutId="header-active" className="absolute bottom-0 left-2 right-2 h-0.5 bg-red-600" />}
+              {pathname === '/' && <motion.div layoutId="header-active" className="absolute -bottom-1 left-2 right-2 h-[2px] bg-blue-600 rounded-t-full" />}
             </Link>
-            <Link to="/new-apps" onClick={triggerHaptic} className={`transition-all p-2 font-bold uppercase tracking-tight flex items-center gap-1 relative ${pathname === '/new-apps' ? 'text-red-600' : ''}`}>
-              New App <span className="flex w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
-              {pathname === '/new-apps' && <motion.div layoutId="header-active" className="absolute bottom-0 left-2 right-2 h-0.5 bg-red-600" />}
+            <Link to="/new-apps" onClick={triggerHaptic} className={`transition-all p-2 tracking-wide flex items-center gap-1.5 relative ${pathname === '/new-apps' ? 'text-blue-600' : 'text-zinc-600 hover:text-blue-500 dark:text-zinc-300'}`}>
+              New Apps <span className="flex w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+              {pathname === '/new-apps' && <motion.div layoutId="header-active" className="absolute -bottom-1 left-2 right-2 h-[2px] bg-blue-600 rounded-t-full" />}
             </Link>
-            <Link to="/news" onClick={triggerHaptic} className={`transition-all p-2 font-bold uppercase tracking-tight relative ${pathname === '/news' ? 'text-red-600' : ''}`}>
+            <Link to="/news" onClick={triggerHaptic} className={`transition-all p-2 tracking-wide relative ${pathname === '/news' ? 'text-blue-600' : 'text-zinc-600 hover:text-blue-500 dark:text-zinc-300'}`}>
               News
-              {pathname === '/news' && <motion.div layoutId="header-active" className="absolute bottom-0 left-2 right-2 h-0.5 bg-red-600" />}
+              {pathname === '/news' && <motion.div layoutId="header-active" className="absolute -bottom-1 left-2 right-2 h-[2px] bg-blue-600 rounded-t-full" />}
             </Link>
             <div className="relative group/more" onMouseEnter={() => setMoreOpen(true)} onMouseLeave={() => setMoreOpen(false)}>
               <button 
-                className={`transition-all p-2 font-bold uppercase tracking-tight flex items-center gap-1 relative ${['/videos', '/blogs', '/contact', '/privacy', '/terms', '/about', '/responsibility'].includes(pathname) ? 'text-red-600' : ''}`}
+                className={`transition-all p-2 tracking-wide flex items-center gap-1 relative ${['/videos', '/blogs', '/contact', '/privacy', '/terms', '/about', '/responsibility'].includes(pathname) ? 'text-blue-600' : 'text-zinc-600 hover:text-blue-500 dark:text-zinc-300'}`}
                 onClick={triggerHaptic}
               >
-                More <MoreHorizontal className="w-4 h-4" />
+                More <MoreHorizontal className="w-4 h-4 ml-1" />
               </button>
               
               <AnimatePresence>
                 {moreOpen && (
                   <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute top-full right-0 mt-2 w-48 bg-white border border-black/5 rounded-2xl shadow-xl overflow-hidden py-2"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    className="absolute top-full right-0 mt-1 w-48 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl border border-black/5 dark:border-white/10 rounded-2xl shadow-lg overflow-hidden py-2 z-50"
                   >
                     {[
                       { to: '/videos', label: 'Videos', icon: Video },
@@ -140,9 +140,9 @@ function Header() {
                         key={item.to}
                         to={item.to} 
                         onClick={() => { setMoreOpen(false); triggerHaptic(); }}
-                        className={`flex items-center gap-3 px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-colors ${pathname === item.to ? 'text-red-600' : ''}`}
+                        className={`flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium transition-colors ${pathname === item.to ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-zinc-700 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/5'}`}
                       >
-                        <item.icon className="w-3 h-3" />
+                        <item.icon className="w-4 h-4 opacity-70" />
                         {item.label}
                       </Link>
                     ))}
@@ -151,15 +151,15 @@ function Header() {
               </AnimatePresence>
             </div>
 
-            <div className="flex items-center gap-3 ml-4 border-l border-black/10 pl-4">
+            <div className="flex items-center gap-3 ml-4 border-l border-zinc-200 dark:border-zinc-800 pl-4 h-6">
               {/* Premium Search Capsule Bar */}
               <button 
                 onClick={() => { triggerHaptic(); setSearchOpen(true); }}
-                className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-100/50 transition-all text-left px-4 py-2 w-44 lg:w-52 xl:w-60 rounded-full group shadow-inner"
+                className="flex items-center gap-2 bg-zinc-100/50 dark:bg-zinc-800/50 hover:bg-zinc-200/50 transition-all text-left px-4 py-1.5 w-44 lg:w-52 rounded-full group outline-none focus:ring-2 focus:ring-blue-500/20"
                 aria-label="Search Store"
               >
-                <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-red-600 transition-colors shrink-0" />
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 group-hover:text-slate-600 transition-colors truncate">Search store...</span>
+                <Search className="w-3.5 h-3.5 text-zinc-400 group-hover:text-blue-500 transition-colors shrink-0" />
+                <span className="text-[13px] text-zinc-500 group-hover:text-zinc-800 dark:group-hover:text-zinc-200 transition-colors truncate">Search...</span>
               </button>
 
               {settings.helpline_telegram && (
@@ -167,44 +167,43 @@ function Header() {
                   href={settings.helpline_telegram.startsWith('http') ? settings.helpline_telegram : `https://t.me/${settings.helpline_telegram.replace('@', '')}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center min-h-[44px] min-w-[44px] bg-[#0088cc]/10 text-[#0088cc] rounded-full border border-[#0088cc]/20 hover:bg-[#0088cc]/20 transition-colors"
+                  className="flex items-center justify-center w-8 h-8 bg-blue-50 text-blue-500 rounded-full hover:bg-blue-100 transition-colors"
                   aria-label="Telegram"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-3.5 h-3.5" />
                 </a>
               )}
               <SupportWidget />
             </div>
           </nav>
 
-          <div className="md:hidden flex items-center gap-2">
+          <div className="md:hidden flex items-center gap-3">
             {/* Mobile Touch-Target Search Capsule Bar */}
             <button 
               onClick={() => { triggerHaptic(); setSearchOpen(true); }}
-              className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-full border border-slate-100/50 active:scale-95 transition-all text-left shadow-sm group"
+              className="flex items-center justify-center w-9 h-9 bg-zinc-100 dark:bg-zinc-800 rounded-full active:scale-95 transition-all text-zinc-500"
               aria-label="Search"
             >
-              <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-red-600 transition-colors" />
-              <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Search...</span>
+              <Search className="w-4 h-4" />
             </button>
             {settings.helpline_telegram && (
               <a 
                 href={settings.helpline_telegram.startsWith('http') ? settings.helpline_telegram : `https://t.me/${settings.helpline_telegram.replace('@', '')}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-center min-h-[40px] min-w-[40px] bg-[#0088cc]/10 text-[#0088cc] rounded-full border border-[#0088cc]/20"
+                className="flex items-center justify-center w-9 h-9 bg-blue-50 text-blue-500 rounded-full"
                 aria-label="Telegram"
               >
-                <Send className="w-3.5 h-3.5" />
+                <Send className="w-4 h-4" />
               </a>
             )}
             <SupportWidget />
             <button 
-              className="flex items-center justify-center min-h-[40px] min-w-[40px] bg-red-600 rounded-full shadow-lg active:scale-95"
+              className="flex items-center justify-center w-9 h-9 bg-zinc-900 dark:bg-white rounded-full active:scale-95 transition-transform"
               onClick={() => { triggerHaptic(); setMenuOpen(true); }}
               aria-label="Open menu"
             >
-              <Menu className="w-4 h-4 text-white" />
+              <Menu className="w-4 h-4 text-white dark:text-zinc-900" />
             </button>
           </div>
         </div>
@@ -221,22 +220,22 @@ function Header() {
             className="fixed inset-0 z-[60] bg-white/98 dark:bg-slate-950/98 backdrop-blur-2xl flex flex-col px-6 py-8 overflow-y-auto"
           >
             <div className="flex justify-between items-center mb-8 shrink-0">
-              <span className="text-xl font-black flex items-center gap-2 uppercase tracking-tighter">
-                {settings.logo_url ? <img src={settings.logo_url} width={24} height={24} className="w-6 h-6 object-contain" alt="Logo" /> : <Shield className="w-6 h-6 text-red-600" />} {settings.site_title}
+              <span className="text-xl font-bold flex items-center gap-2 tracking-tight text-zinc-900 dark:text-white">
+                {settings.logo_url ? <img src={settings.logo_url} width={24} height={24} className="w-6 h-6 object-contain" alt="Logo" /> : <Shield className="w-6 h-6 text-blue-500" />} {settings.site_title}
               </span>
               <button 
                 onClick={() => { triggerHaptic(); setMenuOpen(false); }}
-                className="flex items-center justify-center min-h-[44px] min-w-[44px] bg-red-600 text-white rounded-full shadow-lg active:scale-90 transition-transform"
+                className="flex items-center justify-center w-10 h-10 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full active:scale-95 transition-transform"
                 aria-label="Close menu"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <nav className="grid grid-cols-2 gap-2.5 mb-6 shrink-0">
+            <nav className="grid grid-cols-2 gap-3 mb-6 shrink-0">
               {[
                 { to: '/', label: 'Home', icon: LayoutGrid },
-                { to: '/new-apps', label: 'New App', icon: Sparkles, hot: true },
+                { to: '/new-apps', label: 'New Apps', icon: Sparkles, hot: true },
                 { to: '/news', label: 'News', icon: Newspaper },
                 { to: '/videos', label: 'Videos', icon: Video },
                 { to: '/blogs', label: 'Blogs', icon: Menu },
@@ -252,18 +251,18 @@ function Header() {
                     key={item.to}
                     onClick={() => { triggerHaptic(); setMenuOpen(false); }} 
                     to={item.to} 
-                    className={`flex items-center gap-3 p-3 rounded-2xl transition-all border ${active ? 'bg-red-600 text-white shadow-lg shadow-red-600/10 border-transparent' : 'bg-slate-50 hover:bg-slate-100/50 border-slate-100 text-slate-800'}`}
+                    className={`flex items-center gap-3 p-3.5 rounded-2xl transition-all ${active ? 'bg-blue-600 text-white' : 'bg-black/5 dark:bg-white/10 text-zinc-800 dark:text-zinc-200 hover:bg-black/10'}`}
                   >
-                    <item.icon className={`w-4 h-4 shrink-0 ${active ? 'text-white' : 'text-slate-400'}`} />
-                    <span className="text-xs font-black uppercase tracking-wide truncate">{item.label}</span>
-                    {item.hot && <span className="flex w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse ml-auto shrink-0"></span>}
+                    <item.icon className={`w-4 h-4 shrink-0 ${active ? 'text-white' : 'text-zinc-500 dark:text-zinc-400'}`} />
+                    <span className="text-[13px] font-medium truncate">{item.label}</span>
+                    {item.hot && <span className="flex w-1.5 h-1.5 rounded-full bg-blue-500 ml-auto shrink-0"></span>}
                   </Link>
                 );
               })}
             </nav>
             
-            <div className="mt-auto pt-6 border-t border-black/5 text-center shrink-0">
-              <Link onClick={() => { triggerHaptic(); setMenuOpen(false); }} to="/x9k2m7-admin/login" className="text-xs font-black uppercase tracking-[0.2em] text-red-600 hover:opacity-80 transition-opacity">Admin Portal &copy; 2026</Link>
+            <div className="mt-auto pt-6 border-t border-black/5 dark:border-white/5 text-center shrink-0">
+              <Link onClick={() => { triggerHaptic(); setMenuOpen(false); }} to="/x9k2m7-admin/login" className="text-xs font-semibold text-zinc-400 hover:text-zinc-600 transition-colors">Admin Portal &copy; 2026</Link>
             </div>
           </motion.div>
         )}
@@ -277,56 +276,55 @@ function Header() {
 function Footer() {
   const { settings } = useData();
   return (
-    <footer className="white-theme-portal pt-12 pb-8">
-      <div className="max-w-5xl mx-auto flex flex-col items-center text-center">
-        <h3 className="text-xl font-black tracking-tight mb-4 flex items-center gap-2 uppercase">
-          <div className="p-1 transition-transform hover:scale-110">
+    <footer className="pt-16 pb-8 border-t border-black/5 dark:border-white/5 bg-zinc-50 dark:bg-zinc-950 mt-12">
+      <div className="max-w-5xl mx-auto flex flex-col items-center text-center px-6">
+        <h3 className="text-2xl font-bold tracking-tight mb-3 flex items-center gap-2">
+          <div className="p-1">
             {settings.logo_url ? (
               <img 
                 src={settings.logo_url} 
-                width={32} 
-                height={32} 
-                className="w-8 h-8 object-contain drop-shadow-lg" 
+                width={36} 
+                height={36} 
+                className="w-9 h-9 object-contain" 
                 alt="Logo" 
               />
             ) : (
-              <Shield className="w-8 h-8 text-red-600" />
+              <Shield className="w-8 h-8 text-blue-500" />
             )}
           </div>
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-red-400">
+          <span className="text-zinc-900 dark:text-zinc-100">
             {settings.site_title}
           </span>
         </h3>
-        <p className="text-sm mb-6 max-w-xl font-black uppercase tracking-widest leading-relaxed text-black dark:text-zinc-100">
+        <p className="text-[15px] mb-8 max-w-xl text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium">
           {settings.meta_description}
         </p>
-        <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-[10px] font-black mb-12 uppercase tracking-[0.25em] text-zinc-950 dark:text-zinc-200">
-          <Link to="/" className="hover:text-red-600 transition-colors">Home</Link>
-          <Link to="/about" className="hover:text-red-600 transition-colors">About Us</Link>
-          <Link to="/contact" className="hover:text-red-600 transition-colors">Contact</Link>
-          <Link to="/videos" className="hover:text-red-600 transition-colors">All App</Link>
-          <Link to="/blogs" className="hover:text-red-600 transition-colors">Blogs</Link>
-          <Link to="/responsibility" className="hover:text-red-600 transition-colors">Safety</Link>
-          <Link to="/privacy" className="hover:text-red-600 transition-colors">Privacy</Link>
-          <Link to="/terms" className="hover:text-red-600 transition-colors">Terms</Link>
+        <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-[13px] font-medium mb-16 text-zinc-600 dark:text-zinc-400">
+          <Link to="/" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Home</Link>
+          <Link to="/about" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">About</Link>
+          <Link to="/contact" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Contact</Link>
+          <Link to="/videos" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Apps</Link>
+          <Link to="/blogs" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Blog</Link>
+          <Link to="/privacy" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Privacy</Link>
+          <Link to="/terms" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Terms</Link>
         </div>
         
         {(settings.disclaimer_text || settings.ethics_discrimination_text) && (
           <div className="max-w-4xl w-full flex flex-col gap-6 mb-12">
             {settings.disclaimer_text && (
-              <div className="bg-zinc-50 border-2 border-zinc-200 shadow-sm rounded-[2rem] p-8 sm:p-12 text-left">
-                <h4 className="text-xs font-black mb-5 uppercase tracking-[0.3em] text-black border-b border-zinc-200 pb-3">{settings.disclaimer_heading || 'Platform Disclaimer'}</h4>
+              <div className="bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/5 rounded-3xl p-8 sm:p-10 text-left shadow-sm">
+                <h4 className="text-sm font-semibold mb-3 text-zinc-900 dark:text-white">{settings.disclaimer_heading || 'Disclaimer'}</h4>
                 <div 
-                  className="text-xs sm:text-sm font-extrabold text-black dark:text-zinc-100 leading-relaxed max-w-3xl"
+                  className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-3xl"
                   dangerouslySetInnerHTML={{ __html: settings.disclaimer_text }}
                 />
               </div>
             )}
             {settings.ethics_discrimination_text && (
-              <div className="bg-zinc-50 border-2 border-zinc-200 shadow-sm rounded-[2rem] p-8 sm:p-12 text-left">
-                <h4 className="text-xs font-black mb-5 uppercase tracking-[0.3em] text-black border-b border-zinc-200 pb-3">{settings.ethics_heading || 'Ethics & Discrimination'}</h4>
+              <div className="bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/5 rounded-3xl p-8 sm:p-10 text-left shadow-sm">
+                <h4 className="text-sm font-semibold mb-3 text-zinc-900 dark:text-white">{settings.ethics_heading || 'Ethics & Safety'}</h4>
                 <div 
-                  className="text-xs sm:text-sm font-extrabold text-black dark:text-zinc-100 leading-relaxed max-w-3xl"
+                  className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-3xl"
                   dangerouslySetInnerHTML={{ __html: settings.ethics_discrimination_text }}
                 />
               </div>
@@ -336,18 +334,18 @@ function Footer() {
 
         {settings.important_notice && (
           <div className="max-w-4xl w-full mb-12">
-            <div className="bg-red-50 border-2 border-red-200 rounded-[2rem] p-8 sm:p-12 text-left shadow-sm">
-              <h4 className="text-xs font-black text-red-600 mb-5 uppercase tracking-[0.4em] border-b border-red-200 pb-3">{settings.important_notice_heading || 'Important Notice'}</h4>
+            <div className="bg-blue-50/50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-3xl p-8 sm:p-10 text-left">
+              <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2">{settings.important_notice_heading || 'Notice'}</h4>
               <div 
-                className="text-base sm:text-lg font-black text-red-950 italic leading-snug max-w-3xl"
+                className="text-sm text-blue-800 dark:text-blue-200/80 leading-relaxed max-w-3xl"
                 dangerouslySetInnerHTML={{ __html: settings.important_notice }}
               />
             </div>
           </div>
         )}
 
-        <div className="text-[10px] font-black uppercase tracking-[0.25em] flex flex-col items-center gap-3 text-black dark:text-zinc-200">
-          <span>&copy; 2026 {settings.site_title}. Verified Platform.</span>
+        <div className="text-xs text-zinc-400 flex flex-col items-center gap-4">
+          <span>&copy; {new Date().getFullYear()} {settings.site_title}.</span>
           <SyncStatus />
         </div>
       </div>
@@ -402,29 +400,29 @@ function SyncStatus() {
         <button 
           onClick={handleForceSync}
           disabled={syncing}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter transition-all hover:scale-105 active:scale-95 ${isConnected === true ? (isLive ? 'bg-green-500/10 text-green-500' : 'bg-amber-500/10 text-amber-500') : isConnected === false ? 'bg-red-500/10 text-red-500' : 'bg-slate-500/10 text-slate-500'}`}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${isConnected === true ? (isLive ? 'bg-green-500/10 text-green-600 shadow-sm' : 'bg-orange-500/10 text-orange-600 shadow-sm') : isConnected === false ? 'bg-red-500/10 text-red-600 shadow-sm' : 'bg-slate-500/10 text-slate-500 text-slate-400'}`}
         >
-          <div className={`w-1.5 h-1.5 rounded-full ${syncing ? 'bg-blue-500 animate-spin' : isConnected === true ? (isLive ? 'bg-green-500' : 'bg-amber-500') : isConnected === false ? 'bg-red-500' : 'bg-slate-500 animate-pulse'}`}></div>
-          {syncing ? 'Syncing...' : isConnected === true ? (isLive ? 'Cloud: Live' : 'Cloud: Cache') : isConnected === false ? 'Offline' : 'Connecting...'}
+          <div className={`w-1.5 h-1.5 rounded-full ${syncing ? 'bg-blue-500 animate-spin' : isConnected === true ? (isLive ? 'bg-green-500' : 'bg-orange-500') : isConnected === false ? 'bg-red-500' : 'bg-slate-400 animate-pulse'}`}></div>
+          {syncing ? 'Syncing...' : isConnected === true ? (isLive ? 'Live' : 'Cached') : isConnected === false ? 'Offline' : 'Connecting'}
         </button>
         {lastSyncTime && (
-          <span className="text-[8px] text-slate-400 font-bold">Updated: {lastSyncTime}</span>
+          <span className="text-[10px] text-zinc-400">Updated: {lastSyncTime}</span>
         )}
       </div>
       
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 mt-1">
         <button 
           onClick={handleTestConnection}
           disabled={testing}
-          className="text-[9px] text-blue-500 hover:text-blue-600 font-black uppercase tracking-widest flex items-center gap-1"
+          className="text-[11px] text-blue-500 hover:text-blue-600 font-medium transition-colors"
         >
-          {testing ? 'Testing...' : 'Test Connection'}
+          {testing ? 'Testing...' : 'Diagnostics'}
         </button>
         <button 
           onClick={handleClearCache}
-          className={`text-[9px] font-black uppercase tracking-widest transition-all ${confirmClear ? 'text-rose-500 scale-105' : 'text-slate-500 hover:text-slate-700 underline decoration-slate-500/20'}`}
+          className={`text-[11px] font-medium transition-colors ${confirmClear ? 'text-red-500' : 'text-zinc-500 hover:text-zinc-700'}`}
         >
-          {confirmClear ? 'Tap to Confirm Reset' : 'Reset Cache'}
+          {confirmClear ? 'Confirm Reset' : 'Reset'}
         </button>
       </div>
     </div>
@@ -464,10 +462,10 @@ function BackToTop() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.8, y: 20 }}
           onClick={scrollToTop}
-          className="fixed bottom-24 md:bottom-8 right-6 z-50 p-4 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-2xl shadow-red-600/40 border-2 border-white/20 transition-all hover:scale-110 active:scale-95"
+          className="fixed bottom-24 md:bottom-8 right-6 z-50 p-4 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-full shadow-lg border border-black/5 dark:border-white/10 transition-transform hover:scale-110 active:scale-95"
           aria-label="Back to top"
         >
-          <ArrowRight className="w-6 h-6 -rotate-90" />
+          <ArrowRight className="w-5 h-5 -rotate-90 opacity-70" />
         </motion.button>
       )}
     </AnimatePresence>
@@ -477,8 +475,8 @@ function BackToTop() {
 function LoadingScreen() {
   return (
     <div className="flex flex-col items-center justify-center py-20 min-h-[40vh]">
-      <div className="w-10 h-10 border-3 border-red-600/20 border-t-red-600 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(220,38,38,0.2)]"></div>
-      <p className="text-[10px] font-black uppercase tracking-[0.6em] text-red-600 italic animate-pulse">Syncing Hub...</p>
+      <div className="w-8 h-8 border-[3px] border-black/10 dark:border-white/10 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+      <p className="text-sm font-medium tracking-wide text-zinc-500 animate-pulse">Loading...</p>
     </div>
   );
 }
@@ -523,11 +521,9 @@ function AppContent() {
     if (settings.favicon_url) {
       const targetUrl = settings.favicon_url;
       const icons = [
-        { rel: 'icon', sizes: '192x192' },
-        { rel: 'icon', sizes: '32x32' },
-        { rel: 'icon', sizes: '16x16' },
-        { rel: 'shortcut icon', sizes: 'any' },
-        { rel: 'apple-touch-icon', sizes: '180x180' }
+        { rel: 'icon' },
+        { rel: 'shortcut icon' },
+        { rel: 'apple-touch-icon' }
       ];
       
       // Remove old icons to prevent duplicates
@@ -537,16 +533,14 @@ function AppContent() {
         const newLink = document.createElement('link');
         newLink.rel = iconDef.rel;
         newLink.href = targetUrl;
-        if (iconDef.sizes && iconDef.sizes !== 'any') {
-          newLink.setAttribute('sizes', iconDef.sizes);
-        }
         document.head.appendChild(newLink);
       });
       
       // Attempt to also update the parent document element if we are within an iframe of the same origin (such as preview environments relative hosting)
       try {
         if (window.parent && window.parent !== window && window.parent.document) {
-          rels.forEach(rel => {
+          icons.forEach(iconDef => {
+            const rel = iconDef.rel;
             let parentLink: HTMLLinkElement | null = window.parent.document.querySelector(`link[rel="${rel}"]`) || window.parent.document.querySelector(`link[rel*="${rel}"]`);
             if (parentLink) {
               parentLink.href = targetUrl;
@@ -572,7 +566,7 @@ function AppContent() {
   }, [isAdminPath]);
 
   return (
-    <div className="flex flex-col min-h-screen selection:bg-red-600/20">
+    <div className="flex flex-col min-h-screen">
       <ScrollToTop />
       <Ticker />
       {memoizedHeader}
@@ -644,7 +638,7 @@ function BottomNav() {
     if (window.navigator && window.navigator.vibrate) {
       setTimeout(() => {
         try {
-          window.navigator.vibrate(10);
+          window.navigator.vibrate(15);
         } catch (e) {}
       }, 0);
     }
@@ -653,36 +647,34 @@ function BottomNav() {
   const isActive = (path: string) => pathname === path;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-transparent md:hidden pb-safe">
-      <div className="flex justify-around items-center h-12 max-w-sm mx-auto px-1">
-        <Link to="/videos" onClick={triggerHaptic} className={`flex flex-col items-center gap-0 group relative transition-all duration-200 ${isActive('/videos') ? 'scale-105' : ''}`}>
-          <Video className={`w-3.5 h-3.5 transition-colors ${isActive('/videos') ? 'text-red-600' : 'opacity-40'}`} />
-          <span className={`text-[6px] font-black uppercase tracking-tighter transition-colors ${isActive('/videos') ? 'text-red-600' : 'opacity-40'}`}>Videos</span>
-        </Link>
-        <Link to="/new-apps" onClick={triggerHaptic} className={`flex flex-col items-center gap-0 group relative transition-all duration-200 ${isActive('/new-apps') ? 'scale-105' : ''}`}>
-          <Sparkles className={`w-3.5 h-3.5 transition-colors ${isActive('/new-apps') ? 'text-red-600' : 'opacity-40'}`} />
-          <span className={`text-[6px] font-black uppercase tracking-tighter transition-colors ${isActive('/new-apps') ? 'text-red-600' : 'opacity-40'}`}>Hot</span>
-        </Link>
-        
-        <Link to="/" onClick={triggerHaptic} className="flex flex-col items-center group -mt-4 relative transition-all duration-200">
-          <motion.div 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.9 }}
-            className={`bg-red-600 text-white p-2 rounded-xl shadow-lg border border-white/20 transition-all ${pathname === '/' ? 'ring-2 ring-red-600/20 scale-110' : 'opacity-90'}`}
-          >
-            <LayoutGrid className="w-3.5 h-3.5" />
-          </motion.div>
-          <span className={`text-[6px] font-black uppercase tracking-tighter mt-1 drop-shadow-sm ${pathname === '/' ? 'text-red-600' : 'text-red-500 opacity-60'}`}>Home</span>
-        </Link>
-
-        <Link to="/news" onClick={triggerHaptic} className={`flex flex-col items-center gap-0 group relative transition-all duration-200 ${isActive('/news') ? 'scale-105' : ''}`}>
-          <Newspaper className={`w-3.5 h-3.5 transition-colors ${isActive('/news') ? 'text-red-600' : 'opacity-40'}`} />
-          <span className={`text-[6px] font-black uppercase tracking-tighter transition-colors ${isActive('/news') ? 'text-red-600' : 'opacity-40'}`}>News</span>
-        </Link>
-        <Link to="/contact" onClick={triggerHaptic} className={`flex flex-col items-center gap-0 group relative transition-all duration-200 ${isActive('/contact') ? 'scale-105' : ''}`}>
-          <Info className={`w-3.5 h-3.5 transition-colors ${isActive('/contact') ? 'text-red-600' : 'opacity-40'}`} />
-          <span className={`text-[6px] font-black uppercase tracking-tighter transition-colors ${isActive('/contact') ? 'text-red-600' : 'opacity-40'}`}>Help</span>
-        </Link>
+    <div className="fixed bottom-4 left-0 right-0 z-50 flex justify-center pointer-events-none md:hidden pb-safe px-4">
+      <div className="flex items-center gap-1.5 p-1.5 pointer-events-auto bg-transparent w-auto max-w-full overflow-x-auto no-scrollbar scroll-smooth">
+        {[
+          { icon: Video, label: 'Videos', path: '/videos' },
+          { icon: Sparkles, label: 'New', path: '/new-apps' },
+          { icon: LayoutGrid, label: 'Home', path: '/' },
+          { icon: Newspaper, label: 'News', path: '/news' },
+          { icon: Info, label: 'Help', path: '/contact' }
+        ].map((item) => {
+          const active = isActive(item.path);
+          return (
+            <Link 
+              key={item.path}
+              to={item.path} 
+              onClick={triggerHaptic} 
+              className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all active:scale-[0.85] ${
+                active 
+                  ? 'bg-transparent text-blue-600 dark:text-blue-400 font-extrabold' 
+                  : 'bg-transparent text-zinc-700 dark:text-zinc-300'
+              }`}
+            >
+              <item.icon className={`w-[18px] h-[18px] ${active ? '' : 'opacity-80'}`} />
+              <span className={`text-[11px] font-bold tracking-tight transition-all duration-300 ${active ? 'max-w-[40px] opacity-100' : 'max-w-0 opacity-0 overflow-hidden'}`}>
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

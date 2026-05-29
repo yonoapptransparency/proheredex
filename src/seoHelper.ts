@@ -20,23 +20,28 @@ async function fetchStoreData() {
   }
 
   try {
-    const appsChunkUrl = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_chunk_0`;
-    const settingsUrl = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/settings`;
+    const chunkPromises = Array.from({ length: 5 }).map((_, i) => 
+      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_chunk_${i}`)
+        .then(res => res.ok ? res.json() : null)
+        .catch(() => null)
+    );
 
-    const [appsRes, settingsRes] = await Promise.all([
-      fetch(appsChunkUrl).catch(() => null),
-      fetch(settingsUrl).catch(() => null)
+    const settingsUrl = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/settings`;
+    
+    const [settingsRes, ...chunkResults] = await Promise.all([
+      fetch(settingsUrl).catch(() => null),
+      ...chunkPromises
     ]);
 
-    const appsData = appsRes && appsRes.ok ? await appsRes.json() : null;
-    const settingsData = settingsRes && settingsRes.ok ? await settingsRes.json() : null;
-
-    let apps = [];
-    if (appsData && appsData.fields && appsData.fields.items && appsData.fields.items.arrayValue && appsData.fields.items.arrayValue.values) {
-      apps = appsData.fields.items.arrayValue.values.map((v: any) => v.mapValue.fields);
+    let apps: any[] = [];
+    for (const chunkData of chunkResults) {
+      if (chunkData && chunkData.fields && chunkData.fields.items && chunkData.fields.items.arrayValue && chunkData.fields.items.arrayValue.values) {
+        apps = apps.concat(chunkData.fields.items.arrayValue.values.map((v: any) => v.mapValue.fields));
+      }
     }
     
     let settings = null;
+    const settingsData = settingsRes && settingsRes.ok ? await settingsRes.json() : null;
     if (settingsData && settingsData.fields) {
       settings = settingsData.fields;
     }
@@ -130,11 +135,8 @@ export async function injectSeoTags(template: string, urlPath: string): Promise<
     ${ogImage ? `<meta name="twitter:image" content="${escapeHtml(ogImage)}" />` : ''}
     ${faviconUrl ? `
     <link rel="icon" type="image/x-icon" href="${escapeHtml(faviconUrl)}" />
-    <link rel="icon" type="image/png" sizes="192x192" href="${escapeHtml(faviconUrl)}" />
-    <link rel="icon" type="image/png" sizes="32x32" href="${escapeHtml(faviconUrl)}" />
-    <link rel="icon" type="image/png" sizes="16x16" href="${escapeHtml(faviconUrl)}" />
     <link rel="shortcut icon" href="${escapeHtml(faviconUrl)}" />
-    <link rel="apple-touch-icon" sizes="180x180" href="${escapeHtml(faviconUrl)}" />
+    <link rel="apple-touch-icon" href="${escapeHtml(faviconUrl)}" />
     ` : ''}
   `;
 

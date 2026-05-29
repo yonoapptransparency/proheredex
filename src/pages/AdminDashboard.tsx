@@ -162,7 +162,7 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">SEO Keywords (Comma Separated)</label>
-              <input type="text" name="seo_keywords" defaultValue={editApp?.seo_keywords} placeholder="e.g., vpn, privacy, security app" className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
+              <input type="text" name="seo_keywords" defaultValue={editApp?.seo_keywords} placeholder="e.g., vpn, privacy, util app" className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">SEO OG Image URL (Social Sharing)</label>
@@ -226,8 +226,8 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
           </div>
 
           <div className="border border-black/10 dark:border-white/10 rounded-xl p-4 bg-black/5 dark:bg-white/5 space-y-4">
-             <h3 className="font-bold text-lg dark:text-white flex items-center gap-2"><LinkIcon className="w-4 h-4 text-pink-500"/> Private Access Clearance Config</h3>
-             <label className="block text-sm font-medium opacity-60 dark:text-white">Secure Payload Access Link</label>
+             <h3 className="font-bold text-lg dark:text-white flex items-center gap-2"><LinkIcon className="w-4 h-4 text-pink-500"/> File Access Config</h3>
+             <label className="block text-sm font-medium opacity-60 dark:text-white">Access Content Link</label>
              <input type="url" name="download_url" defaultValue={editApp?.encrypted_download_url} className="w-full bg-white dark:bg-slate-900 border border-pink-500/30 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
           </div>
 
@@ -255,13 +255,13 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
             </div>
             <div>
               <label className="block text-sm font-medium text-purple-500 mb-1">Extended Info Content (HTML)</label>
-              <textarea name="custom_admin_box_html" defaultValue={editApp?.custom_admin_box_html || ''} rows={4} className="w-full bg-purple-500/5 border border-purple-500/20 rounded-lg p-3 dark:text-white font-mono text-xs"></textarea>
+              <textarea name="custom_admin_box_html" defaultValue={editApp?.custom_admin_box_html || ''} rows={10} className="w-full bg-purple-500/5 border border-purple-500/20 rounded-sm p-1.5 dark:text-white font-mono text-sm"></textarea>
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">Full Application Description (HTML)</label>
-            <textarea name="description_html" defaultValue={editApp?.description_html} rows={10} placeholder="<h1>Title</h1><p>Description here...</p>" className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 dark:text-white font-mono text-xs"></textarea>
+            <textarea name="description_html" defaultValue={editApp?.description_html} rows={16} placeholder="<h1>Title</h1><p>Description here...</p>" className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm p-1.5 focus:ring-2 focus:ring-pink-500 dark:text-white font-mono text-sm"></textarea>
           </div>
 
           <div className="border border-black/10 dark:border-white/10 rounded-xl p-4 bg-black/5 dark:bg-white/5">
@@ -398,11 +398,11 @@ const SettingsTab = React.memo(({ mockSettings, handleSaveSettings, saving }: an
             <input type="text" name="favicon_url" defaultValue={mockSettings.favicon_url} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition-all dark:text-white font-bold" />
           </div>
           <div>
-            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Secure Index Heading</label>
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Main Index Heading</label>
             <input type="text" name="secure_index_title" defaultValue={mockSettings.secure_index_title || 'Secure Index'} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition-all dark:text-white font-bold" />
           </div>
           <div>
-            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Secure Index Subtitle Caption</label>
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Main Index Subtitle</label>
             <input type="text" name="secure_index_subtitle" defaultValue={mockSettings.secure_index_subtitle || 'Verified & Transparent App Marketplace'} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition-all dark:text-white font-bold" />
           </div>
         </div>
@@ -413,19 +413,19 @@ const SettingsTab = React.memo(({ mockSettings, handleSaveSettings, saving }: an
         <div className="grid gap-6">
           <div>
             <label className="block text-[11px] font-black text-pink-500 mb-1 uppercase tracking-widest">About Us Page Content (HTML)</label>
-            <textarea name="about_content" rows={6} defaultValue={mockSettings.about_content} className="w-full bg-slate-900 border-2 border-pink-500/20 rounded-2xl p-5 text-pink-400 font-mono text-xs focus:border-pink-500 outline-none transition-all shadow-inner"></textarea>
+            <textarea name="about_content" rows={12} defaultValue={mockSettings.about_content} className="w-full bg-slate-900 border border-pink-500/20 rounded-sm p-1.5 text-pink-400 font-mono text-sm focus:border-pink-500 outline-none transition-all shadow-inner"></textarea>
           </div>
           <div>
             <label className="block text-[11px] font-black text-pink-500 mb-1 uppercase tracking-widest">Privacy Policy Body (HTML)</label>
-            <textarea name="privacy_content" rows={8} defaultValue={mockSettings.privacy_content} className="w-full bg-slate-900 border-2 border-pink-500/20 rounded-2xl p-5 text-pink-400 font-mono text-xs focus:border-pink-500 outline-none transition-all shadow-inner"></textarea>
+            <textarea name="privacy_content" rows={12} defaultValue={mockSettings.privacy_content} className="w-full bg-slate-900 border border-pink-500/20 rounded-sm p-1.5 text-pink-400 font-mono text-sm focus:border-pink-500 outline-none transition-all shadow-inner"></textarea>
           </div>
           <div>
             <label className="block text-[11px] font-black text-pink-500 mb-1 uppercase tracking-widest">Terms & Conditions Body (HTML)</label>
-            <textarea name="terms_content" rows={8} defaultValue={mockSettings.terms_content} className="w-full bg-slate-900 border-2 border-pink-500/20 rounded-2xl p-5 text-pink-400 font-mono text-xs focus:border-pink-500 outline-none transition-all shadow-inner"></textarea>
+            <textarea name="terms_content" rows={12} defaultValue={mockSettings.terms_content} className="w-full bg-slate-900 border border-pink-500/20 rounded-sm p-1.5 text-pink-400 font-mono text-sm focus:border-pink-500 outline-none transition-all shadow-inner"></textarea>
           </div>
           <div>
             <label className="block text-[11px] font-black text-rose-500 mb-1 uppercase tracking-widest underline italic">Platform Responsibility Clause (HTML)</label>
-            <textarea name="responsibility_content" rows={6} defaultValue={mockSettings.responsibility_content} className="w-full bg-slate-900 border-2 border-rose-500/30 rounded-2xl p-5 text-rose-400 font-mono text-xs focus:border-rose-500 outline-none transition-all shadow-inner" placeholder="<p>Our commitment to user safety...</p>"></textarea>
+            <textarea name="responsibility_content" rows={12} defaultValue={mockSettings.responsibility_content} className="w-full bg-slate-900 border border-rose-500/30 rounded-sm p-1.5 text-rose-400 font-mono text-sm focus:border-rose-500 outline-none transition-all shadow-inner" placeholder="<p>Our commitment to user safety...</p>"></textarea>
           </div>
         </div>
       </div>
@@ -813,7 +813,7 @@ const NewsTab = React.memo(({ newsList, handleAddNews, handleDeleteNews, handleN
               <h3 className="font-black text-xs uppercase tracking-[0.3em] text-pink-500 italic pb-2 border-b border-pink-500/10 mt-8">Full Content Editor</h3>
               <div>
                 <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">News Body (Markdown/HTML)</label>
-                <textarea value={item.content} onChange={e => handleNewsChange(item.id, 'content', e.target.value)} rows={12} className="w-full bg-slate-900 border-2 border-pink-500/20 rounded-2xl py-3 px-5 text-pink-500 font-mono text-xs focus:border-pink-500 outline-none shadow-inner"></textarea>
+                <textarea value={item.content} onChange={e => handleNewsChange(item.id, 'content', e.target.value)} rows={16} className="w-full bg-slate-900 border border-pink-500/20 rounded-sm p-1.5 text-pink-500 font-mono text-sm focus:border-pink-500 outline-none shadow-inner"></textarea>
               </div>
             </div>
           </div>
@@ -890,7 +890,7 @@ const BlogsTab = React.memo(({ blogs, handleAddBlog, handleDeleteBlog, handleBlo
             </div>
             <div className="space-y-6">
               <label className="block text-[10px] font-black text-pink-500 mb-1 uppercase tracking-[0.3em] italic">Full HTML Content (Tiptap / Raw HTML)</label>
-              <textarea value={blog.content} onChange={(e) => handleBlogChange(blog.id, 'content', e.target.value)} className="w-full bg-slate-900 border-2 border-pink-500/20 rounded-2xl p-5 text-pink-500 font-mono text-xs shadow-inner h-[400px]" placeholder="Full HTML Content"></textarea>
+              <textarea value={blog.content} onChange={(e) => handleBlogChange(blog.id, 'content', e.target.value)} className="w-full bg-slate-900 border border-pink-500/20 rounded-sm p-1.5 text-pink-500 font-mono text-sm shadow-inner min-h-[400px]" placeholder="Full HTML Content"></textarea>
             </div>
           </div>
         </div>
@@ -1258,7 +1258,7 @@ export default function AdminDashboard() {
         name,
         slug,
         seo_title: formData.get('seo_title') as string || name,
-        seo_description: formData.get('seo_description') as string || (formData.get('description_html') as string)?.replace(/<[^>]*>?/gm, '').substring(0, 160) || '',
+        seo_description: formData.get('seo_description') as string || (formData.get('description_html') as string)?.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim().substring(0, 160) || '',
         seo_keywords: formData.get('seo_keywords') as string || '',
         og_image_url: formData.get('og_image_url') as string || '',
         canonical_url: formData.get('canonical_url') as string || '',

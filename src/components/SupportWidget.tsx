@@ -24,11 +24,11 @@ export default function SupportWidget() {
     <div className="relative inline-block z-50">
       <button
         onClick={toggleWidget}
-        className="flex items-center gap-2 w-10 h-10 lg:w-auto lg:h-11 lg:px-4 justify-center bg-white border border-black/5 rounded-full text-red-600 hover:brightness-110 shadow-sm transition-all hover:scale-105 active:scale-95 shrink-0"
+        className="flex items-center gap-2 w-10 h-10 lg:w-auto lg:h-11 lg:px-4 justify-center bg-blue-50 text-blue-500 rounded-full hover:bg-blue-100 transition-colors shrink-0"
         aria-label="Support Widget"
       >
-        <MessageCircle className="w-4 h-4 lg:w-5 lg:h-5 drop-shadow-[0_0_8px_rgba(236,72,153,0.3)]" />
-        <span className="text-[10px] font-black uppercase tracking-widest hidden lg:inline italic">Sync Helper</span>
+        <MessageCircle className="w-5 h-5 lg:w-5 lg:h-5" />
+        <span className="text-[13px] font-medium hidden lg:inline">Help</span>
       </button>
 
       <AnimatePresence>
@@ -38,30 +38,30 @@ export default function SupportWidget() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 15 }}
             transition={{ type: "spring", damping: 15, stiffness: 300 }}
-            className="absolute right-0 top-full mt-4 glass-panel p-6 w-72 origin-top-right z-[100] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.3)] dark:shadow-[0_50px_100px_-20px_rgba(0,0,0,1)]"
+            className="absolute right-0 top-full mt-4 bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/10 rounded-3xl p-6 w-72 origin-top-right z-[100] shadow-xl"
           >
-            <div className="flex justify-between items-center mb-6 border-b-2 border-black/5 dark:border-white/5 pb-4">
-              <h3 className="font-black text-xs uppercase tracking-tighter dark:text-white italic">Assistance Flow</h3>
+            <div className="flex justify-between items-center mb-6 border-b border-black/5 dark:border-white/5 pb-4">
+              <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">Contact Support</h3>
               <button 
                 onClick={toggleWidget} 
-                className="p-2 rounded-xl bg-black/5 dark:bg-white/5 text-slate-500 hover:text-pink-500 transition-colors"
+                className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-700 transition-colors"
                 aria-label="Close"
               >
                 <X className="w-4 h-4"/>
               </button>
             </div>
             
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
               <a 
                 href={`https://wa.me/${(settings.helpline_whatsapp || '').replace('+','')}`} 
                 target="_blank" 
                 rel="noreferrer"
-                className="flex items-center gap-4 p-4 hover:bg-pink-600/10 rounded-[1.5rem] transition-all border-2 border-transparent hover:border-pink-500/20 group shadow-lg hover:shadow-pink-500/5 dark:text-white"
+                className="flex items-center gap-4 p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-2xl transition-all group border border-transparent hover:border-black/5"
               >
-                <div className="bg-[#25D366]/20 p-3 rounded-xl text-[#25D366] shadow-sm border border-[#25D366]/20 group-hover:scale-110 transition-transform"><MessageCircle className="w-5 h-5"/></div>
+                <div className="bg-[#25D366]/10 p-2.5 rounded-xl text-[#25D366] group-hover:scale-105 transition-transform"><MessageCircle className="w-5 h-5"/></div>
                 <div className="flex flex-col">
-                  <div className="text-xs font-black uppercase tracking-tighter italic">WhatsApp</div>
-                  <div className="text-[8px] font-bold opacity-40 uppercase tracking-widest">Instant Relay</div>
+                  <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">WhatsApp</div>
+                  <div className="text-xs text-zinc-500 font-medium">Message us</div>
                 </div>
               </a>
 
@@ -70,30 +70,30 @@ export default function SupportWidget() {
                   href={settings.helpline_telegram.startsWith('http') ? settings.helpline_telegram : `https://t.me/${settings.helpline_telegram.replace('@', '')}`} 
                   target="_blank" 
                   rel="noreferrer"
-                  className="flex items-center gap-4 p-4 hover:bg-blue-600/10 rounded-[1.5rem] transition-all border-2 border-transparent hover:border-blue-500/20 group shadow-lg hover:shadow-blue-500/5 dark:text-white"
+                  className="flex items-center gap-4 p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-2xl transition-all group border border-transparent hover:border-black/5"
                 >
-                  <div className="bg-[#0088cc]/20 p-3 rounded-xl text-[#0088cc] shadow-sm border border-[#0088cc]/20 group-hover:scale-110 transition-transform"><Send className="w-5 h-5"/></div>
+                  <div className="bg-[#0088cc]/10 p-2.5 rounded-xl text-[#0088cc] group-hover:scale-105 transition-transform"><Send className="w-5 h-5"/></div>
                   <div className="flex flex-col">
-                    <div className="text-xs font-black uppercase tracking-tighter italic">Telegram</div>
-                    <div className="text-[8px] font-bold opacity-40 uppercase tracking-widest">Global Broadcast</div>
+                    <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Telegram</div>
+                    <div className="text-xs text-zinc-500 font-medium">Chat now</div>
                   </div>
                 </a>
               )}
               
               <a 
                 href={`mailto:${settings.support_email}`} 
-                className="flex items-center gap-4 p-4 hover:bg-pink-600/10 rounded-[1.5rem] transition-all border-2 border-transparent hover:border-pink-500/20 group shadow-lg hover:shadow-pink-500/5 dark:text-white"
+                className="flex items-center gap-4 p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-2xl transition-all group border border-transparent hover:border-black/5"
               >
-                <div className="bg-pink-500/20 p-3 rounded-xl text-pink-600 shadow-sm border border-pink-500/20 group-hover:scale-110 transition-transform"><Mail className="w-5 h-5"/></div>
+                <div className="bg-blue-500/10 p-2.5 rounded-xl text-blue-500 group-hover:scale-105 transition-transform"><Mail className="w-5 h-5"/></div>
                 <div className="flex flex-col truncate">
-                  <div className="text-xs font-black uppercase tracking-tighter italic">Direct Mail</div>
-                  <div className="text-[9px] font-bold opacity-40 uppercase tracking-widest truncate">{protectedEmail}</div>
+                  <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Email</div>
+                  <div className="text-xs text-zinc-500 font-medium truncate">{protectedEmail}</div>
                 </div>
               </a>
             </div>
             
             <div className="mt-6 pt-4 text-center border-t border-black/5 dark:border-white/5">
-                <p className="text-[7px] font-black uppercase tracking-[0.3em] opacity-30 italic dark:text-white italic">Administrator Verified Channel</p>
+                <p className="text-[10px] font-medium text-zinc-400">Response time: Usually within 24 hours</p>
             </div>
           </motion.div>
         )}

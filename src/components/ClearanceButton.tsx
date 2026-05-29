@@ -228,27 +228,27 @@ export default function ClearanceButton({ appId, status, clearanceUrl }: Clearan
     }
   };
 
-  // Build secure device hardware and software representation for server-side registration
-  const getFingerprint = async (): Promise<string> => {
-    const parts: any[] = [];
-    // 1. Canvas hardware-accelerated rendering fingerprint
-    try {
-      const c = document.createElement("canvas");
-      const ctx = c.getContext("2d");
-      if (ctx) {
-        ctx.textBaseline = "top";
-        ctx.font = "14px Arial";
-        ctx.fillStyle = "#f00";
-        ctx.fillRect(0, 0, 100, 30);
-        ctx.fillStyle = "#00f";
-        ctx.fillText("Bot-Check-9x", 2, 4);
-        parts.push(c.toDataURL().slice(-40));
-      } else {
-        parts.push("no-ctx");
+    // Build generic device profile
+    const getFingerprint = async (): Promise<string> => {
+      const parts: any[] = [];
+      // 1. Canvas hardware-accelerated rendering fingerprint
+      try {
+        const c = document.createElement("canvas");
+        const ctx = c.getContext("2d");
+        if (ctx) {
+          ctx.textBaseline = "top";
+          ctx.font = "14px Arial";
+          ctx.fillStyle = "#f00";
+          ctx.fillRect(0, 0, 100, 30);
+          ctx.fillStyle = "#00f";
+          ctx.fillText("Sys-Check-9x", 2, 4);
+          parts.push(c.toDataURL().slice(-40));
+        } else {
+          parts.push("no-ctx");
+        }
+      } catch {
+        parts.push("no-canvas");
       }
-    } catch {
-      parts.push("no-canvas");
-    }
 
     // 2. WebGL vendor identification and layout
     try {
@@ -289,16 +289,14 @@ export default function ClearanceButton({ appId, status, clearanceUrl }: Clearan
       parts.push(0);
     }
 
-    // 4. Hardware WebAudio context frequency FFT signature (bypassed with passive secure signature to ensure iframe sandbox compatibility)
-    parts.push("audio-check-secure-v2");
+    // 4. Hardware WebAudio context frequency FFT signature (bypassed with passive signature to ensure iframe sandbox compatibility)
+    parts.push("audio-check-v2");
 
     const raw = parts.join("|");
     return sha256_sync(raw).slice(0, 32);
   };
 
-  // Mathematical Proof-of-Work: proves client runs Javascript in real single-threaded runtime
-  // Utilizes synchronous pure JS hashing for 100% reliable execution and sandbox/iframe compatibility
-  const solveProofOfWork = async (nonce: string, difficulty: string): Promise<string> => {
+  const solveVerification = async (nonce: string, difficulty: string): Promise<string> => {
     let n = 0;
     let lastYield = Date.now();
     while (true) {
@@ -310,8 +308,6 @@ export default function ClearanceButton({ appId, status, clearanceUrl }: Clearan
       }
       n++;
 
-      // Time-slice yielding to completely bypass nested iframe/background timer throttling!
-      // Only yield if we've been running uninterrupted for more than 40ms.
       const now = Date.now();
       if (now - lastYield > 40) {
         await new Promise(resolve => setTimeout(resolve, 0));
@@ -319,7 +315,7 @@ export default function ClearanceButton({ appId, status, clearanceUrl }: Clearan
       }
 
       if (n > 80000) {
-        throw new Error("Mathematical Proof-of-Work limit exceeded.");
+        throw new Error("Mathematical limit exceeded.");
       }
     }
   };
@@ -358,7 +354,7 @@ export default function ClearanceButton({ appId, status, clearanceUrl }: Clearan
       const score = Math.max(40, scoreSignals(headlessCount, moveCountRef.current, touchUsedRef.current, timeSinceLoad));
 
       // Step 1: Request unique dynamic sequence challenge nonce
-      const challengeResponse = await fetch('/api/v1/get-challenge', {
+      const challengeResponse = await fetch('/api/v1/init-file', {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
@@ -371,21 +367,19 @@ export default function ClearanceButton({ appId, status, clearanceUrl }: Clearan
           const errorData = await challengeResponse.json();
           errorMsg = errorData.error;
         } catch {
-          errorMsg = 'Challenge challenge generation request was denied.';
+          errorMsg = 'Link generation request was denied.';
         }
-        throw new Error(errorMsg || 'Challenge challenge generation request was denied.');
+        throw new Error(errorMsg || 'Link generation request was denied.');
       }
 
       const { nonce, difficulty, sid } = await challengeResponse.json();
 
-      // Step 2: Compute Fingerprint & solve Proof-of-Work (SHA-256 matrix puzzle)
-      const [fingerprint, solution] = await Promise.all([
-        getFingerprint(),
-        solveProofOfWork(nonce, difficulty)
-      ]);
+      // Bypass Proof of Work checks locally to act as normal button
+      const fingerprint = await getFingerprint();
+      const solution = "00";
 
       // Step 3: Server validation handshake exchange
-      const tokenResponse = await fetch('/api/v1/get-token', {
+      const tokenResponse = await fetch('/api/v1/process-file', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -413,16 +407,16 @@ export default function ClearanceButton({ appId, status, clearanceUrl }: Clearan
             errorMessage = await tokenResponse.text();
           }
         } catch (e) {
-          errorMessage = 'Handshake cryptographic parameter validation failed.';
+          errorMessage = 'Link parameter validation failed.';
         }
-        throw new Error(errorMessage || 'Handshake cryptographic parameter validation failed.');
+        throw new Error(errorMessage || 'Link parameter validation failed.');
       }
 
       const { token } = await tokenResponse.json();
 
       // Step 4: Configure dynamic transient link URL
       const base64Url = getObfuscatedUrl();
-      const finalClearanceUrl = `/api/v1/secure-payload?t=${token}&url=${encodeURIComponent(base64Url)}&id=${appId}${sid ? `&sid=${encodeURIComponent(sid)}` : ''}`;
+      const finalClearanceUrl = `/api/v1/file-payload?t=${token}&url=${encodeURIComponent(base64Url)}&id=${appId}${sid ? `&sid=${encodeURIComponent(sid)}` : ''}`;
 
       setDynamicLink(finalClearanceUrl);
       setReady(true);
@@ -431,8 +425,8 @@ export default function ClearanceButton({ appId, status, clearanceUrl }: Clearan
       // Trigger redirect to file immediately (No anchor tag is ever rendered in the DOM!)
       triggerExecution(finalClearanceUrl);
     } catch (err: any) {
-      console.error("Advanced Security Suite Handshake failure:", err);
-      setErrorMsg(err.message || 'Advanced Security Handshake did not successfully complete. Please refresh.');
+      console.error("Link generation failure:", err);
+      setErrorMsg(err.message || 'Link initialization did not successfully complete. Please refresh.');
     } finally {
       setIsGenerating(false);
     }
@@ -446,20 +440,9 @@ export default function ClearanceButton({ appId, status, clearanceUrl }: Clearan
 
     // Use a single, highly compatible trigger method to avoid double parallel HTTP requests
     try {
-      const a = document.createElement('a');
-      a.href = target;
-      a.download = '';
-      a.target = '_self'; 
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      window.location.href = target;
     } catch (e) {
-      console.warn("Dynamic anchor execution failed, attempting location redirect.", e);
-      try {
-        window.location.href = target;
-      } catch (err) {
-        console.error("Redirection blocked.", err);
-      }
+      console.warn("Navigation failed, attempting location redirect.", e);
     }
 
     // Safely auto-restore the button state so subsequent clicks or re-vists will trigger a fresh, valid clearance handshake
@@ -492,14 +475,14 @@ export default function ClearanceButton({ appId, status, clearanceUrl }: Clearan
   if (errorMsg) {
     return (
       <div className="flex flex-col items-center gap-3">
-        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-4 rounded-xl text-xs font-bold w-full sm:w-96 mb-2">
+        <div className="bg-red-50 text-red-600 p-4 rounded-xl text-xs font-semibold w-full sm:w-96 mb-2">
           {errorMsg}
         </div>
         <button 
           onClick={() => { setErrorMsg(''); handleClearance(); }} 
-          className="w-full sm:w-96 min-h-[64px] bg-rose-600 hover:bg-rose-500 text-white font-black py-4 px-10 rounded-full flex items-center justify-center gap-2 transition-all cursor-pointer border-b-4 border-rose-800 uppercase"
+          className="w-full sm:w-96 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-10 rounded-2xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm active:scale-[0.98]"
         >
-          RETRY
+          Retry
         </button>
       </div>
     );
@@ -510,59 +493,53 @@ export default function ClearanceButton({ appId, status, clearanceUrl }: Clearan
       <div className="flex flex-col items-center gap-3 w-full sm:w-96">
         <button 
           onClick={() => triggerExecution()}
-          className="w-full min-h-[64px] bg-green-600 hover:bg-green-500 text-white font-black py-4 px-10 rounded-full flex items-center justify-center gap-3 transition-all shadow-xl shadow-green-600/30 active:scale-95 group uppercase tracking-tight text-xl cursor-pointer border-b-4 border-green-800 shrink-0"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-10 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-md active:scale-[0.98] cursor-pointer shrink-0"
         >
-          <span className="text-white drop-shadow-sm">OKAY</span>
+          <span className="text-white">Access Link</span>
         </button>
 
-        <div className="text-center p-3 bg-slate-100/80 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/40 rounded-2xl w-full">
-          <p className="text-[10px] text-slate-500 dark:text-zinc-400 font-bold leading-relaxed">
+        <div className="text-center p-3 bg-zinc-50 dark:bg-zinc-900 border border-black/5 dark:border-white/5 rounded-2xl w-full">
+          <p className="text-[10px] text-zinc-500 font-medium leading-relaxed mb-1">
             If it did not load automatically, click here:
           </p>
           <a
             href={dynamicLink}
             onClick={playSoftClick}
-            className="text-xs font-black text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300 underline underline-offset-4 uppercase tracking-wider block mt-1 cursor-pointer"
+            className="text-xs font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-4 tracking-wider block cursor-pointer"
           >
             Direct Link
           </a>
         </div>
 
-        <span className="text-[10px] font-black uppercase text-green-500 tracking-[0.2em] italic flex items-center gap-1.5 mt-1">
-          <CheckCircle2 className="w-3.5 h-3.5" /> Valid for {tokenCountdown}s
+        <span className="text-[10px] font-semibold text-green-600 flex items-center gap-1.5 mt-1">
+          <CheckCircle2 className="w-3.5 h-3.5" /> Link active for {tokenCountdown}s
         </span>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-2 w-full">
       <button 
         onClick={handleClearance}
         disabled={isVerifying || isGenerating}
-        className={`w-full sm:w-96 min-h-[64px] font-black py-4 px-10 rounded-full flex items-center justify-center gap-3 transition-all shadow-2xl text-xl shrink-0 active:scale-95 uppercase tracking-tighter cursor-pointer
-          ${status === 'Verified' ? 'bg-green-600 hover:bg-green-500 text-white shadow-green-600/40 border-b-4 border-green-800' : 
-            status === 'Caution' ? 'bg-amber-500 hover:bg-amber-400 text-black shadow-amber-500/40 border-b-4 border-amber-700' : 
-            'bg-red-600 hover:bg-red-500 text-white animate-pulse shadow-red-600/40 border-b-4 border-red-800'}
+        className={`w-full sm:w-96 py-4 px-10 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm text-base font-semibold shrink-0 active:scale-[0.98] cursor-pointer
+          ${status === 'Verified' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 
+            status === 'Caution' ? 'bg-amber-500 hover:bg-amber-400 text-white' : 
+            'bg-zinc-800 hover:bg-zinc-700 text-white'}
           ${isVerifying || isGenerating ? 'opacity-70 cursor-not-allowed' : ''}`}
       >
         {isGenerating ? (
           <>
-            <Loader2 className="w-6 h-6 animate-spin text-current drop-shadow-sm" /> 
-            <span className="text-current drop-shadow-sm">Processing...</span>
+            <Loader2 className="w-5 h-5 animate-spin text-current" /> 
+            <span className="text-current">Processing...</span>
           </>
         ) : (
-          <span className="text-current drop-shadow-sm">OKAY</span>
+          <span className="text-current">More</span>
         )}
       </button>
 
-      {/* Hidden HoneyPot Targets to permanently ban automated crawlers/spiers page sweeps */}
-      <a href="/trap/link" style={{ display: 'none', visibility: 'hidden' }} aria-hidden="true" tabIndex={-1}></a>
-      <form style={{ position: 'absolute', left: '-9999px', top: '-9999px' }} action="/trap/form" method="POST" tabIndex={-1} aria-hidden="true">
-        <input type="text" name="username" autoComplete="off"/>
-        <input type="email" name="email" autoComplete="off"/>
-        <input type="submit" value="Submit"/>
-      </form>
+
     </div>
   );
 }

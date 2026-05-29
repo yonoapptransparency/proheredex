@@ -88,12 +88,11 @@ export default function NewsDetailPage() {
     setCommentText('');
   };
 
-  // Initial loading phase (waiting for setup/cache checks)
   if (loading && !newsItem) {
     return (
       <div className="flex flex-col items-center justify-center py-20 min-h-[40vh]">
-        <div className="w-10 h-10 border-3 border-red-600/20 border-t-red-600 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(220,38,38,0.2)]"></div>
-        <p className="text-[10px] font-black uppercase tracking-[0.6em] text-red-600 italic animate-pulse">Loading intel feed...</p>
+        <div className="w-8 h-8 border-[3px] border-black/10 dark:border-white/10 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+        <p className="text-sm font-medium tracking-wide text-zinc-500 animate-pulse">Loading...</p>
       </div>
     );
   }
@@ -102,10 +101,10 @@ export default function NewsDetailPage() {
   if (!newsItem && (!serverNewsFetched || !newsSyncedWithServer || isRefreshing)) {
     return (
       <div className="flex flex-col items-center justify-center py-20 min-h-[40vh] text-center px-4 max-w-sm mx-auto">
-        <div className="w-10 h-10 border-3 border-red-500/20 border-t-red-500 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(239,68,68,0.2)]"></div>
-        <h3 className="text-xs font-black uppercase tracking-widest text-slate-700 mt-2">Syncing Intel Feed</h3>
-        <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
-          Retrieving live updates from our transparent security intel network. Establishing secure cloud connection...
+        <div className="w-8 h-8 border-[3px] border-black/10 dark:border-white/10 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-2">Syncing</h3>
+        <p className="text-sm text-zinc-500 mt-2 leading-relaxed">
+          Retrieving live updates from our network.
         </p>
       </div>
     );
@@ -114,16 +113,16 @@ export default function NewsDetailPage() {
   if (!newsItem) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center px-4 max-w-md mx-auto">
-        <div className="w-16 h-16 bg-red-600/10 text-red-600 rounded-2xl flex items-center justify-center mb-6 border border-red-600/20 shadow-[0_0_20px_rgba(220,38,38,0.15)]">
-          <ShieldAlert className="w-8 h-8 animate-pulse text-red-600" />
+        <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 rounded-2xl flex items-center justify-center mb-6">
+          <ShieldAlert className="w-8 h-8" />
         </div>
-        <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-800">Intel Feed Not Found</h1>
-        <p className="text-slate-500 text-sm mt-3 leading-relaxed mb-8">
-          The requested intel feed item "<span className="font-mono font-bold text-red-600">{slug}</span>" could not be located. It may have been archived, or it is taking a few moments to sync database records.
+        <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-锌-100 mb-2">News Not Found</h1>
+        <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-3 leading-relaxed mb-8">
+          The requested article "<span className="font-mono font-medium text-zinc-800 dark:text-zinc-200">{slug}</span>" could not be located.
         </p>
         <Link 
           to="/news" 
-          className="flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-red-600/20 transition-all duration-300 hover:shadow-red-600/30 hover:scale-[1.02] active:scale-[0.98]"
+          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-[16px] font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98] shadow-md"
         >
           <ArrowLeft className="w-4 h-4" /> View other news
         </Link>
@@ -160,9 +159,11 @@ export default function NewsDetailPage() {
       <div className="mb-10">
         <Link 
           to="/news" 
-          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] opacity-40 hover:opacity-100 transition-opacity"
+           className="inline-flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors group"
         >
-          <ArrowLeft className="w-3 h-3" />
+          <div className="p-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 group-hover:-translate-x-1 transition-transform">
+            <ArrowLeft className="w-4 h-4" />
+          </div>
           News Index
         </Link>
       </div>
@@ -173,87 +174,87 @@ export default function NewsDetailPage() {
       >
         <header className="mb-12">
             <div className="flex items-center gap-2 mb-6">
-                <span className="bg-red-600 text-white text-[8px] font-black px-3 py-1 rounded uppercase tracking-[0.3em] italic shadow-lg shadow-red-600/20">Official Transmission</span>
-                <span className="text-slate-400 text-[8px] font-black uppercase tracking-[0.3em]">Code: NT-{newsItem.id}</span>
+                <span className="bg-blue-50 text-blue-600 text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Official Report</span>
+                <span className="text-zinc-400 text-[10px] font-medium tracking-wider uppercase">Code: NT-{newsItem.id}</span>
             </div>
-            <h1 className="text-4xl sm:text-7xl font-black mb-8 uppercase tracking-tighter italic leading-none text-slate-900">
+            <h1 className="text-3xl sm:text-5xl font-bold mb-6 text-zinc-900 dark:text-zinc-100 tracking-tight leading-[1.1]">
                 {newsItem.title}
             </h1>
             
-            <div className="flex items-center gap-6 pb-8 border-b border-black/5">
-                <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center font-black text-2xl italic shadow-lg shadow-red-600/20 m-0">
+            <div className="flex items-center gap-4 pb-8 border-b border-black/5 dark:border-white/5">
+                <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex items-center justify-center font-bold text-xl m-0">
                    {newsItem.ceo_name ? newsItem.ceo_name.charAt(0) : 'C'}
                 </div>
                 <div>
-                    <p className="font-black text-xl uppercase tracking-tighter italic leading-none">{newsItem.ceo_name}</p>
-                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mt-1">{newsItem.ceo_description || 'Chief Intelligence Officer'}</p>
+                    <p className="font-semibold text-lg text-zinc-900 dark:text-zinc-100 leading-tight">{newsItem.ceo_name}</p>
+                    <p className="text-sm font-medium text-zinc-500 mt-0.5">{newsItem.ceo_description || 'Chief Intelligence Officer'}</p>
                 </div>
             </div>
         </header>
 
         {newsItem.logo_url && (
-            <div className="w-full aspect-video mb-12 rounded-3xl overflow-hidden shadow-lg">
+            <div className="w-full aspect-video mb-12 rounded-3xl overflow-hidden shadow-sm border border-black/5 dark:border-white/5 bg-zinc-50 dark:bg-zinc-900">
                 <img src={newsItem.logo_url} alt={newsItem.title} className="w-full h-full object-cover" />
             </div>
         )}
         
-        <div className="prose prose-slate max-w-none mb-16">
-            <p className="text-xl sm:text-2xl font-black mb-12 text-slate-900 leading-relaxed italic opacity-90">{newsItem.description}</p>
-            <div className="font-medium text-lg text-slate-600 leading-relaxed">
+        <div className="prose prose-zinc dark:prose-invert max-w-none mb-16">
+            <p className="text-xl sm:text-2xl font-medium mb-12 text-zinc-700 dark:text-zinc-300 leading-relaxed">{newsItem.description}</p>
+            <div className="font-normal text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed">
               <ReactMarkdown>{newsItem.content}</ReactMarkdown>
             </div>
         </div>
 
         {newsItem.link && (
             <div className="mb-20">
-                <a href={newsItem.link} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center min-h-[56px] px-10 bg-slate-900 text-white font-black uppercase tracking-widest text-[9px] rounded-xl hover:bg-black transition-all italic active:scale-95 shadow-xl">
+                <a href={newsItem.link} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold rounded-[16px] hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all active:scale-[0.98] shadow-md">
                     Access External Feed
                 </a>
             </div>
         )}
 
-        <footer className="border-t border-black/5 pt-12">
-            <div className="flex items-center gap-4 mb-10">
-                <MessageSquare className="w-5 h-5 text-red-600" />
-                <h3 className="text-xs font-black uppercase tracking-widest italic">Intelligence Feed ({comments.length})</h3>
+        <footer className="border-t border-black/5 dark:border-white/5 pt-12">
+            <div className="flex items-center gap-3 mb-8">
+                <MessageSquare className="w-5 h-5 text-zinc-400" />
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Discussion ({comments.length})</h3>
             </div>
             
-            <form onSubmit={handleAddComment} className="mb-14">
+            <form onSubmit={handleAddComment} className="mb-12">
                 <div className="relative">
                   <textarea
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Broadcast your thoughts..."
-                    className="w-full bg-slate-50 border border-black/5 rounded-3xl p-6 pr-20 transition-all min-h-[120px] resize-none outline-none font-bold text-slate-900 focus:bg-white focus:border-red-600/20"
+                    placeholder="Add a comment..."
+                    className="w-full bg-zinc-50 dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-2xl p-4 pr-16 transition-all min-h-[100px] resize-y focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 font-normal text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400"
                   />
                   <button
                     type="submit"
                     disabled={!commentText.trim()}
-                    className="absolute bottom-6 right-6 w-12 h-12 bg-red-600 text-white rounded-xl flex items-center justify-center hover:bg-red-700 transition-all shadow-lg shadow-red-600/20 disabled:opacity-20 active:scale-90"
+                    className="absolute bottom-4 right-4 w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition-all disabled:opacity-50 active:scale-[0.95]"
                   >
-                    <Send className="w-5 h-5" />
+                    <Send className="w-4 h-4 mr-0.5" />
                   </button>
                 </div>
             </form>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
                 {comments.map((comment) => (
                   <motion.div 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     key={comment.id} 
-                    className="p-8 border border-black/5 rounded-3xl"
+                    className="p-6 border border-black/5 dark:border-white/10 rounded-[20px] bg-white dark:bg-zinc-900"
                   >
-                    <div className="flex items-center gap-4 mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-sm italic">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center font-bold text-sm text-zinc-600 dark:text-zinc-400 shrink-0">
                             {comment.author.charAt(0)}
                         </div>
                         <div>
-                            <p className="font-black uppercase tracking-tighter italic text-sm">{comment.author}</p>
-                            <p className="text-[9px] font-black uppercase tracking-widest opacity-30">{comment.date}</p>
+                            <p className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 leading-none mb-1">{comment.author}</p>
+                            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{comment.date}</p>
                         </div>
                     </div>
-                    <p className="font-bold text-slate-600 leading-relaxed text-sm">{comment.content}</p>
+                    <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed text-sm">{comment.content}</p>
                   </motion.div>
                 ))}
             </div>

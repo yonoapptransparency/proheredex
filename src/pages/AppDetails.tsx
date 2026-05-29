@@ -51,8 +51,8 @@ export default function AppDetails() {
   if (loading && !app) {
     return (
       <div className="flex flex-col items-center justify-center py-20 min-h-[40vh]">
-        <div className="w-10 h-10 border-3 border-red-600/20 border-t-red-600 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(220,38,38,0.2)]"></div>
-        <p className="text-[10px] font-black uppercase tracking-[0.6em] text-red-600 italic animate-pulse">Loading secure files...</p>
+        <div className="w-8 h-8 border-[3px] border-black/10 dark:border-white/10 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+        <p className="text-sm font-medium tracking-wide text-zinc-500 animate-pulse">Loading...</p>
       </div>
     );
   }
@@ -61,10 +61,10 @@ export default function AppDetails() {
   if (!app && (!serverAppsFetched || !appsSyncedWithServer || isRefreshing)) {
     return (
       <div className="flex flex-col items-center justify-center py-20 min-h-[40vh] text-center px-4 max-w-sm mx-auto">
-        <div className="w-10 h-10 border-3 border-red-500/20 border-t-red-500 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(239,68,68,0.2)]"></div>
-        <h3 className="text-xs font-black uppercase tracking-widest text-slate-700 mt-2">Establishing Cloud Sync</h3>
-        <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
-          Verifying secure app listing with our server. This resolves server cold-start latency during deep links...
+        <div className="w-8 h-8 border-[3px] border-black/10 dark:border-white/10 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-2">Connecting</h3>
+        <p className="text-sm text-zinc-500 mt-2 leading-relaxed">
+          Verifying app listing with our server.
         </p>
       </div>
     );
@@ -73,18 +73,18 @@ export default function AppDetails() {
   if (!app) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center px-4 max-w-md mx-auto">
-        <div className="w-16 h-16 bg-red-600/10 text-red-600 rounded-2xl flex items-center justify-center mb-6 border border-red-600/20 shadow-[0_0_20px_rgba(220,38,38,0.15)]">
-          <ShieldAlert className="w-8 h-8 animate-pulse text-red-600" />
+        <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 rounded-2xl flex items-center justify-center mb-6">
+          <ShieldAlert className="w-8 h-8" />
         </div>
-        <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-800">Application Not Found</h1>
-        <p className="text-slate-500 text-sm mt-3 leading-relaxed mb-8">
-          The requested application "<span className="font-mono font-bold text-red-600">{slug}</span>" could not be located in our secure index. It may have been relocated, or it is taking a few moments to sync database records.
+        <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">App Not Found</h1>
+        <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-3 leading-relaxed mb-8">
+          The requested application "<span className="font-mono font-medium text-zinc-800 dark:text-zinc-200">{slug}</span>" could not be located.
         </p>
         <Link 
           to="/" 
-          className="flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-red-600/20 transition-all duration-300 hover:shadow-red-600/30 hover:scale-[1.02] active:scale-[0.98]"
+          className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-[16px] font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98] shadow-md"
         >
-          <ArrowLeft className="w-4 h-4" /> Go back to homepage
+          <ArrowLeft className="w-4 h-4" /> Go back
         </Link>
       </div>
     );
@@ -162,8 +162,7 @@ export default function AppDetails() {
         if (a.id === app.id) return false;
         const appCats = a.category ? a.category.toLowerCase().split(',').map(c => c.trim()) : [];
         return appCats.some(cat => currentCats.includes(cat));
-      })
-      .slice(0, 30);
+      });
   }, [mockApps, app.category, app.id]);
 
   return (
@@ -171,10 +170,10 @@ export default function AppDetails() {
       <div className="px-4 mb-4">
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-red-500 transition-colors group"
+          className="inline-flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors group"
         >
-          <div className="p-2 rounded-full bg-black/5 border border-black/5 group-hover:scale-110 transition-transform">
-            <ArrowLeft className="w-3.5 h-3.5" />
+          <div className="p-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 group-hover:-translate-x-1 transition-transform">
+            <ArrowLeft className="w-4 h-4" />
           </div>
           Back to storefront
         </Link>
@@ -213,34 +212,33 @@ export default function AppDetails() {
         )}
       </Helmet>
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        <div className="pt-2 pb-6 sm:pt-4 sm:pb-10 mb-6 flex flex-col items-center text-center relative transition-all duration-300 border-b border-black/5">
+        <div className="pt-2 pb-6 sm:pt-4 sm:pb-10 mb-6 flex flex-col items-center text-center relative transition-all duration-300 border-b border-black/5 dark:border-white/5">
           <div className="relative mb-6">
-            <div className="relative w-20 h-20 sm:w-32 sm:h-32 rounded-xl sm:rounded-[1.75rem] overflow-hidden shrink-0 shadow-xl bg-white border border-slate-200 group">
+            <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-[22px] overflow-hidden shrink-0 shadow-lg bg-white border border-black/5 dark:border-white/10 group">
               {app.icon_url ? (
-                <img src={app.icon_url || undefined} alt={app.name} width={128} height={128} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                <img src={app.icon_url || undefined} alt={app.name} width={128} height={128} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-3xl sm:text-5xl font-black bg-slate-800 text-slate-500 uppercase">
+                <div className="w-full h-full flex items-center justify-center text-3xl sm:text-5xl font-bold bg-zinc-800 text-zinc-500">
                   {app.name.substring(0, 1)}
                 </div>
               )}
             </div>
-            <div className="absolute -inset-3 blur-2xl bg-red-600/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
           </div>
           
           <div className="flex flex-col items-center w-full max-w-2xl px-2">
             <div className="mb-6">
-              <h1 className="text-3xl sm:text-7xl font-black tracking-tighter uppercase italic text-slate-900 leading-tight mb-4 drop-shadow-sm break-words px-4">
+              <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight mb-4 break-words px-4">
                 {app.name}
               </h1>
-              <div className="flex justify-center flex-wrap gap-3">
+              <div className="flex justify-center flex-wrap gap-2">
                 {app.is_new && (
-                  <div className="px-3 py-1 bg-red-600/10 text-red-600 text-[9px] sm:text-[11px] font-black rounded-lg uppercase tracking-widest animate-pulse border border-red-600/10 shadow-sm">
-                    NEW RELEASE
+                  <div className="px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] font-semibold rounded-full uppercase tracking-wide border border-blue-500/10">
+                    New Release
                   </div>
                 )}
                 <div className={cn(
-                  "px-3 py-1 text-[9px] sm:text-[11px] font-black rounded-lg flex items-center gap-1.5 uppercase tracking-widest border shadow-sm",
-                  app.safety_status === 'Verified' ? "bg-green-500/10 text-green-600 border-green-500/10" : "bg-amber-500/10 text-amber-600 border-amber-500/10"
+                  "px-2.5 py-1 text-[11px] font-semibold rounded-full flex items-center gap-1.5 uppercase tracking-wide border",
+                  app.safety_status === 'Verified' ? "bg-green-500/10 text-green-600 border-green-500/10" : "bg-orange-500/10 text-orange-600 border-orange-500/10"
                 )}>
                   {app.safety_status === 'Verified' ? <ShieldCheck className="w-3.5 h-3.5" /> : <ShieldAlert className="w-3.5 h-3.5" />}
                   {app.safety_status}
@@ -248,17 +246,17 @@ export default function AppDetails() {
               </div>
             </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 w-full max-w-[340px] mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-[360px] mb-8">
               {[
-                { label: 'VERSION', value: app.version },
-                { label: 'SIZE', value: app.file_size },
-                { label: 'TYPE', value: app.category.split(',')[0] },
-                { label: 'RATING', value: app.rating ? app.rating.toFixed(1) : '5.0', icon: Star },
+                { label: 'Version', value: app.version },
+                { label: 'Size', value: app.file_size },
+                { label: 'Type', value: app.category.split(',')[0] },
+                { label: 'Rating', value: app.rating ? app.rating.toFixed(1) : '5.0', icon: Star },
               ].map((item, i) => (
-                <div key={i} className="text-center group py-1 px-1.5 rounded-md bg-black/[0.015] dark:bg-white/[0.015] border border-black/[0.03] dark:border-white/[0.03] hover:border-red-500/10 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-all duration-300">
-                  <div className="text-[7.5px] mb-0.5 font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500 group-hover:text-red-500 transition-colors">{item.label}</div>
-                  <div className="font-extrabold text-[10.5px] sm:text-xs text-slate-800 dark:text-zinc-200 flex items-center justify-center gap-0.5 tracking-tight">
-                    {item.icon && <item.icon className="w-2.5 h-2.5 text-amber-500 fill-amber-500 shrink-0" />}
+                <div key={i} className="text-center py-2 px-1 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-black/5 dark:border-white/5">
+                  <div className="text-[10px] mb-1 font-semibold uppercase tracking-wider text-zinc-500">{item.label}</div>
+                  <div className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 flex items-center justify-center gap-1 tracking-tight">
+                    {item.icon && <item.icon className="w-3 h-3 text-orange-500 fill-orange-500 shrink-0" />}
                     <span className="truncate max-w-full">{item.value}</span>
                   </div>
                 </div>
@@ -266,16 +264,15 @@ export default function AppDetails() {
             </div>
   
             <motion.div
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 15 }}
-              className="w-full sm:w-auto min-w-[280px] sm:min-w-[400px] flex justify-center cursor-pointer select-none"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full sm:w-auto min-w-[280px] flex justify-center cursor-pointer select-none"
             >
               <Link 
                 to={`/info/${app.slug}`} 
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-5 px-12 rounded-2xl sm:rounded-3xl flex items-center justify-center gap-3 transition-all text-[12px] sm:text-[14px] uppercase tracking-[0.2em] italic shadow-2xl shadow-red-600/30 relative overflow-hidden group"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-10 rounded-[20px] flex items-center justify-center gap-2 transition-all text-[15px] shadow-lg shadow-blue-600/20"
               >
-                READ SECURITY & SPECS <ArrowRight className="w-5 h-5" />
+                More <ArrowRight className="w-5 h-5" />
               </Link>
             </motion.div>
           </div>
@@ -283,12 +280,12 @@ export default function AppDetails() {
 
         {relatedApps.length > 0 && (
           <div className="mb-6 px-1">
-            <div className="flex items-center justify-between mb-3 px-3">
-              <h2 className="text-[9px] font-black flex items-center gap-2 uppercase tracking-widest text-slate-500 dark:text-zinc-500 italic">
-                <Sparkles className="w-3 h-3 text-red-600" /> RECOMMENDED FOR YOU
+            <div className="flex items-center justify-between mb-4 px-3">
+              <h2 className="text-xl font-bold flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
+                You might also like
               </h2>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-2">
               {relatedApps.map((relatedApp) => (
                 <AppListItem key={relatedApp.id} app={relatedApp} index={relatedApp.serial_number} />
               ))}
@@ -298,36 +295,36 @@ export default function AppDetails() {
       </div>
 
       {/* RESTORED SAFETY & INFO BOXES */}
-      <div className="px-1 space-y-2 mb-8 max-w-2xl mx-auto">
+      <div className="px-1 space-y-3 mb-8 max-w-3xl mx-auto">
 
         {app.red_box_msg && (
-          <div className="bg-rose-500/10 border-2 border-rose-500/30 p-4 rounded-2xl flex items-start gap-4 shadow-xl shadow-rose-500/5 group hover:bg-rose-500/15 transition-all">
-            <div className="p-2 bg-rose-500 rounded-full shadow-lg shadow-rose-500/20 group-hover:scale-110 transition-transform">
-              <ShieldAlert className="w-4 h-4 text-white" />
+          <div className="bg-rose-50/50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 p-4 rounded-2xl flex items-start gap-4 shadow-sm group">
+            <div className="p-2 bg-rose-100 dark:bg-rose-500/20 rounded-xl text-rose-600 shrink-0">
+              <ShieldAlert className="w-5 h-5" />
             </div>
-            <div className="text-[10px] sm:text-[11px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-tighter italic leading-tight">
+            <div className="text-sm font-medium text-rose-800 dark:text-rose-200 leading-relaxed pt-0.5">
               {app.red_box_msg}
             </div>
           </div>
         )}
         
         {app.yellow_box_msg && (
-          <div className="bg-amber-500/10 border-2 border-amber-500/30 p-4 rounded-2xl flex items-start gap-4 shadow-xl shadow-amber-500/5 group hover:bg-amber-500/15 transition-all">
-            <div className="p-2 bg-amber-500 rounded-full shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform">
-              <Info className="w-4 h-4 text-white" />
+          <div className="bg-orange-50/50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 p-4 rounded-2xl flex items-start gap-4 shadow-sm group">
+             <div className="p-2 bg-orange-100 dark:bg-orange-500/20 rounded-xl text-orange-600 shrink-0">
+              <Info className="w-5 h-5" />
             </div>
-            <div className="text-[10px] sm:text-[11px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-tighter italic leading-tight">
+            <div className="text-sm font-medium text-orange-800 dark:text-orange-200 leading-relaxed pt-0.5">
               {app.yellow_box_msg}
             </div>
           </div>
         )}
 
         {app.idea_box_msg && (
-          <div className="bg-pink-500/10 border-2 border-pink-500/30 p-4 rounded-2xl flex items-start gap-4 shadow-xl shadow-pink-500/5 group hover:bg-pink-500/15 transition-all">
-            <div className="p-2 bg-pink-500 rounded-full shadow-lg shadow-pink-500/20 group-hover:scale-110 transition-transform">
-              <Sparkles className="w-4 h-4 text-white" />
+          <div className="bg-blue-50/50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 p-4 rounded-2xl flex items-start gap-4 shadow-sm group">
+             <div className="p-2 bg-blue-100 dark:bg-blue-500/20 rounded-xl text-blue-600 shrink-0">
+              <Sparkles className="w-5 h-5" />
             </div>
-            <div className="text-[10px] sm:text-[11px] font-black text-pink-500 dark:text-pink-400 uppercase tracking-tighter italic leading-tight">
+            <div className="text-sm font-medium text-blue-800 dark:text-blue-200 leading-relaxed pt-0.5">
               {app.idea_box_msg}
             </div>
           </div>
@@ -336,32 +333,32 @@ export default function AppDetails() {
 
       <div className="px-1 mb-8 space-y-12">
         {app.custom_admin_box_html && (
-           <div className="py-12 border-b border-black/5 relative overflow-hidden group">
+           <div className="py-8 border-b border-black/5 dark:border-white/5 relative overflow-hidden">
              {app.custom_admin_box_heading && (
-               <h2 className="text-sm font-black mb-6 flex items-center gap-2 uppercase tracking-[0.2em] italic">
-                 <ShieldCheck className="w-5 h-5 text-red-600" /> {app.custom_admin_box_heading}
+               <h2 className="text-xl font-bold mb-4 text-zinc-900 dark:text-zinc-100">
+                  {app.custom_admin_box_heading}
                </h2>
              )}
              <div 
-               className="prose prose-slate max-w-none text-lg font-medium leading-relaxed text-slate-600"
+               className="prose prose-zinc dark:prose-invert max-w-none text-base text-zinc-600 dark:text-zinc-400"
                dangerouslySetInnerHTML={{ __html: app.custom_admin_box_html }}
              />
            </div>
         )}
 
-        <div className="py-12">
-          <h2 className="text-sm font-black mb-8 flex items-center gap-2 uppercase tracking-[0.2em]">
-            <FileText className="w-5 h-5 text-red-600" /> About this application
+        <div className="py-8">
+           <h2 className="text-xl font-bold mb-4 text-zinc-900 dark:text-zinc-100">
+             About this app
           </h2>
           <div 
-            className="prose prose-slate max-w-none text-lg font-medium leading-relaxed text-slate-600 custom-description"
-            dangerouslySetInnerHTML={{ __html: app.description_html || '<p>No detailed description available yet.</p>' }}
+             className="prose prose-zinc dark:prose-invert max-w-none text-base text-zinc-600 dark:text-zinc-400"
+            dangerouslySetInnerHTML={{ __html: app.description_html || '<p>No details available.</p>' }}
           />
           
           {app.release_notes && (
-            <div className="mt-12 pt-8 border-t border-black/5">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 italic">Technical Changelog</h3>
-              <div className="bg-slate-50 rounded-2xl p-6 font-bold text-xs text-slate-500 whitespace-pre-wrap border border-black/5">
+             <div className="mt-8 pt-8 border-t border-black/5 dark:border-white/5">
+               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4">What's New</h3>
+               <div className="bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-6 text-sm text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap border border-black/5 dark:border-white/5 line-clamp-4 hover:line-clamp-none transition-all">
                 {app.release_notes}
               </div>
             </div>
@@ -370,21 +367,23 @@ export default function AppDetails() {
       </div>
       
       {app.faqs && app.faqs.length > 0 && (
-        <div className="mb-20 max-w-4xl mx-auto px-4">
-          <div className="py-12 border-t border-black/5">
-            <h2 className="text-xs font-black mb-8 flex items-center gap-2 uppercase tracking-[0.2em]">
-              <Info className="w-4 h-4 text-red-600" /> Frequently Asked Questions
+         <div className="mb-20 px-4">
+           <div className="py-8 border-t border-black/5 dark:border-white/5">
+            <h2 className="text-xl font-bold mb-6 text-zinc-900 dark:text-zinc-100">
+              Frequently Asked Questions
             </h2>
             <div className="space-y-4">
               {app.faqs.map((faq, idx) => (
-                <div key={idx} className="border-b border-black/5 pb-4">
+                 <div key={idx} className="border border-black/5 dark:border-white/10 rounded-2xl p-1 bg-white dark:bg-zinc-900 shadow-sm">
                   <details className="group">
-                    <summary className="font-black py-4 cursor-pointer select-none flex items-center justify-between group-open:text-red-600 text-lg sm:text-2xl tracking-tighter italic">
-                      <span className="flex-1">{faq.question}</span>
-                      <span className="text-2xl leading-none transition-transform group-open:rotate-45 ml-4">+</span>
+                     <summary className="font-medium p-4 cursor-pointer select-none flex items-center justify-between text-base text-zinc-900 dark:text-zinc-100">
+                      <span className="flex-1 pr-4">{faq.question}</span>
+                       <div className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 group-open:rotate-45 transition-transform shrink-0">
+                         +
+                       </div>
                     </summary>
                     <div 
-                      className="px-0 pb-6 pt-2 prose prose-slate max-w-none text-left font-medium text-lg leading-relaxed text-slate-600"
+                       className="px-4 pb-4 pt-0 text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: faq.answer }}
                     />
                   </details>

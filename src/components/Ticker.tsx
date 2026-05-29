@@ -6,17 +6,17 @@ export default function Ticker() {
   if (!settings.ticker_text) return null;
 
   return (
-    <div className="bg-transparent py-3 overflow-hidden border-b border-black/5 flex items-center relative z-[70] select-none pointer-events-none">
-      <div className="bg-red-600 w-2 h-2 rounded-full absolute left-4 z-20 animate-pulse shadow-[0_0_12px_rgba(220,38,38,0.5)]" />
+    <div className="bg-transparent py-3 overflow-hidden border-b border-black/5 dark:border-white/5 flex items-center relative z-[70] select-none pointer-events-none">
+      <div className="bg-blue-500 w-2 h-2 rounded-full absolute left-4 z-20 animate-pulse shadow-[0_0_12px_rgba(59,130,246,0.5)]" />
       
       <div className="flex whitespace-nowrap overflow-hidden pl-12 w-full relative">
         <motion.div
-          className="inline-block whitespace-nowrap min-w-full font-black text-[12px] sm:text-[14px] uppercase tracking-[0.4em] italic text-red-600 dark:text-red-500 drop-shadow-[0_2px_4px_rgba(0,0,0,0.05)]"
+          className="inline-block whitespace-nowrap min-w-full font-medium text-[13px] sm:text-[14px] tracking-wide text-zinc-600 dark:text-zinc-400"
           animate={{ x: ["0%", "-100%"] }}
           transition={{
             repeat: Infinity,
             ease: "linear",
-            duration: 15
+            duration: 20
           }}
         >
           <span className="mx-10">{settings.ticker_text}</span>

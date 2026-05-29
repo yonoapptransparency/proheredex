@@ -74,8 +74,8 @@ export default function FallbackRouteMatcher() {
   if (resolvedType === 'loading') {
     return (
       <div className="flex flex-col items-center justify-center py-20 min-h-[40vh] text-center px-4 max-w-sm mx-auto">
-        <div className="w-10 h-10 border-3 border-red-600/20 border-t-red-600 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(220,38,38,0.2)]"></div>
-        <p className="text-[10px] font-black uppercase tracking-[0.6em] text-red-600 italic animate-pulse">Resolving secure URL...</p>
+        <div className="w-8 h-8 border-[3px] border-black/10 dark:border-white/10 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+        <p className="text-sm font-medium tracking-wide text-zinc-500 animate-pulse">Resolving URL...</p>
       </div>
     );
   }
@@ -97,19 +97,19 @@ export default function FallbackRouteMatcher() {
   }
 
   return (
-    <div className="text-center py-20 text-slate-500 px-4 min-h-[40vh] flex flex-col justify-center items-center">
-      <div className="w-16 h-16 bg-red-600/10 text-red-600 rounded-2xl flex items-center justify-center mb-6 border border-red-600/20 shadow-[0_0_20px_rgba(220,38,38,0.15)] mx-auto">
-        <span className="text-2xl font-black italic">404</span>
+    <div className="text-center py-20 px-4 min-h-[40vh] flex flex-col justify-center items-center">
+      <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 rounded-2xl flex items-center justify-center mb-6">
+        <span className="text-2xl font-bold">404</span>
       </div>
-      <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-800">Connection Failed</h1>
-      <p className="max-w-md mx-auto text-sm text-slate-500 mt-3 mb-8 leading-relaxed">
-        We could not resolve this link to any secure application listing, news bulletin, or blog dispatch in our dynamic cloud repository.
+      <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Page Not Found</h1>
+      <p className="max-w-md mx-auto text-sm text-zinc-500 dark:text-zinc-400 mb-8 leading-relaxed font-medium">
+        We could not resolve this link to any application listing, news bulletin, or blog post.
       </p>
       <Link 
         to="/" 
-        className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-red-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-[16px] font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98] shadow-md"
       >
-        Return to Storefront
+        Return to Home
       </Link>
     </div>
   );

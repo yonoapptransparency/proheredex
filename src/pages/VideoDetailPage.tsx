@@ -80,12 +80,11 @@ export default function VideoDetailPage() {
     setCommentText('');
   };
 
-  // Initial loading phase (waiting for setup/cache checks)
   if (loading && !videoItem) {
     return (
       <div className="flex flex-col items-center justify-center py-20 min-h-[40vh]">
-        <div className="w-10 h-10 border-3 border-red-600/20 border-t-red-600 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(220,38,38,0.2)]"></div>
-        <p className="text-[10px] font-black uppercase tracking-[0.6em] text-red-600 italic animate-pulse">Loading secure transmission...</p>
+        <div className="w-8 h-8 border-[3px] border-black/10 dark:border-white/10 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+        <p className="text-sm font-medium tracking-wide text-zinc-500 animate-pulse">Loading transmission...</p>
       </div>
     );
   }
@@ -94,10 +93,10 @@ export default function VideoDetailPage() {
   if (!videoItem && (!serverVideosFetched || !videosSyncedWithServer || isRefreshing)) {
     return (
       <div className="flex flex-col items-center justify-center py-20 min-h-[40vh] text-center px-4 max-w-sm mx-auto">
-        <div className="w-10 h-10 border-3 border-red-500/20 border-t-red-500 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(239,68,68,0.2)]"></div>
-        <h3 className="text-xs font-black uppercase tracking-widest text-slate-700 mt-2">Syncing Transmission Feed</h3>
-        <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
-          Verifying secure transmission logs with the secure database gateway. Establishing secure cloud connection...
+        <div className="w-8 h-8 border-[3px] border-black/10 dark:border-white/10 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-2">Syncing</h3>
+        <p className="text-sm text-zinc-500 mt-2 leading-relaxed">
+          Verifying secure transmission logs with the network...
         </p>
       </div>
     );
@@ -106,16 +105,16 @@ export default function VideoDetailPage() {
   if (!videoItem) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center px-4 max-w-md mx-auto">
-        <div className="w-16 h-16 bg-red-600/10 text-red-600 rounded-2xl flex items-center justify-center mb-6 border border-red-600/20 shadow-[0_0_20px_rgba(220,38,38,0.15)]">
-          <ShieldAlert className="w-8 h-8 animate-pulse text-red-600" />
+        <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 rounded-2xl flex items-center justify-center mb-6">
+          <ShieldAlert className="w-8 h-8" />
         </div>
-        <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-800">Transmission Not Found</h1>
-        <p className="text-slate-500 text-sm mt-3 leading-relaxed mb-8">
-          The requested video transmission "<span className="font-mono font-bold text-red-600">{slug}</span>" could not be loaded. It may have been unlisted, or it is taking a few moments to sync database records.
+        <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Transmission Not Found</h1>
+        <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-3 leading-relaxed mb-8">
+          The requested video transmission "<span className="font-mono font-medium text-zinc-800 dark:text-zinc-200">{slug}</span>" could not be loaded.
         </p>
         <Link 
           to="/videos" 
-          className="flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-red-600/20 transition-all duration-300 hover:shadow-red-600/30 hover:scale-[1.02] active:scale-[0.98]"
+          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-[16px] font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98] shadow-md"
         >
           <ArrowLeft className="w-4 h-4" /> View other videos
         </Link>
@@ -137,7 +136,7 @@ export default function VideoDetailPage() {
   }
 
   return (
-    <div className="animate-fade-in max-w-4xl mx-auto pb-12">
+    <div className="animate-fade-in max-w-4xl mx-auto pb-12 px-4">
       <Helmet>
         <title>{videoItem.title} - {mockSettings.site_title}</title>
         <meta name="description" content={videoItem.description} />
@@ -150,107 +149,103 @@ export default function VideoDetailPage() {
         <meta property="og:type" content="video.other" />
       </Helmet>
       
-      <div className="mb-6">
+      <div className="mb-6 pt-4">
         <Link 
           to="/videos" 
-          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-colors group"
+          className="inline-flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors group"
         >
-          <div className="p-2 rounded-full bg-black/5 border border-black/5 group-hover:scale-110 transition-transform">
-            <ArrowLeft className="w-3.5 h-3.5" />
+          <div className="p-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 group-hover:-translate-x-1 transition-transform">
+            <ArrowLeft className="w-4 h-4" />
           </div>
-          Back to all apps
+          Videos
         </Link>
       </div>
 
-      <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[3rem] overflow-hidden shadow-2xl border-2 border-white/20 dark:border-white/10 group relative">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-pink-500/30 to-transparent"></div>
-        <div className="relative aspect-video w-full bg-black shadow-2xl border-b-2 border-white/10 dark:border-white/5">
-          {videoId ? (
-            <iframe 
-              className="w-full h-full"
-              src={`https://www.youtube.com/embed/${videoId}?autoplay=0`} 
-              title={videoItem.title}
-              frameBorder="0" 
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-              allowFullScreen>
-            </iframe>
-          ) : (
-            <div className="flex items-center justify-center h-full text-white font-black uppercase tracking-widest italic">Signal Error: Invalid Stream URL</div>
-          )}
+      <div className="bg-zinc-50 dark:bg-zinc-800/30 rounded-[32px] overflow-hidden shadow-sm border border-black/5 dark:border-white/5 relative">
+        <div className="relative w-full bg-black">
+           <div className="aspect-video w-full max-w-5xl mx-auto">
+              {videoId ? (
+                <iframe 
+                  className="w-full h-full"
+                  src={`https://www.youtube.com/embed/${videoId}?autoplay=0`} 
+                  title={videoItem.title}
+                  frameBorder="0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                  allowFullScreen>
+                </iframe>
+              ) : (
+                <div className="flex items-center justify-center h-full text-zinc-500 font-medium text-sm">Invalid video URL</div>
+              )}
+           </div>
         </div>
         
-        <div className="p-8 sm:p-14">
-            <div className="flex items-center gap-3 mb-6">
-                <span className="bg-pink-600 text-white text-[8px] font-black px-3 py-1 rounded-lg uppercase tracking-[0.3em] italic shadow-xl shadow-pink-500/20">Active Stream</span>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 dark:text-white italic">Node: TV-{videoItem.id}</span>
+        <div className="p-6 sm:p-10">
+            <div className="flex items-center gap-2 mb-4">
+                <span className="bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Video Hub</span>
             </div>
-            <h1 className="text-3xl sm:text-5xl font-black leading-tight mb-8 tracking-tighter dark:text-white uppercase italic">
+            <h1 className="text-2xl sm:text-4xl font-bold leading-tight mb-4 tracking-tight text-zinc-900 dark:text-zinc-100">
               {videoItem.title}
             </h1>
             
-            <div className="flex flex-wrap items-center gap-4 mb-10 pb-8 border-b-2 border-black/5 dark:border-white/5">
-              <div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 px-4 py-2 rounded-xl border border-black/5 dark:border-white/5">
-                <Calendar className="w-4 h-4 text-pink-500" />
-                <span className="text-[10px] font-black uppercase tracking-widest opacity-60 dark:text-white">
-                  Logged: {new Date(videoItem.created_at).toLocaleDateString()}
+            <div className="flex items-center gap-2 mb-8 text-sm font-medium text-zinc-500">
+                <Calendar className="w-4 h-4" />
+                <span>
+                  {new Date(videoItem.created_at).toLocaleDateString()}
                 </span>
-              </div>
             </div>
 
-            <div className="prose prose-pink dark:prose-invert max-w-none opacity-80 font-bold leading-relaxed text-sm sm:text-base">
+            <div className="prose prose-zinc dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-400 leading-relaxed text-base">
               <p>{videoItem.description}</p>
             </div>
 
-            <div className="mt-20 pt-14 border-t-4 border-pink-500/20">
-              <h3 className="text-2xl font-black flex items-center gap-4 mb-10 uppercase tracking-tighter dark:text-white italic">
-                <MessageSquare className="w-8 h-8 text-pink-500" />
-                Stream Reactions ({comments.length})
+            <div className="mt-12 pt-10 border-t border-black/5 dark:border-white/5">
+              <h3 className="text-xl font-bold flex items-center gap-2 mb-8 tracking-tight text-zinc-900 dark:text-zinc-100">
+                <MessageSquare className="w-5 h-5 text-blue-500" />
+                Comments ({comments.length})
               </h3>
               
-              <form onSubmit={handleAddComment} className="mb-14">
-                <div className="relative group">
+              <form onSubmit={handleAddComment} className="mb-10">
+                <div className="relative">
                   <textarea
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Provide intel..."
-                    className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-[2.5rem] p-6 pr-20 focus:border-pink-500 transition-all min-h-[150px] resize-none outline-none font-bold dark:text-white placeholder-slate-400"
+                    placeholder="Add a comment..."
+                    className="w-full bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-2xl p-4 pr-14 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all min-h-[120px] resize-y outline-none font-normal text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400"
                   />
                   <button
                     type="submit"
                     disabled={!commentText.trim()}
-                    className="absolute bottom-6 right-6 w-14 h-14 bg-pink-500 text-white rounded-2xl flex items-center justify-center hover:bg-pink-600 transition-all shadow-xl shadow-pink-500/20 disabled:opacity-20 active:scale-90"
+                    className="absolute bottom-4 right-4 w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition-all disabled:opacity-50 active:scale-[0.95]"
                     aria-label="Submit comment"
                   >
-                    <Send className="w-6 h-6" />
+                    <Send className="w-4 h-4 mr-0.5" />
                   </button>
                 </div>
               </form>
 
-              <div className="space-y-8">
+              <div className="space-y-4">
                 {comments.map((comment) => (
                   <motion.div 
-                    initial={{ opacity: 0, x: -10 }}
-                    whileInView={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     key={comment.id} 
-                    className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-8 border-2 border-white/20 dark:border-white/10 shadow-xl group hover:border-pink-500/30 transition-all"
+                    className="bg-white dark:bg-zinc-900 p-6 rounded-[20px] border border-black/5 dark:border-white/5 shadow-sm"
                   >
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-pink-500/10 text-pink-500 flex items-center justify-center font-black text-xl italic border-2 border-pink-500/20 shadow-inner">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex items-center justify-center font-bold text-sm shrink-0">
                           {comment.author.charAt(0)}
                         </div>
                         <div>
-                          <p className="font-black uppercase tracking-tighter dark:text-white italic text-lg">{comment.author}</p>
-                          <p className="text-[10px] font-black uppercase tracking-widest opacity-30 dark:text-white">{comment.date}</p>
+                          <p className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 leading-none mb-1">{comment.author}</p>
+                          <p className="text-xs font-medium text-zinc-500">{comment.date}</p>
                         </div>
-                      </div>
                     </div>
-                    <p className="font-bold opacity-70 dark:text-white leading-relaxed text-sm">{comment.content}</p>
+                    <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed text-sm">{comment.content}</p>
                   </motion.div>
                 ))}
                 {comments.length === 0 && (
-                  <div className="py-20 text-center border-4 border-dashed border-black/5 dark:border-white/5 rounded-[3rem]">
-                     <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-30 italic dark:text-white">Secure Feed: Waiting for First Input</p>
+                  <div className="py-16 text-center">
+                     <p className="text-sm font-medium text-zinc-500">No comments yet. Be the first!</p>
                   </div>
                 )}
               </div>

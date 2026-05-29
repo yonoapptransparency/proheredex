@@ -126,8 +126,8 @@ export default function AdminLogin() {
             )}
           </div>
         </div>
-        <h1 className="text-3xl font-black text-center mb-2 text-rose-500 uppercase tracking-widest italic">Restricted Zone</h1>
-        <p className="text-[10px] text-center text-slate-500 mb-8 font-black uppercase tracking-[0.3em]">Top Secret Security Clearance Required</p>
+        <h1 className="text-3xl font-black text-center mb-2 text-rose-500 uppercase tracking-widest italic">Admin Login</h1>
+        <p className="text-[10px] text-center text-slate-500 mb-8 font-black uppercase tracking-[0.3em]">Admin Login Required</p>
         
         {domainMismatch && (
           <div className="mb-6 bg-amber-500/10 border border-amber-500/30 p-4 rounded-lg">
@@ -162,7 +162,7 @@ export default function AdminLogin() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-black opacity-60 mb-2 uppercase tracking-widest text-slate-300">Security Cipher</label>
+              <label className="block text-[10px] font-black opacity-60 mb-2 uppercase tracking-widest text-slate-300">Password</label>
               <div className="relative">
                 <input 
                   type="password" 

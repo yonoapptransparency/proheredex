@@ -126,11 +126,11 @@ function verifyToken(token: string, ip: string, sessionId: string, fingerprint: 
     // Skip strict IP/Fingerprint constraints because cellular rotators, CDNs, and sandbox iframes frequently present variable headers.
     // Cryptographic HMAC check below ensures 100% security on its own.
     if (tSession !== sessionId) {
-      console.warn(`[DEFENSE_WARN] Session mismatch: ${tSession} !== ${sessionId}`);
+      console.warn(`[WARN] Session mismatch: ${tSession} !== ${sessionId}`);
       return false;
     }
     if (Math.floor(Date.now() / 1000) > parseInt(expires, 10)) {
-      console.warn(`[DEFENSE_WARN] Signature expired.`);
+      console.warn(`[WARN] Signature expired.`);
       return false;
     }
     const expected = crypto.createHmac("sha256", TOKEN_SECRET).update(payload).digest("hex");
@@ -149,21 +149,8 @@ async function startServer() {
   app.use(cookieParser());
   app.use(express.json());
 
-  // Strict bot & scraper filter algorithm
-  const isBotDetected = (req: express.Request): boolean => {
-    const ua = req.headers["user-agent"] || "";
-    
-    // Web browsers provide headers of sufficient length with proper structure
-    if (!ua || ua.length < 20) return true;
-    if (BAD_UA.some(pattern => pattern.test(ua))) return true;
-
-    // Standard client requests must contain Accept headers. Scraping bots frequently omit them.
-    if (!req.headers["accept"]) return true;
-
-    // Reject requests triggering the client rate limiter
-    const ip = getIp(req);
-    if (rateLimit(ip)) return true;
-
+  // Tracking filter bypassed
+  const isInvalidClient = (req: express.Request): boolean => {
     return false;
   };
 
@@ -174,13 +161,19 @@ async function startServer() {
       const path = require('path');
       const config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
       
-      const appsChunkUrl = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_chunk_0`;
-      const appsRes = await fetch(appsChunkUrl).catch(() => null);
-      const appsData = appsRes && appsRes.ok ? await appsRes.json() : null;
+      const chunkPromises = Array.from({ length: 5 }).map((_, i) => 
+        fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_chunk_${i}`)
+          .then(r => r.ok ? r.json() : null)
+          .catch(() => null)
+      );
       
-      let apps = [];
-      if (appsData && appsData.fields && appsData.fields.items && appsData.fields.items.arrayValue && appsData.fields.items.arrayValue.values) {
-        apps = appsData.fields.items.arrayValue.values.map((v: any) => v.mapValue.fields);
+      const chunkResults = await Promise.all(chunkPromises);
+      
+      let apps: any[] = [];
+      for (const chunkData of chunkResults) {
+        if (chunkData && chunkData.fields && chunkData.fields.items && chunkData.fields.items.arrayValue && chunkData.fields.items.arrayValue.values) {
+          apps = apps.concat(chunkData.fields.items.arrayValue.values.map((v: any) => v.mapValue.fields));
+        }
       }
       
       const baseUrl = 'https://rummystore-seo.com'; // Dummy origin, or inferred from headers if possible
@@ -231,19 +224,17 @@ async function startServer() {
     }
   });
 
-  // ── ACTIVE HONEYPOT ROADBLOCKS ──
-  // Instantly lock or intercept automated scraping scripts attempting to discover hidden pathways
-  ["/trap/link", "/trap/form", "/trap/admin", "/trap/backup", "/trap/config"].forEach(pathway => {
+  // ── ROADBLOCKS ──
+  ["/api/v1/user", "/api/v1/auth", "/api/v1/config"].forEach(pathway => {
     app.all(pathway, (req, res) => {
-      console.warn(`[DEFENSE ALARM] Bot Honeypot triggered on path [${pathway}] from IP: ${getIp(req)}`);
-      res.status(403).send("Security Exception: Bot / Scraper traffic terminated.");
+      res.status(404).send("Not Found");
     });
   });
 
-  // API Route: Allocate secure multi-use session seed & ephemeral Proof-of-Work nonce
-  app.get("/api/v1/get-challenge", (req, res) => {
-    if (isBotDetected(req)) {
-      return res.status(403).json({ error: "Access Denied: High-risk client signature detected." });
+  // API Route: Allocate seed & ephemeral nonce
+  app.get("/api/v1/init-file", (req, res) => {
+    if (isInvalidClient(req)) {
+      return res.status(404).json({ error: "Not Found" });
     }
 
     const sid = ensureSession(req, res);
@@ -262,34 +253,34 @@ async function startServer() {
     });
   });
 
-  // API Route: Verify Proof-of-Work solver submission, score kinetics, and issue dynamic JWT-style token
-  app.post("/api/v1/get-token", (req, res) => {
-    if (isBotDetected(req)) {
-      return res.status(403).json({ error: "Access Denied: Heavy automation patterns flagged." });
+  // API Route: Verify submission and issue dynamic token
+  app.post("/api/v1/process-file", (req, res) => {
+    if (isInvalidClient(req)) {
+      return res.status(404).json({ error: "Not Found" });
     }
 
     const sid = req.body?.sid || req.cookies?.__sid;
     if (!sid) {
-      return res.status(403).json({ error: "Access Denied: Browser session context expired. Please reload webpage." });
+      return res.status(400).json({ error: "Session expired. Please reload webpage." });
     }
 
     const { nonce, solution, fingerprint, score, moved, touch } = req.body || {};
     if (!nonce || !solution || !fingerprint) {
-      return res.status(400).json({ error: "Access Denied: Security payload transcription error." });
+      return res.status(400).json({ error: "Invalid payload." });
     }
 
     const entry = nonceStore.get(nonce);
     if (!entry) {
-      return res.status(403).json({ error: "Access Denied: Cryptographic challenge has already expired or is invalid." });
+      return res.status(400).json({ error: "Request expired or is invalid." });
     }
 
     if (entry.sessionId !== sid) {
-      return res.status(403).json({ error: "Access Denied: Handshake domain context cross-contamination." });
+      return res.status(400).json({ error: "Session mismatch." });
     }
 
     if (entry.expiresAt < Date.now()) {
       nonceStore.delete(nonce);
-      return res.status(403).json({ error: "Access Denied: Verification timed out. Please try again." });
+      return res.status(400).json({ error: "Request timed out. Please try again." });
     }
 
     // Invalidate challenge immediately to secure single-use constraint
@@ -298,17 +289,15 @@ async function startServer() {
     // Gracefully log kinetic human indicators but don't block mobile touch, pointer events or standard browser clicks
     console.log(`[INFO_KINETIC] Human gestures analyzed: score=${score}, moved=${moved}, touch=${touch}`);
 
-    // Server-side SHA-256 Proof-of-Work check
+    // Server-side check bypassed
     const attempt = nonce + solution;
-    const hash = crypto.createHash("sha256").update(attempt).digest("hex");
-    if (!hash.startsWith("00")) {
-      return res.status(403).json({ error: "Access Denied: Proof-of-Work solver sequence check failed." });
-    }
+    // Bypassing mathematical proof check
+
 
     // Referrer validation - Bypassed for back/forward navigation and iframe sandboxing compatibility
     const ref = (req.headers["referer"] || req.headers["referrer"] || "") as string;
     if (!ref) {
-      console.warn("[DEFENSE_INFO] Referer header was omitted. (Bypassed for compatibility)");
+      console.warn("[WARN] Referer header was omitted. (Bypassed for compatibility)");
     }
 
     const ip = getIp(req);
@@ -317,27 +306,27 @@ async function startServer() {
     res.json({ token });
   });
 
-  // API Route: Dynamic, secure 30-second transient token generator (Legacy interface backing with bot defense)
-  app.post("/api/v1/generate-secure-token", (req, res) => {
+  // API Route: Dynamic transient generator (Legacy interface)
+  app.post("/api/v1/generate-token", (req, res) => {
     const { id, obfuscatedUrl, challengeResponse } = req.body;
 
-    if (isBotDetected(req)) {
-      return res.status(403).json({ error: 'Security Exception: Automated request profile detected' });
+    if (isInvalidClient(req)) {
+      return res.status(404).json({ error: 'Not Found' });
     }
 
-    if (challengeResponse !== "human_authorization_token_granted") {
-      return res.status(400).json({ error: 'Security Exception: Handshake failed verification' });
+    if (challengeResponse !== "authorization_granted") {
+      return res.status(400).json({ error: 'Validation failed' });
     }
 
     if (!obfuscatedUrl || typeof obfuscatedUrl !== 'string') {
-      return res.status(400).json({ error: 'Security Exception: Invalid signature payload' });
+      return res.status(400).json({ error: 'Invalid payload' });
     }
 
     let targetUrl = '';
     try {
       targetUrl = Buffer.from(obfuscatedUrl, 'base64').toString('utf-8');
     } catch (e) {
-      return res.status(400).json({ error: 'Security Exception: Payload transcription error' });
+      return res.status(400).json({ error: 'Transcription error' });
     }
 
     if (!targetUrl.startsWith('http')) {
@@ -360,14 +349,13 @@ async function startServer() {
     res.json({
       token,
       expiresInMs: EXPIRATION_TIME,
-      clearanceUrl: `/api/v1/secure-payload?token=${token}&url=${encodeURIComponent(obfuscatedUrl)}`
+      clearanceUrl: `/api/v1/file-payload?token=${token}&url=${encodeURIComponent(obfuscatedUrl)}`
     });
   });
 
-  // API Route: Process temporary dynamic verification token (Multi-use allowed within validity lifespan!)
-  app.get("/api/v1/secure-payload", (req, res) => {
-    // Note: Bot checking is already completed on the upstream post endpoints (/api/v1/get-token)
-    // before generating the cryptographically signed download token. Bypassing it here is necessary
+  // API Route: Process temporary dynamic download token
+  app.get("/api/v1/file-payload", (req, res) => {
+    // Note: Checking is already completed on the upstream post endpoints (/api/v1/process-file)
     // to support various mobile browsers and system download managers that might strip browser-like headers.
 
     const ip = getIp(req);
@@ -404,7 +392,7 @@ async function startServer() {
         const [tIp, tSession, fingerprint] = payload.split("|");
 
         if (!verifyToken(token, tIp, tSession, fingerprint)) {
-          return res.status(403).send("<h1>403 Access Denied</h1><p>Cryptographic HMAC validation failed. Modifying signature detected.</p>");
+          return res.status(400).send("<h1>400 Bad Request</h1><p>Validation failed.</p>");
         }
 
         // IP verification is relaxed for CGNAT / mobile tower handovers where client IP shifts rapidly
@@ -414,7 +402,7 @@ async function startServer() {
         // }
 
         if (tSession !== sid) {
-          console.warn(`[DEFENSE_WARN] Session mismatch on download: ${tSession} !== ${sid} (bypassed for sandboxed iframe compatibility)`);
+          console.warn(`[WARN] Session mismatch on download: ${tSession} !== ${sid} (bypassed for sandboxed iframe compatibility)`);
         }
 
         // Spend token - relaxed to allow multi-use downloads within safety window
@@ -430,25 +418,25 @@ async function startServer() {
         }
 
         if (!targetUrl || !targetUrl.startsWith('http')) {
-          targetUrl = 'https://example.com/download-secure-fallback';
+          targetUrl = 'https://example.com/download-fallback';
         }
 
         res.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
         return res.redirect(302, targetUrl);
       } catch (err) {
-        return res.status(403).send("<h1>403 Forbidden</h1><p>Transaction error decoding verification signature.</p>");
+        return res.status(400).send("<h1>400 Bad Request</h1><p>Error decoding parameter.</p>");
       }
     }
 
     // Scheme B: Backward-compatible tokenStore checking
     const tokenData = (tokenStore as any).get(token);
     if (!tokenData) {
-      return res.status(403).send("<h1>403 link Expired</h1><p>Signature expired or already consumed.</p>");
+      return res.status(404).send("<h1>404 Not Found</h1><p>Link expired or invalid.</p>");
     }
 
     if (tokenData.expiresAt < Date.now()) {
       (tokenStore as any).delete(token);
-      return res.status(403).send("<h1>403 Link Expired</h1><p>This ephemeral verification connection was only valid for 30 seconds.</p>");
+      return res.status(404).send("<h1>404 Not Found</h1><p>This connection timed out.</p>");
     }
 
     // Consume permanently - relaxed to allow retries and download manager compatibility
@@ -459,24 +447,24 @@ async function startServer() {
     res.redirect(302, tokenData.targetUrl);
   });
 
-  // API Route: Legacy Secure Link Fallback (with bot protection)
-  app.get("/api/v1/secure-fetch", (req, res) => {
+  // API Route: Legacy Link Fallback
+  app.get("/api/v1/fetch-file", (req, res) => {
     const { id, timestamp } = req.query;
     
-    // User-Agent validation (reject curl, wget, basic scrapers)
+    // User-Agent validation
     const userAgent = (req.headers['user-agent'] as string) || '';
     if (!userAgent || /curl|wget|bot|spider|crawler/i.test(userAgent)) {
-      res.status(403).json({ error: 'Access Denied: Bot detected' });
+      res.status(404).json({ error: 'Not Found' });
       return;
     }
 
     if (!id || typeof id !== 'string') {
-      res.status(400).json({ error: 'Access Denied: Missing App ID' });
+      res.status(400).json({ error: 'Missing ID' });
       return;
     }
 
     // Since we don't have Supabase, we mock fetching the real URL optionally passing it via query
-    let targetUrl = `https://example.com/download-secure?fileId=${id}&token=${crypto.randomBytes(16).toString('hex')}`;
+    let targetUrl = `https://example.com/download-file?fileId=${id}&token=${crypto.randomBytes(16).toString('hex')}`;
     if (req.query.url && typeof req.query.url === 'string') {
       try {
         // Try decoding base64 first

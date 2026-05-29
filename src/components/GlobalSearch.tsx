@@ -77,9 +77,9 @@ export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onC
             >
               <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
                 {query.length > 0 ? (
-                  <Zap className="w-6 h-6 text-red-600 animate-pulse" />
+                  <Zap className="w-6 h-6 text-blue-500 animate-pulse" />
                 ) : (
-                  <Search className="w-6 h-6 text-slate-300" />
+                  <Search className="w-6 h-6 text-zinc-400 dark:text-zinc-500" />
                 )}
               </div>
               <input
@@ -89,12 +89,12 @@ export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onC
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Find anything... (Apps, Tools, Games)"
-                className="w-full h-20 pl-16 pr-20 bg-white border-2 border-black/5 rounded-[2.5rem] shadow-2xl text-2xl font-black uppercase italic tracking-tighter focus:outline-none focus:border-red-600/20 transition-all placeholder:text-slate-200 font-bold"
+                className="w-full h-20 pl-16 pr-20 bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-[2.5rem] shadow-xl text-xl font-medium focus:outline-none focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 dark:text-white"
               />
               <button 
                 type="button"
                 onClick={onClose}
-                className="absolute inset-y-4 right-4 w-12 h-12 bg-slate-50 flex items-center justify-center rounded-2xl hover:bg-red-600 hover:text-white transition-all active:scale-90"
+                className="absolute inset-y-4 right-4 w-12 h-12 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 transition-all active:scale-95"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -106,43 +106,43 @@ export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onC
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="mt-6 bg-white border border-black/5 rounded-[3rem] shadow-2xl overflow-hidden p-6"
+                  className="mt-4 bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/10 rounded-3xl shadow-xl overflow-hidden py-4"
                 >
-                  <div className="flex items-center justify-between mb-6 px-4">
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em] opacity-30 italic">Search Intel ({results.length})</span>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600 animate-pulse">Live Feed</span>
+                  <div className="flex items-center justify-between mb-4 px-6">
+                    <span className="text-xs font-semibold text-zinc-500 tracking-wide uppercase">Results ({results.length})</span>
+                    <span className="text-xs font-semibold text-blue-500 animate-pulse tracking-wide uppercase">Live Search</span>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1 px-3">
                     {results.length > 0 ? results.map((app) => (
                       <Link 
                         key={app.id} 
                         to={`/app/${app.slug}`}
                         onClick={onClose}
-                        className="flex items-center gap-4 p-4 hover:bg-slate-50 rounded-3xl transition-all group border border-transparent hover:border-black/5"
+                        className="flex items-center gap-4 p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-2xl transition-all group"
                       >
-                        <div className="w-14 h-14 bg-white rounded-2xl shadow-sm border border-black/5 overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+                        <div className="w-12 h-12 bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-black/5 dark:border-white/5 overflow-hidden shrink-0">
                           {app.icon_url && <img src={app.icon_url} alt="" className="w-full h-full object-cover" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-xl font-black uppercase italic tracking-tighter truncate leading-none mb-1">{app.name}</h4>
-                          <p className="text-[10px] font-bold uppercase tracking-widest opacity-40 truncate">{app.category || 'Premium Service'}</p>
+                          <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 truncate mb-0.5">{app.name}</h4>
+                          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">{app.category || 'Premium Service'}</p>
                         </div>
-                        <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-red-600" />
+                        <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-blue-500 mr-2" />
                       </Link>
                     )) : (
                       <div className="py-12 text-center">
-                        <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Loader2 className="w-6 h-6 text-slate-200 animate-spin" />
+                        <div className="w-12 h-12 bg-zinc-50 dark:bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Loader2 className="w-6 h-6 text-zinc-300 dark:text-zinc-600 animate-spin" />
                         </div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-30 italic">Decrypting results...</p>
+                        <p className="text-sm text-zinc-400 dark:text-zinc-500">Searching...</p>
                       </div>
                     )}
                   </div>
 
                   {results.length > 0 && (
-                    <div className="mt-8 pt-6 border-t border-black/5 text-center">
-                      <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 italic">Press Enter for top direct match</p>
+                     <div className="mt-4 pt-4 border-t border-black/5 dark:border-white/5 text-center">
+                      <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500">Press Enter to select the top result</p>
                     </div>
                   )}
                 </motion.div>

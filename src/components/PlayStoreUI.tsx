@@ -52,11 +52,11 @@ export const FlipkartBanner = React.memo(({ items }: BannerProps) => {
       <div 
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex overflow-x-auto gap-3 px-4 pb-6 snap-x no-scrollbar scroll-smooth"
+        className="flex overflow-x-auto gap-4 px-4 pb-6 snap-x no-scrollbar scroll-smooth"
       >
         {items.map((item, i) => {
           const isExternal = item.link && (item.link.startsWith('http://') || item.link.startsWith('https://') || item.link.startsWith('//'));
-          const classes = "flex-shrink-0 w-[85vw] sm:w-[500px] h-[160px] sm:h-[180px] rounded-2xl relative overflow-hidden snap-center group block border border-white/30 shadow-lg";
+          const classes = "flex-shrink-0 w-[85vw] sm:w-[500px] h-[200px] sm:h-[240px] rounded-[24px] relative overflow-hidden snap-center group block shadow-md border border-black/5 dark:border-white/5";
           const content = (
             <motion.div 
               whileHover={{ scale: 0.99 }}
@@ -69,14 +69,15 @@ export const FlipkartBanner = React.memo(({ items }: BannerProps) => {
                 decoding="async"
                 loading="lazy"
               />
-              <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col justify-end">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-6 flex flex-col justify-end">
                 <div className="flex flex-col gap-1 w-full text-left">
-                  <span className="bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-[0.2em] shadow-lg w-fit">Exclusive</span>
+                  <span className="text-white/80 text-[10px] font-semibold uppercase tracking-wider">Featured</span>
                   <div className="mt-1">
-                    <h3 className="text-white text-base sm:text-lg font-black mb-0 uppercase tracking-tighter drop-shadow-[0_2px_5px_rgba(0,0,0,0.95)] italic leading-tight">
+                    <h3 className="text-white text-xl sm:text-2xl font-bold tracking-tight mb-1">
                       {item.title}
                     </h3>
-                    <p className="text-white text-[10px] sm:text-xs font-bold drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.95)] uppercase tracking-tight mt-0.5">
+                    <p className="text-white/90 text-sm font-medium">
                       {item.subtitle}
                     </p>
                   </div>
@@ -112,13 +113,13 @@ export const FlipkartBanner = React.memo(({ items }: BannerProps) => {
       </div>
       
       {/* Indicators */}
-      <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-1.5 py-2 pointer-events-none">
+      <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 py-2 pointer-events-none">
         {items.map((_, i) => (
           <div 
             key={i} 
             className={cn(
-              "h-1 rounded-full transition-all duration-300",
-              i === activeIndex ? "w-8 bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.5)]" : "w-1.5 bg-slate-300"
+              "h-1.5 rounded-full transition-all duration-300",
+              i === activeIndex ? "w-6 bg-blue-500 shadow-sm" : "w-1.5 bg-zinc-300 dark:bg-zinc-700"
             )}
           />
         ))}
@@ -132,7 +133,7 @@ export const PromotionSection = React.memo(() => {
     <div className="mx-2 mb-10 overflow-hidden">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Video Card */}
-        <div className="aspect-video rounded-[2.5rem] overflow-hidden bg-slate-900 border-2 border-white/20 shadow-2xl relative group min-h-[200px] w-full">
+        <div className="aspect-video rounded-[32px] overflow-hidden bg-zinc-900 border border-black/5 dark:border-white/5 shadow-sm relative group min-h-[200px] w-full">
           <iframe 
             className="w-full h-full"
             src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0&mute=1" 
@@ -142,35 +143,24 @@ export const PromotionSection = React.memo(() => {
             allowFullScreen
             loading="lazy"
           ></iframe>
-          <div className="absolute top-4 left-4 bg-red-600 text-white text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-[0.2em] shadow-2xl">Premium Feature</div>
         </div>
 
         {/* Secure Access Hub Card */}
-        <div className="bg-linear-to-br from-red-600 to-rose-700 rounded-[2.5rem] p-6 flex flex-col justify-between text-white relative overflow-hidden shadow-2xl group min-h-[200px]">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
+        <div className="bg-blue-600 rounded-[32px] p-8 flex flex-col justify-between text-white relative overflow-hidden shadow-md group min-h-[200px]">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
           
-          <div className="relative z-10">
-            <h3 className="text-2xl font-black uppercase tracking-tighter mb-2 italic">Join the Hub</h3>
-            <p className="text-white/80 text-xs font-black uppercase tracking-tight mb-6 max-w-[200px] leading-relaxed">Experience swift, direct application audits on our secure mobile portal.</p>
+          <div className="relative z-10 w-full max-w-[280px]">
+            <h3 className="text-2xl font-bold tracking-tight mb-2">Editor's Choice</h3>
+            <p className="text-blue-100 text-sm font-medium leading-relaxed mb-6">Discover the most innovative and carefully crafted applications curated by our team.</p>
           </div>
 
           <div className="relative z-10 flex items-center gap-4">
-            <button className="bg-white text-rose-600 px-6 py-3 rounded-2xl font-black uppercase tracking-wider text-xs shadow-2xl hover:bg-rose-50 transition-all active:scale-95 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4" />
-              Gain Active Access
+            <button className="bg-white text-blue-600 px-6 py-3 rounded-full font-semibold text-sm shadow-sm hover:bg-blue-50 transition-all active:scale-95 flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              Explore Selection
             </button>
-            <div className="flex -space-x-3">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-rose-600 bg-slate-200 overflow-hidden shrink-0 shadow-lg">
-                  <img src={`https://i.pravatar.cc/32?img=${i + 20}`} alt="user" className="w-full h-full object-cover" loading="lazy" />
-                </div>
-              ))}
-            </div>
           </div>
           
-          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/5 rounded-full flex items-center justify-center rotate-12">
-            <Sparkles className="w-12 h-12 text-white/10" />
-          </div>
         </div>
       </div>
     </div>
@@ -192,20 +182,20 @@ export const PlayStoreTabs = React.memo(({ activeTab, onTabChange, hideOnSearch 
 
   const tabs = settings.categories && settings.categories.length > 0 
     ? settings.categories 
-    : ["All", "Rummy Games", "Card Games", "Esports"];
+    : ["All", "Games", "Apps", "Entertainment"];
   
   return (
-    <div className="mb-6 sticky top-16 z-40">
-      <div className="flex overflow-x-auto no-scrollbar gap-2 px-2">
+    <div className="mb-6 sticky top-16 z-40 bg-zinc-50/80 dark:bg-zinc-950/80 backdrop-blur-md py-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div className="flex overflow-x-auto no-scrollbar gap-2">
         {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => onTabChange(tab)}
             className={cn(
-              "whitespace-nowrap px-4 py-1.5 text-[10px] sm:text-xs font-semibold transition-all rounded-full border will-change-transform",
+              "whitespace-nowrap px-4 py-2 text-sm font-medium transition-all rounded-full border",
               activeTab === tab 
-                ? "bg-red-600 text-white border-red-600 shadow-[0_0_20px_rgba(220,38,38,0.3)] font-black uppercase tracking-widest scale-105" 
-                : "bg-white/40 backdrop-blur-xl border-white/40 hover:bg-white/60 font-bold uppercase tracking-tight"
+                ? "bg-blue-500 text-white border-blue-500 shadow-sm" 
+                : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-black/5 dark:border-white/5 hover:bg-zinc-50 dark:hover:bg-zinc-800"
             )}
           >
             {tab}
@@ -234,14 +224,19 @@ export const AppListItem = React.memo(({ app, index }: { app: any; index?: numbe
     >
       <Link 
         to={`/app/${app.slug}`}
-        className="flex items-center gap-4 sm:gap-6 p-4 sm:p-5 mb-4 glass-panel hover:brightness-110 dark:hover:brightness-[1.15] transition-all duration-300 active:scale-[0.98] group rounded-2xl sm:rounded-[2rem] border-t border-white/10 dark:border-white/5"
+        onClick={() => {
+          if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(10);
+          }
+        }}
+        className="flex items-center gap-4 p-4 mb-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-200 group rounded-2xl relative active:scale-[0.98]"
       >
-        <div className="w-6 sm:w-8 text-[10px] sm:text-base font-black opacity-30 text-center shrink-0 italic text-slate-400 dark:text-zinc-600">
+        <div className="w-6 sm:w-8 text-sm font-bold text-zinc-400 dark:text-zinc-500 text-center shrink-0">
           {displayIndex}
         </div>
 
-        <div className="relative w-16 h-16 sm:w-20 sm:h-20 shrink-0">
-          <div className="w-full h-full rounded-2xl overflow-hidden bg-white shadow-md border border-slate-200 dark:border-white/10 relative z-10 transition-transform group-hover:scale-105 duration-300">
+        <div className="relative w-16 h-16 sm:w-[72px] sm:h-[72px] shrink-0">
+          <div className="w-full h-full rounded-[18px] overflow-hidden bg-white shadow-sm border border-black/5 dark:border-white/10 relative z-10 transition-transform group-hover:-translate-y-0.5 duration-300">
             <img 
               src={app.icon_url || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop"} 
               alt={app.name} 
@@ -253,31 +248,33 @@ export const AppListItem = React.memo(({ app, index }: { app: any; index?: numbe
           </div>
         </div>
         
-        <div className="flex-1 min-w-0 flex flex-col justify-center px-1 sm:px-2">
-          <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5 flex-wrap">
-            <h3 className="font-black text-sm sm:text-lg leading-tight uppercase tracking-tighter italic dark:text-zinc-100 break-words w-full">
+        <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <h3 className="font-semibold text-base sm:text-[17px] tracking-tight text-zinc-900 dark:text-zinc-100 truncate w-full">
               {app.name}
             </h3>
-            {app.safety_status === 'Verified' && (
-              <ShieldCheck className="w-4 h-4 text-green-500 shrink-0" />
-            )}
           </div>
 
-          <div className="text-[10px] sm:text-sm font-black uppercase tracking-wider sm:tracking-widest leading-none opacity-60 dark:text-zinc-400 truncate max-w-full">{app.category} • {app.file_size}</div>
+          <div className="text-xs sm:text-[13px] font-normal text-zinc-500 dark:text-zinc-400 truncate">
+            {app.category}
+          </div>
 
-          <div className="flex items-center gap-2 sm:gap-2.5 leading-none mt-1 sm:mt-1.5">
-            <span className="text-[10px] sm:text-sm font-black opacity-40 tracking-tighter dark:text-zinc-500">
-              {app.rating ? app.rating.toFixed(1) : '10.0'}
-            </span>
-            <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400" />
+          <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 mt-0.5">
+            <span>{app.rating ? app.rating.toFixed(1) : '10.0'}</span>
+            <Star className="w-3 h-3 fill-current text-zinc-400" />
+            {app.safety_status === 'Verified' && (
+              <ShieldCheck className="w-3 h-3 text-blue-500 shrink-0 ml-1" />
+            )}
           </div>
         </div>
         
-        <div className="shrink-0 pr-1 sm:pr-2">
-          <div className="bg-red-600 text-white px-5 py-2 sm:px-6 sm:py-2 text-[11px] sm:text-sm font-black rounded-full transition-all uppercase tracking-widest shadow-lg active:scale-95 hover:scale-105">
-            Get
+        <div className="shrink-0 pr-1">
+          <div className="bg-black/5 dark:bg-white/10 text-zinc-900 dark:text-zinc-100 px-4 py-1 text-[11px] font-bold rounded-full transition-all duration-300 group-hover:bg-zinc-900 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-zinc-900 shadow-sm border border-transparent group-hover:border-black/5 dark:group-hover:border-white/5">
+            MORE
           </div>
         </div>
+        
+        <div className="absolute bottom-0 right-4 left-[104px] border-b border-black/5 dark:border-white/5 opacity-50 transition-opacity group-hover:opacity-0" />
       </Link>
     </motion.div>
   );
@@ -294,14 +291,19 @@ export const TopChartItem = React.memo(({ rank, app }: TopChartItemProps) => {
     >
       <Link 
         to={`/app/${app.slug}`}
-        className="flex items-center gap-4 sm:gap-6 p-4 sm:p-5 mb-3 glass-panel hover:brightness-110 dark:hover:brightness-[1.15] transition-all duration-300 active:scale-[0.99] group rounded-[1.5rem] shadow-sm dark:shadow-[0_25px_60px_rgba(0,0,0,0.5)] border-t border-white/10 dark:border-white/5"
+        onClick={() => {
+          if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(10);
+          }
+        }}
+        className="flex items-center gap-4 p-4 mb-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-200 group rounded-2xl relative active:scale-[0.98]"
       >
-        <div className="w-6 sm:w-8 text-[10px] sm:text-base font-black opacity-30 text-center shrink-0 italic text-slate-400 dark:text-zinc-600">
+        <div className="w-6 sm:w-8 text-sm font-bold text-zinc-400 dark:text-zinc-500 text-center shrink-0">
           {rank}
         </div>
         
-        <div className="relative w-16 h-16 sm:w-20 sm:h-20 shrink-0">
-          <div className="w-full h-full rounded-2xl overflow-hidden bg-white shadow-md border border-slate-200 dark:border-white/10 relative z-10 transition-transform group-hover:scale-105 duration-300">
+        <div className="relative w-16 h-16 sm:w-[72px] sm:h-[72px] shrink-0">
+          <div className="w-full h-full rounded-[18px] overflow-hidden bg-white shadow-sm border border-black/5 dark:border-white/10 relative z-10 transition-transform group-hover:-translate-y-0.5 duration-300">
             <img 
               src={app.icon_url || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop"} 
               alt={app.name} 
@@ -313,25 +315,29 @@ export const TopChartItem = React.memo(({ rank, app }: TopChartItemProps) => {
           </div>
         </div>
         
-        <div className="flex-1 min-w-0 flex flex-col justify-center px-1 sm:px-2">
-          <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5 flex-wrap">
-            <h3 className="font-black text-sm sm:text-lg leading-tight uppercase tracking-tighter italic dark:text-zinc-100 break-words w-full">
+        <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <h3 className="font-semibold text-base sm:text-[17px] tracking-tight text-zinc-900 dark:text-zinc-100 truncate w-full">
               {app.name}
             </h3>
-            {app.safety_status === 'Verified' && <ShieldCheck className="w-4 h-4 shrink-0 text-green-500" />}
           </div>
-          <span className="text-[10px] sm:text-sm font-black opacity-60 uppercase tracking-widest leading-none dark:text-zinc-400">{app.category} • {app.file_size}</span>
-          <div className="flex items-center gap-2 sm:gap-2.5 text-[10px] sm:text-sm font-black opacity-40 mt-1 sm:mt-1.5 uppercase tracking-tighter leading-none dark:text-zinc-500">
+          <div className="text-xs sm:text-[13px] font-normal text-zinc-500 dark:text-zinc-400 truncate">
+            {app.category}
+          </div>
+          <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 mt-0.5">
             <span>{app.rating ? app.rating.toFixed(1) : '10.0'}</span>
-            <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400" />
+            <Star className="w-3 h-3 fill-current text-zinc-400" />
+            {app.safety_status === 'Verified' && <ShieldCheck className="w-3 h-3 text-blue-500 shrink-0 ml-1" />}
           </div>
         </div>
         
-        <div className="shrink-0 pr-1 sm:pr-2">
-          <div className="bg-red-600 text-white px-5 py-2 sm:px-6 sm:py-2 text-[11px] sm:text-sm font-black rounded-full transition-all uppercase tracking-widest shadow-lg active:scale-95 hover:scale-105">
-            Get
+        <div className="shrink-0 pr-1">
+          <div className="bg-black/5 dark:bg-white/10 text-zinc-900 dark:text-zinc-100 px-4 py-1 text-[11px] font-bold rounded-full transition-all duration-300 group-hover:bg-zinc-900 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-zinc-900 shadow-sm border border-transparent group-hover:border-black/5 dark:group-hover:border-white/5">
+            MORE
           </div>
         </div>
+        
+        <div className="absolute bottom-0 right-4 left-[104px] border-b border-black/5 dark:border-white/5 opacity-50 transition-opacity group-hover:opacity-0" />
       </Link>
     </motion.div>
   );
