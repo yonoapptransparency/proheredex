@@ -118,54 +118,8 @@ export default function Home() {
           })}
         </script>
       </Helmet>
-      {/* Premium Hero Section - Compact, Sleek, Futuristic */}
-      <div className="text-center py-6 sm:py-8 px-4 mb-4">
-        <div className="inline-flex flex-col items-center justify-center">
-          <motion.h1 
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-3xl sm:text-5xl font-bold mb-3 tracking-tight text-zinc-900 dark:text-white"
-          >
-            {mockSettings.secure_index_title || 'Secure Index'}
-          </motion.h1>
-
-          {mockSettings.secure_index_subtitle && (
-            <motion.p 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1 }}
-              className="text-sm sm:text-base font-medium text-zinc-500 tracking-wide mb-6 text-center max-w-sm sm:max-w-md"
-            >
-              {mockSettings.secure_index_subtitle}
-            </motion.p>
-          )}
-        </div>
-
-        {/* Compact Search */}
-        <div className="max-w-md mx-auto mb-2">
-          <form 
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (filteredApps.length > 0) {
-                navigate(`/app/${filteredApps[0].slug}`);
-              }
-            }}
-            className="relative group block"
-          >
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-              <Search className="h-4 w-4 text-zinc-400 group-focus-within:text-blue-500 transition-colors" />
-            </div>
-            <input
-              type="search"
-              enterKeyHint="search"
-              className="block w-full pl-11 pr-4 py-3 bg-zinc-100/80 dark:bg-zinc-800/80 border border-zinc-200/50 dark:border-zinc-700/50 rounded-[16px] placeholder-zinc-500 text-sm focus:outline-none focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-zinc-900 dark:text-white"
-              placeholder="Search apps..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </form>
-        </div>
-      </div>
+      {/* Restored top pacing for a minimal and modern entry design */}
+      <div className="pt-4 px-4" />
 
       {!searchTerm && activeTab.toLowerCase() !== 'categories' && activeTab.toLowerCase() !== 'top charts' && (
         <FlipkartBanner items={bannerItems} />

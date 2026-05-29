@@ -305,11 +305,13 @@ export async function commitFileToGitHub({
 
   try {
     const res = await fetch(
-      `https://api.github.com/repos/${cleanOwner}/${cleanRepo}/contents/${cleanPath}?ref=${cleanBranch}`,
+      `https://api.github.com/repos/${cleanOwner}/${cleanRepo}/contents/${cleanPath}?ref=${cleanBranch}&_nocache=${Date.now()}`,
       {
         headers: {
           'Authorization': authHeader,
-          'Accept': 'application/vnd.github.v3+json'
+          'Accept': 'application/vnd.github.v3+json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
         }
       }
     );
