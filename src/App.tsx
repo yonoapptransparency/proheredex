@@ -27,6 +27,7 @@ import VideosPage from './pages/VideosPage';
 import VideoDetailPage from './pages/VideoDetailPage';
 import FallbackRouteMatcher from './components/FallbackRouteMatcher';
 
+import { getAdminPath } from './lib/utils';
 import Ticker from './components/Ticker';
 import SupportWidget from './components/SupportWidget';
 import GlobalSearch from './components/GlobalSearch';
@@ -488,7 +489,8 @@ function AppContent() {
   const location = useLocation();
   const [isAgeVerified, setIsAgeVerified] = useState(true);
 
-  const isAdminPath = location.pathname.startsWith('/x9k2m7-admin');
+  const adminPath = getAdminPath();
+  const isAdminPath = location.pathname.startsWith(`/${adminPath}`);
 
   const triggerHaptic = () => {
     if (window.navigator && window.navigator.vibrate) {
@@ -604,8 +606,8 @@ function AppContent() {
                 <Route path="/wp-admin" element={<Navigate to="/" replace />} />
                 <Route path="/dashboard" element={<Navigate to="/" replace />} />
                 <Route path="/panel" element={<Navigate to="/" replace />} />
-                <Route path="/x9k2m7-admin/login" element={<Suspense fallback={<div className="flex h-screen items-center justify-center p-8"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>}><AdminLogin /></Suspense>} />
-                <Route path="/x9k2m7-admin/*" element={<Suspense fallback={<div className="flex h-screen items-center justify-center p-8"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>}><AdminDashboard /></Suspense>} />
+                <Route path={`/${adminPath}/login`} element={<Suspense fallback={<div className="flex h-screen items-center justify-center p-8"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>}><AdminLogin /></Suspense>} />
+                <Route path={`/${adminPath}/*`} element={<Suspense fallback={<div className="flex h-screen items-center justify-center p-8"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>}><AdminDashboard /></Suspense>} />
                 <Route path="*" element={<FallbackRouteMatcher />} />
               </Routes>
             </motion.div>

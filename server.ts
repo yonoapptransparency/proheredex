@@ -532,9 +532,19 @@ const rateLimitMap = new Map<string, number[]>();
     // Gracefully log kinetic human indicators but don't block mobile touch, pointer events or standard browser clicks
     console.log(`[INFO_KINETIC] Human gestures analyzed: score=${score}, moved=${moved}, touch=${touch}`);
 
-    // Server-side check bypassed
+    // Enforce kinetic behavior scores to filter out automated scrapers and headless download bots
+    if (typeof score !== 'number' || score < 50) {
+      console.warn(`[DEFENSE ALARM] Bot score constraint triggered on IP ${getIp(req)}: score=${score}`);
+      return res.status(403).json({ error: "Access Denied: High-risk automated request profile detected. Please use a normal browser." });
+    }
+
+    // Server-side SHA-256 Proof-of-Work check
     const attempt = nonce + solution;
-    // Bypassing mathematical proof check
+    const hash = crypto.createHash("sha256").update(attempt).digest("hex");
+    if (!hash.startsWith("00")) {
+      console.warn(`[DEFENSE ALARM] Mathematical verification failure on IP ${getIp(req)}: proof=${hash}`);
+      return res.status(403).json({ error: "Access Denied: Proof-of-Work solver sequence check failed." });
+    }
 
 
     // Referrer validation - Bypassed for back/forward navigation and iframe sandboxing compatibility
@@ -567,9 +577,16 @@ const rateLimitMap = new Map<string, number[]>();
 
     let targetUrl = '';
     try {
-      targetUrl = Buffer.from(obfuscatedUrl, 'base64').toString('utf-8');
-    } catch (e) {
-      return res.status(400).json({ error: 'Transcription error' });
+      if (obfuscatedUrl.startsWith('U2FsdGVkX1')) {
+        const CryptoJS = require('crypto-js');
+        const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
+        const bytes = CryptoJS.AES.decrypt(obfuscatedUrl, AES_SECRET);
+        targetUrl = bytes.toString(CryptoJS.enc.Utf8);
+      } else {
+        throw new Error("Base64 links are deprecated. Authentic cryptographic encryption is required.");
+      }
+    } catch (e: any) {
+      return res.status(400).json({ error: e.message || 'Decryption error' });
     }
 
     if (!targetUrl.startsWith('http')) {
@@ -693,8 +710,6 @@ const rateLimitMap = new Map<string, number[]>();
                                 const CryptoJS = require('crypto-js');
                                 const bytes = CryptoJS.AES.decrypt(encryptedUrlField, AES_SECRET);
                                 targetUrl = bytes.toString(CryptoJS.enc.Utf8);
-                            } else if (encryptedUrlField.startsWith('B64__')) {
-                                targetUrl = Buffer.from(encryptedUrlField.substring(5), 'base64').toString('utf8');
                             } else {
                                 targetUrl = encryptedUrlField;
                             }
@@ -768,22 +783,18 @@ const rateLimitMap = new Map<string, number[]>();
     let targetUrl = `https://example.com/download-file?fileId=${id}&token=${crypto.randomBytes(16).toString('hex')}`;
     if (req.query.url && typeof req.query.url === 'string') {
       try {
-        // Try decoding base64 first
-        targetUrl = Buffer.from(req.query.url, 'base64').toString('utf-8');
-      } catch (e) {
-        // Fallback
-        targetUrl = req.query.url;
-      }
-      
-      // If the url was not base64 encoded, decoding it might result in garbage or original string.
-      if (!targetUrl.startsWith('http')) {
-        if (req.query.url.startsWith('http')) {
-           targetUrl = req.query.url;
-        } else if (targetUrl === 'U2FsdGVkX19xxxxxx' || targetUrl.trim() === '') {
-           targetUrl = `https://example.com/mock-secure-redirect?original=${targetUrl}`;
+        const queryUrl = req.query.url;
+        if (queryUrl.startsWith('U2FsdGVkX1')) {
+          const CryptoJS = require('crypto-js');
+          const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
+          const bytes = CryptoJS.AES.decrypt(queryUrl, AES_SECRET);
+          targetUrl = bytes.toString(CryptoJS.enc.Utf8);
         } else {
-           targetUrl = 'https://' + targetUrl.replace(/^[^\w]+/, '');
+          // Reject cheap Base64 for safety
+          targetUrl = 'https://example.com/unauthorized-access-blocked';
         }
+      } catch (e) {
+        targetUrl = 'https://example.com/unauthorized-access-blocked';
       }
     }
     

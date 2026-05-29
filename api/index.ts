@@ -218,13 +218,19 @@ app.post(["/api/v1/get-token", "/api/v1/process-file"], (req, res) => {
   // Gracefully log kinetic human indicators but don't block mobile touch, pointer events or standard browser clicks
   console.log(`[INFO_KINETIC] Human gestures analyzed: score=${score}, moved=${moved}, touch=${touch}`);
 
+  // Enforce kinetic behavior scores to filter out automated scrapers and headless download bots
+  if (typeof score !== 'number' || score < 50) {
+    console.warn(`[DEFENSE_WARN] Bot score constraint triggered on IP ${getIp(req)}: score=${score}`);
+    return res.status(403).json({ error: "Access Denied: High-risk automated request profile detected." });
+  }
+
   // Server-side SHA-256 Proof-of-Work check
-  // (Bypassed for standard button behavior in AI lab environment)
-  // const attempt = nonce + solution;
-  // const hash = crypto.createHash("sha256").update(attempt).digest("hex");
-  // if (!hash.startsWith("00")) {
-  //   return res.status(403).json({ error: "Access Denied: Proof-of-Work solver sequence check failed." });
-  // }
+  const attempt = nonce + solution;
+  const hash = crypto.createHash("sha256").update(attempt).digest("hex");
+  if (!hash.startsWith("00")) {
+    console.warn(`[DEFENSE_WARN] Mathematical verification failure on IP ${getIp(req)}: proof=${hash}`);
+    return res.status(403).json({ error: "Access Denied: Proof-of-Work solver sequence check failed." });
+  }
 
   // Referrer validation - Bypassed for back/forward navigation and iframe sandboxing compatibility
   const ref = (req.headers["referer"] || req.headers["referrer"] || "") as string;

@@ -123,7 +123,7 @@ export default function GatewayPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 min-h-[40vh]">
         <div className="w-8 h-8 border-[3px] border-black/10 dark:border-white/10 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-        <p className="text-sm font-medium tracking-wide text-zinc-500 animate-pulse">Loading gateway...</p>
+        <p className="text-sm font-medium tracking-wide text-zinc-500 animate-pulse">Preparing download details...</p>
       </div>
     );
   }
@@ -133,7 +133,7 @@ export default function GatewayPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 min-h-[40vh] text-center px-4 max-w-sm mx-auto">
         <div className="w-8 h-8 border-[3px] border-black/10 dark:border-white/10 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-2">Syncing Gateway Sync</h3>
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-2">Retrieving App Specifications</h3>
         <p className="text-sm text-zinc-500 mt-2 leading-relaxed">
           Loading app details from the server...
         </p>
@@ -211,7 +211,7 @@ export default function GatewayPage() {
       </div>
       <Helmet>
         <title>{`${app.seo_title || app.name} - Technical Info | ${mockSettings.site_title || 'RUMMY STORE'}`}</title>
-        <meta name="description" content={app.seo_description || (app.description_html ? app.description_html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim().substring(0, 160) : `Verified technical specs and application profile for ${app.name}.`)} />
+        <meta name="description" content={app.seo_description || (app.description_html ? app.description_html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim().substring(0, 160) : `Technical specifications and download details for ${app.name}.`)} />
         {app.seo_keywords && <meta name="keywords" content={`${app.seo_keywords}, info ${app.name}, ${app.name} technical info`} />}
         <meta property="og:title" content={`${app.seo_title || app.name} - Technical Profile`} />
         <meta property="og:description" content={app.seo_description || (app.description_html ? app.description_html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim().substring(0, 160) : `Detailed information and specifications for ${app.name}.`)} />
@@ -239,9 +239,9 @@ export default function GatewayPage() {
           <Info className="w-3.5 h-3.5" />
           Status: {app.safety_status}
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold mb-3 tracking-tight text-zinc-900 dark:text-锌-100 flex flex-wrap items-center justify-center gap-3">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-3 tracking-tight text-zinc-900 dark:text-zinc-100 flex flex-wrap items-center justify-center gap-3">
           <Info className="w-6 h-6 text-blue-500" />
-          <span>Information Portal</span>
+          <span>Download Redirection Hub</span>
         </h1>
         <p className="font-medium text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
           Specifications and details for <span className="font-semibold text-zinc-900 dark:text-zinc-100">{app.name}</span>.
@@ -337,7 +337,7 @@ export default function GatewayPage() {
         <h2 className="text-3xl sm:text-4xl font-bold mb-10 tracking-tight text-zinc-900 dark:text-zinc-100">Technical Details</h2>
         <div 
           className="prose prose-zinc dark:prose-invert max-w-none prose-p:leading-relaxed prose-a:text-blue-500"
-          dangerouslySetInnerHTML={{ __html: app.description_html || '<p>Verified gateway specs.</p>' }}
+          dangerouslySetInnerHTML={{ __html: app.description_html || '<p>App details and technical specifications.</p>' }}
         />
       </div>
 

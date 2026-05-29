@@ -135,78 +135,7 @@ export interface VideoItem {
 const savedApps = typeof window !== 'undefined' ? localStorage.getItem('rummystore_apps') : null;
 export const mockApps: AppConfig[] = savedApps ? (() => {
   try { return JSON.parse(savedApps); } catch { return []; }
-})() : [
-  {
-    id: 'game1',
-    name: 'Subway Surfers',
-    slug: 'subway-surfers',
-    category: 'Games, Action',
-    version: '3.10.0',
-    file_size: '150 MB',
-    developer: 'SYBO Games',
-    icon_url: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop',
-    screenshots: [
-      'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&q=80',
-    ],
-    encrypted_download_url: 'U2FsdGVkX19xxxxxx',
-    description_html: '<p>Dash as fast as you can. Dodge the oncoming trains.</p>',
-    red_box_msg: '',
-    yellow_box_msg: '',
-    idea_box_msg: '',
-    safety_status: 'Verified',
-    serial_number: 1,
-    is_new: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '1',
-    name: 'Instagram SafeMod',
-    slug: 'instagram-safemod',
-    category: 'Social',
-    version: '2.4.1',
-    file_size: '45.2 MB',
-    developer: 'Meta Privacy Team',
-    icon_url: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop',
-    screenshots: [
-      'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&q=80',
-    ],
-    encrypted_download_url: 'U2FsdGVkX19xxxxxx',
-    description_html: '<p>A privacy-focused version of Instagram that restricts tracking and excessive permissions.</p>',
-    red_box_msg: '',
-    yellow_box_msg: '',
-    idea_box_msg: 'Always ensure your device permissions are set to strictly necessary.',
-    safety_status: 'Verified',
-    serial_number: 1,
-    is_featured: true,
-    is_new: true,
-    release_notes: '* Fixed tracking bugs.\n* Enhanced encryption layer.',
-    rating: 4.8,
-    created_at: '2026-05-11T10:00:00Z'
-  },
-  {
-    id: '2',
-    name: 'Suspicious Messaging App',
-    slug: 'suspicious-msg',
-    category: 'Communication',
-    version: '1.0',
-    file_size: '12 MB',
-    developer: 'Unknown',
-    icon_url: 'https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?w=128&h=128&fit=crop',
-    screenshots: [],
-    encrypted_download_url: '',
-    description_html: '<p>This app requests unnecessary permissions like contact lists and precise location.</p>',
-    red_box_msg: 'Do NOT install without a sandbox.',
-    yellow_box_msg: 'Rejected by safety moderators.',
-    idea_box_msg: '',
-    safety_status: 'Unsafe',
-    serial_number: 2,
-    is_featured: false,
-    is_new: false,
-    release_notes: '',
-    rating: 1.2,
-    created_at: '2026-04-10T10:00:00Z'
-  }
-];
+})() : [];
 
 export const saveMockApps = (apps: AppConfig[]) => {
   localStorage.setItem('rummystore_apps', JSON.stringify(apps));
@@ -257,22 +186,7 @@ export const saveMockSettings = (settings: GlobalSettings) => {
 const savedNews = typeof window !== 'undefined' ? localStorage.getItem('rummystore_news') : null;
 export const mockNews: NewsItem[] = savedNews ? (() => {
   try { return JSON.parse(savedNews); } catch { return []; }
-})() : [
-  {
-    id: '1',
-    slug: 'tech-innovations-2026',
-    title: 'Technology Innovations in 2026',
-    logo_url: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&q=80',
-    description: 'A deep dive into the most exciting technical leaps of this year.',
-    ceo_name: 'Elena Vance',
-    ceo_description: 'An experienced technical leader with 10+ years of building secure systems.',
-    seo_title: 'Tech Innovations 2026 - Latest News',
-    seo_description: 'Read the latest updates about tech innovations in 2026.',
-    content: 'A comprehensive guide to digital transformations this year...',
-    published_at: new Date().toISOString(),
-    link: 'https://example.com/news/1'
-  }
-];
+})() : [];
 
 export const saveMockNews = (newsList: NewsItem[]) => {
   localStorage.setItem('rummystore_news', JSON.stringify(newsList));
@@ -282,20 +196,7 @@ export const saveMockNews = (newsList: NewsItem[]) => {
 const savedBlogs = typeof window !== 'undefined' ? localStorage.getItem('rummystore_blogs') : null;
 export const mockBlogs: BlogPost[] = savedBlogs ? (() => {
   try { return JSON.parse(savedBlogs); } catch { return []; }
-})() : [
-  {
-    id: '1',
-    slug: 'future-mobile-security',
-    title: 'The Future of Mobile Security',
-    content: 'As mobile devices become central to our lives, securing them is more important than ever...',
-    author: 'Admin Team',
-    cover_url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80',
-    published_at: new Date().toISOString(),
-    seo_title: 'Future of Mobile Security - Blog',
-    seo_description: 'Exploring the upcoming trends in mobile device protection.',
-    seo_keywords: 'mobile security, privacy, encryption, 2026 tech'
-  }
-];
+})() : [];
 
 export const saveMockBlogs = (blogs: BlogPost[]) => {
   localStorage.setItem('rummystore_blogs', JSON.stringify(blogs));
@@ -305,18 +206,7 @@ export const saveMockBlogs = (blogs: BlogPost[]) => {
 const savedVideos = typeof window !== 'undefined' ? localStorage.getItem('rummystore_videos') : null;
 export const mockVideos: VideoItem[] = savedVideos ? (() => {
   try { return JSON.parse(savedVideos); } catch { return []; }
-})() : [
-  {
-    id: '1',
-    slug: 'intro-video',
-    title: 'Intro to RUMMY STORE',
-    description: 'A brief introduction to the RUMMY STORE platform and its virtual gaming offerings.',
-    youtube_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    seo_title: 'RUMMY STORE Introduction Video',
-    seo_description: 'Watch the RUMMY STORE introduction video.',
-    created_at: new Date().toISOString()
-  }
-];
+})() : [];
 
 export const saveMockVideos = (videos: VideoItem[]) => {
   localStorage.setItem('rummystore_videos', JSON.stringify(videos));

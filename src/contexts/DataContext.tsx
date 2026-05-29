@@ -495,20 +495,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       await setDoc(doc(db, 'store_data', 'secure_links'), { items: secureLinks });
       
       console.log("Cloud: Apps update acknowledged by server.");
-
-      if (gitConfig?.autoSync) {
-        console.log("GitHub Sync: AutoSync engaged. Triggering compile and commit...");
-        const updatedCode = generateStaticDataFileCode(newApps, settings, news, blogs, videos);
-        commitFileToGitHub({
-          owner: gitConfig.owner,
-          repo: gitConfig.repo,
-          token: gitConfig.token,
-          branch: gitConfig.branch || 'main',
-          path: 'src/lib/staticData.ts',
-          content: updatedCode,
-          message: `Admin Release Auto-Update: Added/Updated applications`
-        }).catch(err => console.error("Background auto-sync commit failed:", err));
-      }
     } catch (err: any) {
       console.error("Save Apps Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/apps');
@@ -652,27 +638,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const pushAllToGitHub = React.useCallback(async (customConfig?: GitConfig) => {
-    const configToUse = customConfig || gitConfig;
-    if (!configToUse || !configToUse.token || !configToUse.owner || !configToUse.repo) {
-      throw new Error("GitHub synchronization is not fully configured. Please configure GitHub Repository Sync under your admin panel first.");
-    }
-
-    const code = generateStaticDataFileCode(apps, settings, news, blogs, videos);
-    
-    // Obfuscate standard content strings for bots to avoid indexing the plain-text
-    const obfuscatedCode = code;
-    
-    await commitFileToGitHub({
-      owner: configToUse.owner,
-      repo: configToUse.repo,
-      token: configToUse.token,
-      branch: configToUse.branch || 'main',
-      path: 'src/lib/staticData.ts',
-      content: code,
-      message: `Admin Manual Sync: Recompiled and updated static store fallbacks`
-    });
-    console.log("GitHub Manual Sync complete: Repository updated with live databases!");
-  }, [gitConfig, apps, settings, news, blogs, videos]);
+    throw new Error("GitHub synchronization has been deactivated for security reasons.");
+  }, []);
 
   const testCloudConnection = React.useCallback(async () => {
     if (!isFirebaseConfigured) return false;

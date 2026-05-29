@@ -5,6 +5,8 @@ import { auth } from '../lib/firebase';
 import { useData } from '../contexts/DataContext';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
+import { getAdminPath } from '../lib/utils';
+
 export default function AdminLogin() {
   const { settings } = useData();
   const [email, setEmail] = useState('');
@@ -62,10 +64,10 @@ export default function AdminLogin() {
             Please register this domain in the security control interface or access the portal from your authorized support domain.
           </p>
         </>);
-      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        setError("Invalid email or password. Please use the Google Login if you haven't set an email password yet.");
       } else {
-        setError(err.message || "Failed to sign in. Please check your credentials.");
+        // Secure error mapping: Return a generic message for all other authentication codes
+        // to prevent bad actors from checking account status, existence, or configuration details.
+        setError("Invalid email or password. Please verify your credentials and try again.");
       }
       setIsLoading(false);
     }
@@ -84,7 +86,8 @@ export default function AdminLogin() {
           <p>Access Mismatch: This host domain ({window.location.hostname}) has not been authorized.</p>
           </>);
       } else {
-        setError(err.message || "Failed to sign in with Google.");
+        // Obfuscate federated login errors to prevent leaking admin details
+        setError("Unable to complete federated authentication. Please consult your administrator or try again.");
       }
       setIsLoading(false);
     }
@@ -99,16 +102,17 @@ export default function AdminLogin() {
     setError(null);
     try {
       await sendPasswordResetEmail(auth, email);
-      setMessage("Password reset email sent! Please check your inbox.");
     } catch (err: any) {
-      setError(err.message || "Failed to send reset email.");
+      // Quietly consume errors internally to prevent email probing/enumeration attacks
+      console.warn("Secure password reset requested. Suppressed disclosure of potential account status.", err.code);
     } finally {
+      setMessage("If that email address is registered, a password reset link has been sent. Please check your inbox.");
       setIsLoading(false);
     }
   };
 
   if (authenticated) {
-    return <Navigate to="/x9k2m7-admin" />;
+    return <Navigate to={`/${getAdminPath()}`} />;
   }
 
   return (

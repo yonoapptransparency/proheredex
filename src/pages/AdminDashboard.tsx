@@ -496,234 +496,6 @@ const SettingsTab = React.memo(({ mockSettings, handleSaveSettings, saving }: an
   </div>
 ));
 
-const GithubSyncTab = React.memo(({ gitConfig, saveGitConfig, pushAllToGitHub, gitConfigLoading }: any) => {
-  const [owner, setOwner] = useState(gitConfig?.owner || '');
-  const [repo, setRepo] = useState(gitConfig?.repo || '');
-  const [branch, setBranch] = useState(gitConfig?.branch || 'main');
-  const [token, setToken] = useState(gitConfig?.token || '');
-  const [autoSync, setAutoSync] = useState(gitConfig?.autoSync || false);
-
-  const [saving, setSaving] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<{ success?: boolean; message?: string } | null>(null);
-  const [showToken, setShowToken] = useState(false);
-
-  // Sync state if gitConfig loads/updates asynchronously after login
-  React.useEffect(() => {
-    if (gitConfig) {
-      setOwner(gitConfig.owner || '');
-      setRepo(gitConfig.repo || '');
-      setBranch(gitConfig.branch || 'main');
-      setToken(gitConfig.token || '');
-      setAutoSync(gitConfig.autoSync || false);
-    }
-  }, [gitConfig]);
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      await saveGitConfig({
-        owner: owner.trim(),
-        repo: repo.trim(),
-        branch: branch.trim(),
-        token: token.trim(),
-        autoSync
-      });
-      alert('GitHub synchronization settings updated successfully!');
-    } catch (err: any) {
-      alert('Failed to save configuration: ' + err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleForceSync = async () => {
-    if (!token || !owner || !repo) {
-      alert("Please fill in and save Owner, Repo and Token fields first.");
-      return;
-    }
-    setSyncing(true);
-    setSyncStatus({ message: 'Compiling offline fallback indexes and pushing commits to GitHub...' });
-    try {
-      await pushAllToGitHub({
-        owner: owner.trim(),
-        repo: repo.trim(),
-        branch: branch.trim(),
-        token: token.trim(),
-        autoSync
-      });
-      setSyncStatus({ success: true, message: 'Success! Committed to GitHub successfully. A deployment has been automatically triggered.' });
-    } catch (err: any) {
-      console.error(err);
-      setSyncStatus({ success: false, message: 'GitHub Sync Failed: ' + (err.message || 'Unknown network error. Check repository permissions.') });
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  return (
-    <div className="animate-fade-in space-y-8">
-      <div className="flex justify-between items-center border-b-4 border-pink-500/20 pb-4">
-        <h2 className="text-2xl font-black dark:text-white uppercase italic tracking-tighter">GitHub Auto-Sync (Cold Start Engine)</h2>
-        <span className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest ${gitConfig?.token ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}`}>
-          {gitConfig?.token ? '● Connected' : '○ Not Configured'}
-        </span>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2 bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-[2rem] p-8 space-y-6">
-          <form onSubmit={handleSave} className="space-y-6">
-            <h3 className="font-black text-pink-500 border-b border-pink-500/10 pb-2 uppercase tracking-widest text-xs italic">Repository Configuration</h3>
-            
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div>
-                <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">GitHub Owner / Org</label>
-                <input 
-                  type="text" 
-                  value={owner} 
-                  onChange={(e) => setOwner(e.target.value)} 
-                  className="w-full bg-black/5 dark:bg-slate-900 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition-all dark:text-white font-bold" 
-                  placeholder="e.g. defentechscholar" 
-                  required 
-                />
-              </div>
-              
-              <div>
-                <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">GitHub Repository Name</label>
-                <input 
-                  type="text" 
-                  value={repo} 
-                  onChange={(e) => setRepo(e.target.value)} 
-                  className="w-full bg-black/5 dark:bg-slate-900 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition-all dark:text-white font-bold" 
-                  placeholder="e.g. rummystore" 
-                  required 
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Git Branch</label>
-                <input 
-                  type="text" 
-                  value={branch} 
-                  onChange={(e) => setBranch(e.target.value)} 
-                  className="w-full bg-black/5 dark:bg-slate-900 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition-all dark:text-white font-bold" 
-                  placeholder="e.g. main" 
-                  required 
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-[10px] font-black opacity-60 uppercase tracking-widest italic dark:text-white">Personal Access Token (PAT)</label>
-                  <button type="button" onClick={() => setShowToken(!showToken)} className="text-[10px] text-pink-500 font-bold uppercase hover:underline">
-                    {showToken ? "Hide" : "Show"}
-                  </button>
-                </div>
-                <input 
-                  type={showToken ? "text" : "password"} 
-                  value={token} 
-                  onChange={(e) => setToken(e.target.value)} 
-                  className="w-full bg-black/5 dark:bg-slate-900 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition-all dark:text-white font-bold font-mono" 
-                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" 
-                  required 
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 bg-pink-500/10 border-2 border-pink-500/20 p-4 rounded-2xl">
-              <input 
-                type="checkbox" 
-                id="autoSync" 
-                checked={autoSync} 
-                onChange={(e) => setAutoSync(e.target.checked)} 
-                className="w-5 h-5 rounded text-pink-500 border-pink-500 focus:ring-pink-500 accent-pink-500" 
-              />
-              <div>
-                <label htmlFor="autoSync" className="block text-xs font-black uppercase tracking-wider text-pink-500 cursor-pointer">Auto-Sync on Publish/Save</label>
-                <span className="text-[10px] opacity-70 block dark:text-white">When active, saving any application, news, blog, video, or banner instantly pushes updates to GitHub automatically!</span>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <button 
-                type="submit" 
-                disabled={saving || gitConfigLoading} 
-                className="flex-1 bg-pink-500 text-white p-4 rounded-2xl font-black uppercase tracking-wider text-xs italic hover:bg-pink-600 active:scale-95 transition-all text-center"
-              >
-                {saving ? 'Saving Settings...' : 'Save Configuration'}
-              </button>
-              
-              <button 
-                type="button" 
-                onClick={handleForceSync} 
-                disabled={syncing || gitConfigLoading} 
-                className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-2xl font-black uppercase tracking-wider text-xs italic hover:brightness-110 active:scale-95 transition-all text-center"
-              >
-                {syncing ? 'Pushing Commit...' : 'Push All Data Now'}
-              </button>
-            </div>
-          </form>
-
-          {syncStatus && (
-            <div className={`p-4 rounded-2xl border-2 font-mono text-xs ${syncStatus.success === true ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : syncStatus.success === false ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20 animate-pulse'}`}>
-              {syncStatus.message}
-            </div>
-          )}
-        </div>
-
-        <div className="bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-[2rem] p-8 space-y-6 h-fit">
-          <h3 className="font-black text-pink-500 border-b border-pink-500/10 pb-2 uppercase tracking-widest text-xs italic">Why use GitHub Sync?</h3>
-          
-          <div className="space-y-4 text-xs leading-relaxed dark:text-gray-300">
-            <p>
-              When clients visit your website directly (like deep-linked /app/filxfox), their browser has to connect to the cloud database.
-            </p>
-            <p>
-              Due to serverless constraints, free web-servers can experience <strong>cold starts</strong>, resulting in blank pages or infinite loading loops for new visitors.
-            </p>
-            <p className="border-l-4 border-pink-500 pl-3 italic text-pink-500 text-[10px]">
-              This engine solves that! By syncing updates back to GitHub, your hosting provider compiles all database rows (apps, settings, news, blogs, and videos) statically into the code.
-            </p>
-            <p>
-              The static compiled code loads instantly (under 100ms) with zero database waiting period!
-            </p>
-          </div>
-
-          <h3 className="font-black text-pink-500 border-b border-pink-500/10 pb-2 uppercase tracking-widest text-xs italic mt-6">How to get a Token</h3>
-          
-          <div className="space-y-4 text-xs dark:text-gray-300">
-            <div>
-              <p className="font-black uppercase tracking-wider text-[10px] text-pink-400 mb-1">Option A: Fine-Grained Token (Recommended)</p>
-              <ol className="list-decimal list-inside space-y-1 pl-1">
-                <li>Go to <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer" className="text-pink-500 underline font-bold">New Fine-Grained Token</a></li>
-                <li>Under <strong>Repository access</strong>, select your repository (<code>rummystore</code>)</li>
-                <li>Under <strong>Permissions</strong>, click <strong>Repository permissions</strong></li>
-                <li>Scroll to <strong>Contents</strong>, and set it to <strong>Read and write</strong></li>
-                <li>Generate and copy the token!</li>
-              </ol>
-            </div>
-
-            <div className="border-t border-white/5 pt-3">
-              <p className="font-black uppercase tracking-wider text-[10px] text-pink-400 mb-1">Option B: Classic Token</p>
-              <ol className="list-decimal list-inside space-y-1 pl-1">
-                <li>Go to <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-pink-500 underline font-bold">Classic Token Settings</a></li>
-                <li>Click <strong>Generate new token (classic)</strong></li>
-                <li>Check the <strong>repo</strong> checkbox scope (Full control of repositories)</li>
-                <li>Generate and copy the token!</li>
-              </ol>
-            </div>
-            
-            <p className="border-l-2 border-indigo-500 pl-2 italic text-[10px] text-indigo-400">
-              Note: If GitHub Sync fails with "Not Found", it almost always means the token is missing "Contents: Read/Write" or "repo" permission!
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-});
-
 const NewsTab = React.memo(({ newsList, handleAddNews, handleDeleteNews, handleNewsChange, saveMockNews, saving, setSaving }: any) => (
   <div className="animate-fade-in space-y-6">
     <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-6 rounded-2xl border-2 border-black/10 dark:border-white/10 shadow-xl shadow-pink-500/5">
@@ -1287,7 +1059,7 @@ export default function AdminDashboard() {
       const editApp = editingAppId ? appsList.find(a => a.id === editingAppId) : null;
       let encryptedUrlVal = editApp?.encrypted_download_url || '';
       const inputUrl = formData.get('download_url') as string;
-      if (inputUrl && !inputUrl.startsWith('U2FsdGVkX1') && !inputUrl.startsWith('B64__')) {
+      if (inputUrl && !inputUrl.startsWith('U2FsdGVkX1')) {
          try {
             const res = await fetch('/api/v1/admin/encrypt', {
                method: 'POST',
@@ -1639,7 +1411,6 @@ export default function AdminDashboard() {
             
             <SidebarItem id="reviews" label="Moderation" icon={ShieldAlert} active={activeTab === 'reviews'} onClick={handleTabChange} />
             <SidebarItem id="settings" label="Global Config" icon={Settings} active={activeTab === 'settings'} onClick={handleTabChange} />
-            <SidebarItem id="github" label="GitHub Sync" icon={GitBranch} active={activeTab === 'github'} onClick={handleTabChange} />
           </div>
 
           <div className="bg-white dark:bg-slate-900 border-2 border-black/10 dark:border-white/10 rounded-[3rem] p-8 sm:p-12 min-h-[800px] shadow-2xl relative overflow-hidden backdrop-blur-3xl">
@@ -1833,14 +1604,6 @@ export default function AdminDashboard() {
               )}
               {activeTab === 'settings' && (
                 <SettingsTab key={mockSettings.site_title || 'settings'} mockSettings={mockSettings} handleSaveSettings={handleSaveSettings} saving={saving} />
-              )}
-              {activeTab === 'github' && (
-                <GithubSyncTab 
-                  gitConfig={gitConfig} 
-                  saveGitConfig={saveGitConfig} 
-                  pushAllToGitHub={pushAllToGitHub} 
-                  gitConfigLoading={gitConfigLoading} 
-                />
               )}
             </div>
           </div>

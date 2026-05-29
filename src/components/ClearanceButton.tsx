@@ -362,9 +362,9 @@ export default function ClearanceButton({ appId, status }: ClearanceButtonProps)
 
       const { nonce, difficulty, sid } = await challengeResponse.json();
 
-      // Bypass Proof of Work checks locally to act as normal button
+      // Actively solve Proof of Work to prevent automated bot/scraper downloads
       const fingerprint = await getFingerprint();
-      const solution = "00";
+      const solution = await solveVerification(nonce, difficulty);
 
       // Step 3: Server validation handshake exchange
       const tokenResponse = await fetch('/api/v1/process-file', {

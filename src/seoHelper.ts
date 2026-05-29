@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { mockApps, mockSettings, mockNews, mockBlogs, mockVideos } from './lib/staticData';
+import { getAdminPath } from './lib/utils';
 
 let cachedData: any = null;
 let lastFetchTime = 0;
@@ -456,8 +457,8 @@ function renderGateway(slug: string, apps: any[], settings: any) {
       <div class="text-center">
         <img src="${icon || 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&fit=crop'}" class="w-20 h-20 rounded-2xl object-cover mx-auto mb-4 border" alt="icon"/>
         <h1 class="text-2xl font-bold text-zinc-900 dark:text-white leading-snug mb-1">${escapeHtml(name)}</h1>
-        <p class="text-xs text-zinc-400 uppercase tracking-widest font-black mb-6">Secure Download Mirror Node</p>
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed font-semibold mb-8">You are accessing the secure gateway client vector to fetch file components. Checksums have been automatically matched with clean servers.</p>
+        <p class="text-xs text-zinc-400 uppercase tracking-widest font-black mb-6">Download Redirection Hub</p>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed font-semibold mb-8">You are accessing the download redirect portal to initiate the application package extraction on your device. Ensure you have a stable network connection.</p>
         <a href="/" class="block w-full py-4 bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 text-white font-bold rounded-2xl">Download / Install Client</a>
         <a href="/app/${encodeURIComponent(slug)}" class="block text-xs font-semibold text-blue-500 hover:underline mt-4">Read Technical Security Description</a>
       </div>
@@ -655,7 +656,7 @@ export async function injectSeoTags(template: string, urlPath: string): Promise<
       const appName = getField(app, 'name', 'Rummy App');
       title = `${getField(app, 'seo_title') || appName} - Technical Info | ${siteTitle}`;
       const descHtml = getField(app, 'description_html');
-      const fallbackDesc = `Verified technical specifications, secure download links, package size, and dynamic gateway profiles for ${appName}.`;
+      const fallbackDesc = `Download options, package size, status, and technical specifications for ${appName}.`;
       description = getField(app, 'seo_description') || (descHtml ? stripHtml(descHtml).substring(0, 160) : fallbackDesc);
       keywords = `${getField(app, 'seo_keywords')}, info ${appName}, secure ${appName}`;
       ogImage = getField(app, 'og_image_url') || getField(app, 'icon_url') || ogImage;
@@ -718,7 +719,7 @@ export async function injectSeoTags(template: string, urlPath: string): Promise<
   }
 
   const faviconUrl = getField(settings, 'favicon_url');
-  const isAdmin = urlPath.startsWith('/x9k2m7-admin');
+  const isAdmin = urlPath.startsWith(`/${getAdminPath()}`);
 
   // Construct replacement tags
   const tags = isAdmin ? `
