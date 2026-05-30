@@ -750,13 +750,18 @@ const rateLimitMap = new Map<string, number[]>();
                 const encryptedBlob = fields.encryptedData.stringValue;
                 const bytes = CryptoJS.AES.decrypt(encryptedBlob, AES_SECRET);
                 const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+                console.log("Decrypted text length:", decryptedText ? decryptedText.length : 0);
                 if (decryptedText) {
                   const linksArray = JSON.parse(decryptedText);
                   const linkObj = linksArray.find((v: any) => v.id === appId);
                   if (linkObj && linkObj.url) {
                     const encryptedUrl = linkObj.url;
-                    const decryptBytes = CryptoJS.AES.decrypt(encryptedUrl, AES_SECRET);
-                    targetUrl = decryptBytes.toString(CryptoJS.enc.Utf8);
+                    if (encryptedUrl.startsWith('U2FsdGVkX1')) {
+                      const decryptBytes = CryptoJS.AES.decrypt(encryptedUrl, AES_SECRET);
+                      targetUrl = decryptBytes.toString(CryptoJS.enc.Utf8);
+                    } else {
+                      targetUrl = encryptedUrl; // Legacy plaintext
+                    }
                   }
                 }
               } else if (fields?.items?.arrayValue?.values) {
@@ -766,8 +771,12 @@ const rateLimitMap = new Map<string, number[]>();
                 if (linkObj && linkObj.mapValue.fields.url) {
                   const encryptedUrl = linkObj.mapValue.fields.url.stringValue;
                   if (encryptedUrl) {
-                    const bytes = CryptoJS.AES.decrypt(encryptedUrl, AES_SECRET);
-                    targetUrl = bytes.toString(CryptoJS.enc.Utf8);
+                    if (encryptedUrl.startsWith('U2FsdGVkX1')) {
+                      const bytes = CryptoJS.AES.decrypt(encryptedUrl, AES_SECRET);
+                      targetUrl = bytes.toString(CryptoJS.enc.Utf8);
+                    } else {
+                      targetUrl = encryptedUrl;
+                    }
                   }
                 }
               }
@@ -810,9 +819,38 @@ const rateLimitMap = new Map<string, number[]>();
         } catch (err) {
           console.error("Firestore retrieval or decryption failed", err);
         }
+        
+        console.log("FINAL TARGET URL:", targetUrl, "appId:", appId);
 
         if (!targetUrl || !targetUrl.startsWith('http')) {
-          return res.status(400).send("<h1>400 Bad Request</h1><p>More information gateway data could not be located or decrypted.</p>");
+          console.log("Rejecting targetUrl:", targetUrl);
+          return res.status(400).send(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Content Unavailable</title>
+              <style>
+                body { font-family: system-ui, sans-serif; background: #000; color: #fff; text-align: center; padding: 10vh 20px; }
+                .container { max-width: 600px; margin: 0 auto; background: #111; padding: 40px; border-radius: 12px; border: 1px solid #333; }
+                h1 { color: #f43f5e; margin-bottom: 20px; }
+                p { color: #9ca3af; line-height: 1.6; }
+                a { color: #3b82f6; text-decoration: none; border-bottom: 1px transparent; transition: all 0.2s; }
+                a:hover { border-bottom-color: #3b82f6; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <h1>Link Not Configured</h1>
+                <p>The download or more information link for this application has not been configured securely in the database.</p>
+                <p><strong>Admin Note:</strong> Please login to the <a href="/admin">Admin Dashboard</a>, edit this app, provide a <em>Download URL</em>, and click Save App.</p>
+                <br>
+                <a href="/">&larr; Return to Home</a>
+              </div>
+            </body>
+            </html>
+          `);
         }
 
         // Apply Mistake 5 fix: Add affiliate referral code server-side

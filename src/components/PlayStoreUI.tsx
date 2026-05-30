@@ -67,7 +67,7 @@ export const FeaturedBanner = React.memo(({ items }: BannerProps) => {
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 alt="Banner"
                 decoding="async"
-                loading="lazy"
+                loading="eager"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-6 flex flex-col justify-end">
@@ -141,7 +141,7 @@ export const PromotionSection = React.memo(() => {
             frameBorder="0" 
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
             allowFullScreen
-            loading="lazy"
+            loading="eager"
           ></iframe>
         </div>
 
@@ -240,7 +240,7 @@ export const AppListItem = React.memo(({ app, index }: { app: any; index?: numbe
             <img 
               src={app.icon_url || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop"} 
               alt={app.name} 
-              loading="lazy"
+              loading="eager"
               decoding="async"
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover"
@@ -307,7 +307,7 @@ export const TopChartItem = React.memo(({ rank, app }: TopChartItemProps) => {
             <img 
               src={app.icon_url || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop"} 
               alt={app.name} 
-              loading="lazy"
+              loading="eager"
               decoding="async"
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover"
