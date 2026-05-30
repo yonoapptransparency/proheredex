@@ -357,7 +357,16 @@ app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], async (req, res) => 
           
           try {
             const urlResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/secure_links`);
-            const secureData = await urlResponse.json();
+            let secureData = await urlResponse.json();
+            
+            // Fallback to sec_vault if secure_links is empty
+            if (secureData.error || (!secureData.fields?.encryptedData && !secureData.fields?.items)) {
+                const vaultRes = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/sec_vault`);
+                const vaultData = await vaultRes.json();
+                if (!vaultData.error) {
+                    secureData = vaultData;
+                }
+            }
             
             if (!secureData.error) {
               const fields = secureData.fields;

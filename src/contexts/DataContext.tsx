@@ -546,9 +546,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (encryptedData) {
-        await setDoc(doc(db, 'store_data', 'sec_vault'), { encryptedData });
+        await setDoc(doc(db, 'store_data', 'secure_links'), { encryptedData });
       } else {
-        await setDoc(doc(db, 'store_data', 'sec_vault'), { items: secureLinks });
+        await setDoc(doc(db, 'store_data', 'secure_links'), { items: secureLinks });
       }
       
       console.log("Cloud: Apps update acknowledged by server.");

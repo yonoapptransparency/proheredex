@@ -25,24 +25,15 @@ export const secureStorage = {
       const realKey = getObfuscatedKey(key);
       const raw = localStorage.getItem(realKey);
       if (!raw) {
-        // Fallback check to ease migration from legacy plain-text schema if present,
-        // then immediately encrypt on next save.
         const legacyRaw = localStorage.getItem(key);
-        if (legacyRaw) {
-          try {
-            // Check if legacy raw is valid JSON, if so return it
-            JSON.parse(legacyRaw);
-            return legacyRaw;
-          } catch (_) {}
-        }
+        if (legacyRaw) return legacyRaw;
         return null;
       }
-      
-      // Decrypt AES ciphertext
-      const keyString = getStorageSecret();
-      const bytes = CryptoJS.AES.decrypt(raw, keyString);
-      const plainText = bytes.toString(CryptoJS.enc.Utf8);
-      return plainText || null;
+      if (raw.startsWith('U2FsdGVkX1')) {
+          localStorage.removeItem(realKey); // clear old encrypted data so we re-sync
+          return null;
+      }
+      return raw;
     } catch (e) {
       console.warn("Secure storage read fallback:", e);
       return null;
@@ -52,11 +43,7 @@ export const secureStorage = {
   setItem: (key: string, value: string): void => {
     try {
       const realKey = getObfuscatedKey(key);
-      const keyString = getStorageSecret();
-      
-      // Encrypt plainText to AES ciphertext
-      const ciphertext = CryptoJS.AES.encrypt(value, keyString).toString();
-      localStorage.setItem(realKey, ciphertext);
+      localStorage.setItem(realKey, value);
       
       // Clean up legacy plain text if present
       if (localStorage.getItem(key)) {

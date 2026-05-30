@@ -930,10 +930,16 @@ export default function AdminDashboard() {
   React.useEffect(() => {
     if (!loading && !isInitializedRef.current && isAdminUser !== null) {
       if (isAdminUser) {
-        getDoc(doc(db, 'store_data', 'sec_vault')).then(async (snap) => {
+        getDoc(doc(db, 'store_data', 'secure_links')).then(async (snap) => {
           let secureMap = new Map();
-          if (snap.exists()) {
-            const snapData = snap.data();
+          let snapData = snap.exists() ? snap.data() : null;
+          
+          if (!snapData || (!snapData.encryptedData && !snapData.items)) {
+              const vaultSnap = await getDoc(doc(db, 'store_data', 'sec_vault'));
+              if (vaultSnap.exists()) snapData = vaultSnap.data();
+          }
+
+          if (snapData) {
             if (snapData.encryptedData) {
               try {
                 const idToken = await auth.currentUser?.getIdToken();
