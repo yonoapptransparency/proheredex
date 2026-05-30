@@ -2,6 +2,9 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import crypto from "crypto";
 import compression from "compression";
+import fs from "fs";
+import path from "path";
+import CryptoJS from "crypto-js";
 
 const app = express();
 
@@ -293,11 +296,15 @@ app.post(["/api/v1/generate-secure-token", "/api/v1/generate-token"], (req, res)
 });
 
 // API Route: Process temporary dynamic verification token (Multi-use allowed within validity lifespan!)
-app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], (req, res) => {
+app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], async (req, res) => {
+  // Note: Checking is already completed on the upstream post endpoints (/api/v1/process-file)
+  // to support various mobile browsers and system download managers that might strip browser-like headers.
+
   const ip = getIp(req);
   const sid = (req.query.sid || req.cookies?.__sid) as string;
   const token = (req.query.token || req.query.t) as string;
   const obfuscatedUrl = req.query.url as string;
+  const appId = req.query.id as string;
 
   if (!token) {
     return res.status(400).send("<h1>400 Bad Request</h1><p>Verification transmission tokens were omitted.</p>");
@@ -343,9 +350,95 @@ app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], (req, res) => {
         }
       }
 
-      if (!targetUrl || !targetUrl.startsWith('http')) {
-        targetUrl = 'https://example.com/download-secure-fallback';
+      if (!targetUrl && appId) {
+        try {
+          const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
+          const config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
+          
+          try {
+            const urlResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/secure_links`);
+            const secureData = await urlResponse.json();
+            
+            if (!secureData.error) {
+              const fields = secureData.fields;
+              if (fields?.encryptedData?.stringValue) {
+                const encryptedBlob = fields.encryptedData.stringValue;
+                const bytes = CryptoJS.AES.decrypt(encryptedBlob, AES_SECRET);
+                const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+                if (decryptedText) {
+                  const linksArray = JSON.parse(decryptedText);
+                  const linkObj = linksArray.find((v: any) => v.id === appId);
+                  if (linkObj && linkObj.url) {
+                    const encryptedUrl = linkObj.url;
+                    const decryptBytes = CryptoJS.AES.decrypt(encryptedUrl, AES_SECRET);
+                    targetUrl = decryptBytes.toString(CryptoJS.enc.Utf8);
+                  }
+                }
+              } else if (fields?.items?.arrayValue?.values) {
+                // Backward compatibility for legacy unencrypted list schema
+                const linksArray = fields.items.arrayValue.values;
+                const linkObj = linksArray.find((v: any) => v.mapValue.fields.id.stringValue === appId);
+                if (linkObj && linkObj.mapValue.fields.url) {
+                  const encryptedUrl = linkObj.mapValue.fields.url.stringValue;
+                  if (encryptedUrl) {
+                    const bytes = CryptoJS.AES.decrypt(encryptedUrl, AES_SECRET);
+                    targetUrl = bytes.toString(CryptoJS.enc.Utf8);
+                  }
+                }
+              }
+            }
+          } catch (err) {
+             console.warn("secure_links get or decryption failed, falling back to chunks scanner", err);
+          }
+
+          if (!targetUrl || !targetUrl.startsWith('http')) {
+            console.log("File Payload Scraper: Attempting direct chunk scan for app ID:", appId);
+            const metaResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_meta`);
+            const metaData = await metaResponse.json();
+            let numChunks = 1;
+            if (!metaData.error && metaData.fields?.numChunks?.integerValue) {
+                numChunks = parseInt(metaData.fields.numChunks.integerValue, 10);
+            }
+            
+            for (let i = 0; i < numChunks; i++) {
+                const chunkResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_chunk_${i}`);
+                const chunkData = await chunkResponse.json();
+                if (!chunkData.error && chunkData.fields?.items?.arrayValue?.values) {
+                    const values = chunkData.fields.items.arrayValue.values;
+                    const item = values.find((v: any) => v.mapValue.fields.id.stringValue === appId);
+                    if (item && item.mapValue.fields) {
+                        const encryptedUrlField = item.mapValue.fields.encrypted_download_url?.stringValue || item.mapValue.fields.download_url?.stringValue;
+                        if (encryptedUrlField) {
+                            if (encryptedUrlField.startsWith('U2FsdGVkX1')) {
+                                const bytes = CryptoJS.AES.decrypt(encryptedUrlField, AES_SECRET);
+                                targetUrl = bytes.toString(CryptoJS.enc.Utf8);
+                            } else {
+                                targetUrl = encryptedUrlField;
+                            }
+                            console.log("Successfully retrieved URL from fallback chunk scan for app ID:", appId);
+                            break;
+                        }
+                    }
+                }
+            }
+          }
+        } catch (err) {
+          console.error("Firestore retrieval or decryption failed", err);
+        }
       }
+
+      if (!targetUrl || !targetUrl.startsWith('http')) {
+         return res.status(400).send("<h1>400 Bad Request</h1><p>More information gateway data could not be located or decrypted.</p>");
+      }
+
+      // Apply Mistake 5 fix: Add affiliate referral code server-side
+      try {
+        const targetUrlObj = new URL(targetUrl);
+        if (!targetUrlObj.searchParams.has('code')) {
+          targetUrlObj.searchParams.set('code', 'AFFILIATE_SECURE_123');
+          targetUrl = targetUrlObj.toString();
+        }
+      } catch (e) {}
 
       res.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
       return res.redirect(302, targetUrl);

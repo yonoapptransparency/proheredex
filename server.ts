@@ -785,7 +785,7 @@ const rateLimitMap = new Map<string, number[]>();
         }
 
         if (!targetUrl || !targetUrl.startsWith('http')) {
-          return res.status(400).send("<h1>400 Bad Request</h1><p>Application payload could not be located or decrypted.</p>");
+          return res.status(400).send("<h1>400 Bad Request</h1><p>More information gateway data could not be located or decrypted.</p>");
         }
 
         // Apply Mistake 5 fix: Add affiliate referral code server-side
