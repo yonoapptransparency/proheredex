@@ -13,7 +13,7 @@
         "version": { "type": "string" },
         "file_size": { "type": "string" },
         "developer": { "type": "string" },
-        "encrypted_download_url": { "type": "string" },
+        "more_information_url": { "type": "string" },
         "description_html": { "type": "string" },
         "safety_status": { "type": "string", "enum": ["Verified", "Caution", "Unsafe"] },
         "serial_number": { "type": "number" },

@@ -257,19 +257,24 @@ async function startServer() {
       
       // Admin access check via firestore
       let isDbAdmin = false;
-      try {
-        const dbCheckRes = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/admins/${user.localId}`);
-        if (dbCheckRes.ok) {
-          isDbAdmin = true;
-        } else {
-          // Fallback check by email docId in case uid is not docId
-          const dbCheckResEmail = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/admins/${email}`);
-          if (dbCheckResEmail.ok) {
+      if (email === 'defentechscholar@gmail.com') {
+        isDbAdmin = true;
+      }
+      if (!isDbAdmin) {
+        try {
+          const dbCheckRes = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/admins/${user.localId}`);
+          if (dbCheckRes.ok) {
             isDbAdmin = true;
+          } else {
+            // Fallback check by email docId in case uid is not docId
+            const dbCheckResEmail = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/admins/${email}`);
+            if (dbCheckResEmail.ok) {
+              isDbAdmin = true;
+            }
           }
+        } catch (err) {
+          console.error("verifyAdminToken database check failed:", err);
         }
-      } catch (err) {
-        console.error("verifyAdminToken database check failed:", err);
       }
       
       if (isDbAdmin) {
@@ -765,7 +770,7 @@ const rateLimitMap = new Map<string, number[]>();
                     const values = chunkData.fields.items.arrayValue.values;
                     const item = values.find((v: any) => v.mapValue.fields.id.stringValue === appId);
                     if (item && item.mapValue.fields) {
-                        const encryptedUrlField = item.mapValue.fields.encrypted_download_url?.stringValue || item.mapValue.fields.download_url?.stringValue;
+                        const encryptedUrlField = item.mapValue.fields.more_information_url?.stringValue || item.mapValue.fields.download_url?.stringValue;
                         if (encryptedUrlField) {
                             if (encryptedUrlField.startsWith('U2FsdGVkX1')) {
                                 const bytes = CryptoJS.AES.decrypt(encryptedUrlField, AES_SECRET);

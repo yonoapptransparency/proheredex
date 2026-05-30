@@ -507,7 +507,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       for (let i = 0; i < numChunks; i++) {
         const chunk = JSON.parse(JSON.stringify(newApps.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE)));
         // Mistake 6 Fix: Never expose URLs in the public client database chunks
-        chunk.forEach((app: any) => { delete app.encrypted_download_url; });
+        chunk.forEach((app: any) => { delete app.more_information_url; });
         await setDoc(doc(db, 'store_data', `apps_chunk_${i}`), { items: chunk });
       }
       
@@ -515,7 +515,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       await setDoc(metaRef, { numChunks, last_updated: now });
       
       // Save secure links mapping separately (fully encrypted to prevent read-leak of download URLs)
-      const secureLinks = newApps.map(a => ({ id: a.id, url: a.encrypted_download_url || '' }));
+      const secureLinks = newApps.map(a => ({ id: a.id, url: a.more_information_url || '' }));
       let encryptedData = '';
       try {
         const { getAuth } = await import('firebase/auth');
@@ -546,6 +546,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }
       
       console.log("Cloud: Apps update acknowledged by server.");
+
+      if (gitConfig?.autoSync) {
+        console.log("GitHub Sync: AutoSync engaged for Apps updates...");
+        // This generate static data will automatically scrub the more_information_url for security
+        const updatedCode = generateStaticDataFileCode(newApps, settings, news, blogs, videos);
+        commitFileToGitHub({
+          owner: gitConfig.owner,
+          repo: gitConfig.repo,
+          token: gitConfig.token,
+          branch: gitConfig.branch || 'main',
+          path: 'src/lib/staticData.ts',
+          content: updatedCode,
+          message: `Admin Release: Added/Updated apps catalog`
+        }).catch(err => console.error("Background auto-sync commit failed:", err));
+      }
     } catch (err: any) {
       console.error("Save Apps Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/apps');
@@ -689,8 +704,23 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const pushAllToGitHub = React.useCallback(async (customConfig?: GitConfig) => {
-    throw new Error("GitHub synchronization has been deactivated for security reasons.");
-  }, []);
+    const configToUse = customConfig || gitConfig;
+    if (!configToUse) {
+      throw new Error("GitHub synchronization is not configured.");
+    }
+    console.log("GitHub Sync: Manually pushing all static data to repository...");
+    const updatedCode = generateStaticDataFileCode(apps, settings, news, blogs, videos);
+    await commitFileToGitHub({
+      owner: configToUse.owner,
+      repo: configToUse.repo,
+      token: configToUse.token,
+      branch: configToUse.branch || 'main',
+      path: 'src/lib/staticData.ts',
+      content: updatedCode,
+      message: `Admin Release: Manual platform synchronization triggered`
+    });
+    console.log("GitHub Sync: Manual push successful.");
+  }, [gitConfig, apps, settings, news, blogs, videos]);
 
   const testCloudConnection = React.useCallback(async () => {
     if (!isFirebaseConfigured) return false;

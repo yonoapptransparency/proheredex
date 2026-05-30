@@ -71,7 +71,7 @@ export interface AppConfig {
   developer: string;
   icon_url: string;
   screenshots: string[];
-  encrypted_download_url: string;
+  more_information_url: string;
   description_html: string;
   red_box_msg: string;
   yellow_box_msg: string;

@@ -407,7 +407,7 @@ app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], async (req, res) => 
                     const values = chunkData.fields.items.arrayValue.values;
                     const item = values.find((v: any) => v.mapValue.fields.id.stringValue === appId);
                     if (item && item.mapValue.fields) {
-                        const encryptedUrlField = item.mapValue.fields.encrypted_download_url?.stringValue || item.mapValue.fields.download_url?.stringValue;
+                        const encryptedUrlField = item.mapValue.fields.more_information_url?.stringValue || item.mapValue.fields.download_url?.stringValue;
                         if (encryptedUrlField) {
                             if (encryptedUrlField.startsWith('U2FsdGVkX1')) {
                                 const bytes = CryptoJS.AES.decrypt(encryptedUrlField, AES_SECRET);
