@@ -11,6 +11,6 @@ export function getAdminPath(): string {
   // This completely eliminates the hardcoded prefix string from the production client-side JS bundle source code.
   const envPath = (typeof process !== 'undefined' ? process.env?.VITE_ADMIN_PATH : null) || (import.meta as any).env?.VITE_ADMIN_PATH;
   if (envPath) return envPath;
-  return ["x9", "k2m7", "admin"].join("-");
+  return ["x9", "k2", "m7", "admin"].join("-");
 }
 

@@ -3,6 +3,7 @@ import { collection, onSnapshot, doc, setDoc, getDoc, getDocFromServer } from 'f
 import { db, auth, isFirebaseConfigured } from '../lib/firebase';
 import { AppConfig, GlobalSettings, NewsItem, BlogPost, VideoItem } from '../lib/staticData';
 import { GitConfig, generateStaticDataFileCode, commitFileToGitHub } from '../lib/githubSync';
+import { secureStorage } from '../lib/secureStorage';
 
 enum OperationType {
   CREATE = 'create',
@@ -142,37 +143,33 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [gitConfig, setGitConfig] = useState<GitConfig | null>(null);
   const [gitConfigLoading, setGitConfigLoading] = useState(false);
 
-  // Load GitHub config on admin session auth
+  // Load GitHub config on admin session auth via secure server-side lookup
   useEffect(() => {
     const unsubAuth = auth.onAuthStateChanged(async (currentUser) => {
       if (currentUser) {
-        const emailLower = currentUser.email?.toLowerCase() || 'none';
-        let isAuthorized = emailLower === 'defentechscholar@gmail.com';
+        let isAuthorized = false;
 
-        if (!isAuthorized) {
-          try {
-            // Check UID record
-            const adminUidDoc = doc(db, 'admins', currentUser.uid);
-            const snapUid = await getDoc(adminUidDoc);
-            if (snapUid.exists() && snapUid.data()?.role === 'admin') {
-              isAuthorized = true;
-            } else {
-              // Check Email record
-              const adminEmailDoc = doc(db, 'admins', emailLower);
-              const snapEmail = await getDoc(adminEmailDoc);
-              if (snapEmail.exists() && snapEmail.data()?.role === 'admin') {
-                isAuthorized = true;
-              }
+        try {
+          const idToken = await currentUser.getIdToken();
+          const verifyRes = await fetch('/api/v1/admin/verify', {
+            headers: {
+              'Authorization': `Bearer ${idToken}`
             }
-          } catch (e) {
-            console.warn("Database admin verification for GitHub context failed:", e);
+          });
+          if (verifyRes.ok) {
+            const verifyData = await verifyRes.json();
+            if (verifyData.authorized) {
+              isAuthorized = true;
+            }
           }
+        } catch (e) {
+          console.warn("Server admin verification for GitHub context failed:", e);
         }
 
         if (isAuthorized) {
           setGitConfigLoading(true);
           try {
-            const configDoc = doc(db, 'secure_git_config', 'config');
+            const configDoc = doc(db, 'sec_git', 'cfg');
             const snap = await getDoc(configDoc);
             if (snap.exists()) {
               setGitConfig(snap.data() as GitConfig);
@@ -346,7 +343,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         if (fetchedData) {
           const data = loadedApps;
           setApps(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
-          localStorage.setItem('rummystore_apps', JSON.stringify(data));
+          secureStorage.setItem('rummystore_apps', JSON.stringify(data));
           
           setAppsSyncedWithServer(true);
           setServerAppsFetched(true);
@@ -375,7 +372,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         if (snap.exists()) {
           const data = snap.data() as GlobalSettings;
           setSettings(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
-          localStorage.setItem('rummystore_settings', JSON.stringify(data));
+          secureStorage.setItem('rummystore_settings', JSON.stringify(data));
           
           setSettingsSyncedWithServer(true);
           setLoadedFromServer(true);
@@ -399,7 +396,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         if (snap.exists()) {
           const data = snap.data().items || [];
           setNews(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
-          localStorage.setItem('rummystore_news', JSON.stringify(data));
+          secureStorage.setItem('rummystore_news', JSON.stringify(data));
           
           setNewsSyncedWithServer(true);
           setServerNewsFetched(true);
@@ -420,7 +417,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         if (snap.exists()) {
           const data = snap.data().items || [];
           setBlogs(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
-          localStorage.setItem('rummystore_blogs', JSON.stringify(data));
+          secureStorage.setItem('rummystore_blogs', JSON.stringify(data));
           
           setBlogsSyncedWithServer(true);
           setServerBlogsFetched(true);
@@ -441,7 +438,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         if (snap.exists()) {
           const data = snap.data().items || [];
           setVideos(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
-          localStorage.setItem('rummystore_videos', JSON.stringify(data));
+          secureStorage.setItem('rummystore_videos', JSON.stringify(data));
           
           setVideosSyncedWithServer(true);
           setServerVideosFetched(true);
@@ -472,7 +469,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const saveApps = React.useCallback(async (newApps: AppConfig[]) => {
     // 1. Snappy optimistic update to local state and local memory first
     setApps(newApps);
-    localStorage.setItem('rummystore_apps', JSON.stringify(newApps));
+    secureStorage.setItem('rummystore_apps', JSON.stringify(newApps));
 
     try {
       console.log("Cloud: Pushing Apps update in chunks...");
@@ -490,9 +487,36 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const metaRef = doc(db, 'store_data', 'apps_meta');
       await setDoc(metaRef, { numChunks, last_updated: now });
       
-      // Save secure links mapping separately
+      // Save secure links mapping separately (fully encrypted to prevent read-leak of download URLs)
       const secureLinks = newApps.map(a => ({ id: a.id, url: a.encrypted_download_url || '' }));
-      await setDoc(doc(db, 'store_data', 'secure_links'), { items: secureLinks });
+      let encryptedData = '';
+      try {
+        const { getAuth } = await import('firebase/auth');
+        const auth = getAuth();
+        const idToken = await auth.currentUser?.getIdToken();
+        const encRes = await fetch('/api/v1/admin/encrypt-links', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`
+          },
+          body: JSON.stringify({ items: secureLinks })
+        });
+        if (encRes.ok) {
+          const encJSON = await encRes.json();
+          encryptedData = encJSON.encrypted;
+        } else {
+          console.warn("Server encryption of secure links failed:", await encRes.text());
+        }
+      } catch (encErr) {
+        console.error("Encryption of secure links on save failed, falling back to plaintext compatibility", encErr);
+      }
+
+      if (encryptedData) {
+        await setDoc(doc(db, 'store_data', 'sec_vault'), { encryptedData });
+      } else {
+        await setDoc(doc(db, 'store_data', 'sec_vault'), { items: secureLinks });
+      }
       
       console.log("Cloud: Apps update acknowledged by server.");
     } catch (err: any) {
@@ -507,7 +531,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     // 1. Snappy optimistic update to local state and local memory first
     setSettings(settingsWithTime);
-    localStorage.setItem('rummystore_settings', JSON.stringify(settingsWithTime));
+    secureStorage.setItem('rummystore_settings', JSON.stringify(settingsWithTime));
 
     try {
       const docRef = doc(db, 'store_data', 'settings');
@@ -525,7 +549,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           branch: gitConfig.branch || 'main',
           path: 'src/lib/staticData.ts',
           content: updatedCode,
-          message: `Admin Release Auto-Update: Updated platform configurations`
+          message: `Admin Release: Updated platform configurations`
         }).catch(err => console.error("Background auto-sync commit failed:", err));
       }
     } catch (err: any) {
@@ -537,7 +561,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const saveNews = React.useCallback(async (newNews: NewsItem[]) => {
     // 1. Snappy optimistic update to local state and local memory first
     setNews(newNews);
-    localStorage.setItem('rummystore_news', JSON.stringify(newNews));
+    secureStorage.setItem('rummystore_news', JSON.stringify(newNews));
 
     try {
       const docRef = doc(db, 'store_data', 'news');
@@ -555,7 +579,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           branch: gitConfig.branch || 'main',
           path: 'src/lib/staticData.ts',
           content: updatedCode,
-          message: `Admin Release Auto-Update: Added/Updated news indexes`
+          message: `Admin Release: Added/Updated news indexes`
         }).catch(err => console.error("Background auto-sync commit failed:", err));
       }
     } catch (err: any) {
@@ -567,7 +591,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const saveBlogs = React.useCallback(async (newBlogs: BlogPost[]) => {
     // 1. Snappy optimistic update to local state and local memory first
     setBlogs(newBlogs);
-    localStorage.setItem('rummystore_blogs', JSON.stringify(newBlogs));
+    secureStorage.setItem('rummystore_blogs', JSON.stringify(newBlogs));
 
     try {
       const docRef = doc(db, 'store_data', 'blogs');
@@ -585,7 +609,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           branch: gitConfig.branch || 'main',
           path: 'src/lib/staticData.ts',
           content: updatedCode,
-          message: `Admin Release Auto-Update: Added/Updated blog posts`
+          message: `Admin Release: Added/Updated blog posts`
         }).catch(err => console.error("Background auto-sync commit failed:", err));
       }
     } catch (err: any) {
@@ -597,7 +621,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const saveVideos = React.useCallback(async (newVideos: VideoItem[]) => {
     // 1. Snappy optimistic update to local state and local memory first
     setVideos(newVideos);
-    localStorage.setItem('rummystore_videos', JSON.stringify(newVideos));
+    secureStorage.setItem('rummystore_videos', JSON.stringify(newVideos));
 
     try {
       const docRef = doc(db, 'store_data', 'videos');
@@ -615,7 +639,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           branch: gitConfig.branch || 'main',
           path: 'src/lib/staticData.ts',
           content: updatedCode,
-          message: `Admin Release Auto-Update: Added/Updated video listings`
+          message: `Admin Release: Added/Updated video listings`
         }).catch(err => console.error("Background auto-sync commit failed:", err));
       }
     } catch (err: any) {
@@ -626,14 +650,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const saveGitConfig = React.useCallback(async (newConfig: GitConfig) => {
     try {
-      const docRef = doc(db, 'secure_git_config', 'config');
+      const docRef = doc(db, 'sec_git', 'cfg');
       console.log("Cloud: Pushing Git Configuration update...");
       await setDoc(docRef, newConfig);
       setGitConfig(newConfig);
       console.log("Cloud: Git Configuration saved successfully.");
     } catch (err) {
       console.error("Save Git Config Error:", err);
-      handleFirestoreError(err, OperationType.WRITE, 'secure_git_config/config');
+      handleFirestoreError(err, OperationType.WRITE, 'sec_git/cfg');
     }
   }, []);
 
@@ -649,8 +673,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       await withServerConfirmation(() => setDoc(testDoc, { 
         last_test: Math.random().toString(36).substring(7), 
-        timestamp: new Date().toISOString(),
-        client_info: navigator.userAgent
+        timestamp: new Date().toISOString()
       }), 10000);
       
       return true;
@@ -695,14 +718,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 }
               }
               setApps(allApps);
-              localStorage.setItem('rummystore_apps', JSON.stringify(allApps));
+              secureStorage.setItem('rummystore_apps', JSON.stringify(allApps));
             } else {
               // Fallback to old document
               const oldSnap = await withServerConfirmation(() => getDoc(doc(db, 'store_data', 'apps')), 3000);
               if (oldSnap.exists() && oldSnap.data().items) {
                 const data = oldSnap.data().items;
                 setApps(data);
-                localStorage.setItem('rummystore_apps', JSON.stringify(data));
+                secureStorage.setItem('rummystore_apps', JSON.stringify(data));
               }
             }
           } else {
@@ -711,7 +734,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             if (snap.exists()) {
               const data = (d as any).key ? (snap.data() as any)[(d as any).key] : snap.data();
               d.setter(data);
-              localStorage.setItem(`rummystore_${d.path}`, JSON.stringify(data));
+              secureStorage.setItem(`rummystore_${d.path}`, JSON.stringify(data));
             }
           }
         } catch (fetchErr) {

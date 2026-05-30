@@ -132,17 +132,19 @@ export interface VideoItem {
   created_at: string;
 }
 
-const savedApps = typeof window !== 'undefined' ? localStorage.getItem('rummystore_apps') : null;
+import { secureStorage } from './secureStorage';
+
+const savedApps = typeof window !== 'undefined' ? secureStorage.getItem('rummystore_apps') : null;
 export const mockApps: AppConfig[] = savedApps ? (() => {
   try { return JSON.parse(savedApps); } catch { return []; }
 })() : [];
 
 export const saveMockApps = (apps: AppConfig[]) => {
-  localStorage.setItem('rummystore_apps', JSON.stringify(apps));
+  secureStorage.setItem('rummystore_apps', JSON.stringify(apps));
   mockApps.splice(0, mockApps.length, ...apps);
 };
 
-const savedSettings = typeof window !== 'undefined' ? localStorage.getItem('rummystore_settings') : null;
+const savedSettings = typeof window !== 'undefined' ? secureStorage.getItem('rummystore_settings') : null;
 export const mockSettings: GlobalSettings = savedSettings ? ((): GlobalSettings => {
   try { return JSON.parse(savedSettings); } catch { return {} as GlobalSettings; }
 })() : {
@@ -174,41 +176,41 @@ export const mockSettings: GlobalSettings = savedSettings ? ((): GlobalSettings 
   banners: [
     { id: "1", title: "Virtual Pro Gaming", subtitle: "Top rated app of the week", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&q=80", link: "/" },
     { id: "2", title: "E-Sports Tournaments", subtitle: "Learn strategy and gameplay", image: "https://images.unsplash.com/photo-1606167668511-22c64ee0fce6?auto=format&fit=crop&q=80&w=800", link: "/" },
-    { id: "3", title: "Gaming Enthusiasts", subtitle: "Join our top community", image: "https://images.unsplash.com/photo-1616422285623-13ff0162193c?auto=format&fit=crop&q=80&w=800", link: "/" }
+    { id: "3", title: "Gaming Enthusiauts", subtitle: "Join our top community", image: "https://images.unsplash.com/photo-1616422285623-13ff0162193c?auto=format&fit=crop&q=80&w=800", link: "/" }
   ]
 };
 
 export const saveMockSettings = (settings: GlobalSettings) => {
-  localStorage.setItem('rummystore_settings', JSON.stringify(settings));
+  secureStorage.setItem('rummystore_settings', JSON.stringify(settings));
   Object.assign(mockSettings, settings);
 };
 
-const savedNews = typeof window !== 'undefined' ? localStorage.getItem('rummystore_news') : null;
+const savedNews = typeof window !== 'undefined' ? secureStorage.getItem('rummystore_news') : null;
 export const mockNews: NewsItem[] = savedNews ? (() => {
   try { return JSON.parse(savedNews); } catch { return []; }
 })() : [];
 
 export const saveMockNews = (newsList: NewsItem[]) => {
-  localStorage.setItem('rummystore_news', JSON.stringify(newsList));
+  secureStorage.setItem('rummystore_news', JSON.stringify(newsList));
   mockNews.splice(0, mockNews.length, ...newsList);
 };
 
-const savedBlogs = typeof window !== 'undefined' ? localStorage.getItem('rummystore_blogs') : null;
+const savedBlogs = typeof window !== 'undefined' ? secureStorage.getItem('rummystore_blogs') : null;
 export const mockBlogs: BlogPost[] = savedBlogs ? (() => {
   try { return JSON.parse(savedBlogs); } catch { return []; }
 })() : [];
 
 export const saveMockBlogs = (blogs: BlogPost[]) => {
-  localStorage.setItem('rummystore_blogs', JSON.stringify(blogs));
+  secureStorage.setItem('rummystore_blogs', JSON.stringify(blogs));
   mockBlogs.splice(0, mockBlogs.length, ...blogs);
 };
 
-const savedVideos = typeof window !== 'undefined' ? localStorage.getItem('rummystore_videos') : null;
+const savedVideos = typeof window !== 'undefined' ? secureStorage.getItem('rummystore_videos') : null;
 export const mockVideos: VideoItem[] = savedVideos ? (() => {
   try { return JSON.parse(savedVideos); } catch { return []; }
 })() : [];
 
 export const saveMockVideos = (videos: VideoItem[]) => {
-  localStorage.setItem('rummystore_videos', JSON.stringify(videos));
+  secureStorage.setItem('rummystore_videos', JSON.stringify(videos));
   mockVideos.splice(0, mockVideos.length, ...videos);
 };

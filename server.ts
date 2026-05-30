@@ -6,6 +6,7 @@ import crypto from "crypto";
 import compression from "compression";
 import fs from "fs";
 import { injectSeoTags } from "./src/seoHelper";
+import CryptoJS from "crypto-js";
 
 // Cryptographic secrets for hashing, signature verification, and session identifiers
 const TOKEN_SECRET = process.env.TOKEN_SECRET || crypto.randomBytes(32).toString('hex');
@@ -158,8 +159,6 @@ async function startServer() {
   // API Route: Dynamic Sitemap Generation for SEO
   app.get('/sitemap.xml', async (req, res) => {
     try {
-      const fs = require('fs');
-      const path = require('path');
       const config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
       
       const chunkPromises = Array.from({ length: 5 }).map((_, i) => 
@@ -225,8 +224,68 @@ async function startServer() {
     }
   });
 
+  // Helper: Secure Admin validation middleware for API endpoints
+  const verifyAdminToken = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized: Missing verification token.' });
+    }
+    const idToken = authHeader.split('Bearer ')[1];
+    if (!idToken || idToken === 'null' || idToken === 'undefined') {
+      return res.status(401).json({ error: 'Unauthorized: Empty session verification token.' });
+    }
+    try {
+      const config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
+      
+      const lookupRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${config.apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken })
+      });
+      
+      if (!lookupRes.ok) {
+        return res.status(401).json({ error: 'Unauthorized: Verification token lookup failed.' });
+      }
+      
+      const lookupData = await lookupRes.json() as any;
+      const user = lookupData.users?.[0];
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized: Authenticated identity could not be located.' });
+      }
+      
+      const email = user.email?.toLowerCase() || '';
+      
+      // Admin access check via firestore
+      let isDbAdmin = false;
+      try {
+        const dbCheckRes = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/admins/${user.localId}`);
+        if (dbCheckRes.ok) {
+          isDbAdmin = true;
+        } else {
+          // Fallback check by email docId in case uid is not docId
+          const dbCheckResEmail = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/admins/${email}`);
+          if (dbCheckResEmail.ok) {
+            isDbAdmin = true;
+          }
+        }
+      } catch (err) {
+        console.error("verifyAdminToken database check failed:", err);
+      }
+      
+      if (isDbAdmin) {
+        (req as any).adminUser = user;
+        return next();
+      }
+      
+      return res.status(403).json({ error: 'Forbidden: Admin authorization is required.' });
+    } catch (err: any) {
+      console.error("verifyAdminToken helper error:", err);
+      return res.status(500).json({ error: `Internal server security validation error: ${err.message || err}` });
+    }
+  };
+
   // API Route: Secure Server-Side GitHub Synchronization Proxy (Bypasses CORS/sandboxing restrictions)
-  app.post("/api/github-sync/commit", async (req, res) => {
+  app.post("/api/github-sync/commit", verifyAdminToken, async (req, res) => {
     try {
       const { owner, repo, token, branch, path: filePath, content, message } = req.body || {};
       
@@ -442,17 +501,57 @@ async function startServer() {
     }
   });
 
+  // Admin API: Secure Admin Verification
+  app.get("/api/v1/admin/verify", verifyAdminToken, (req, res) => {
+    res.json({ authorized: true, user: (req as any).adminUser });
+  });
+
   // Admin API: Secure URL encryption
-  app.post("/api/v1/admin/encrypt", express.json(), (req, res) => {
+  app.post("/api/v1/admin/encrypt", verifyAdminToken, (req, res) => {
     const { url } = req.body;
     if (!url) return res.status(400).json({ error: 'URL is required' });
     try {
-      const CryptoJS = require('crypto-js');
       const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
       const ciphertext = CryptoJS.AES.encrypt(url, AES_SECRET).toString();
       res.json({ encrypted: ciphertext });
     } catch (err) {
       res.status(500).json({ error: 'Encryption failed' });
+    }
+  });
+
+  // Admin API: Encrypt secure links payload list
+  app.post("/api/v1/admin/encrypt-links", verifyAdminToken, (req, res) => {
+    const { items } = req.body;
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ error: 'Valid links array payload is required.' });
+    }
+    try {
+      const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
+      const plainText = JSON.stringify(items);
+      const ciphertext = CryptoJS.AES.encrypt(plainText, AES_SECRET).toString();
+      res.json({ encrypted: ciphertext });
+    } catch (err) {
+      res.status(500).json({ error: 'Links encryption failed' });
+    }
+  });
+
+  // Admin API: Decrypt secure links payload list
+  app.post("/api/v1/admin/decrypt-links", verifyAdminToken, (req, res) => {
+    const { encryptedData } = req.body;
+    if (!encryptedData) {
+      return res.status(400).json({ error: 'Encrypted payload ciphertext is required.' });
+    }
+    try {
+      const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
+      const bytes = CryptoJS.AES.decrypt(encryptedData, AES_SECRET);
+      const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+      if (!decryptedText) {
+        throw new Error("Empty decrypted block.");
+      }
+      const items = JSON.parse(decryptedText);
+      res.json({ items });
+    } catch (err) {
+      res.status(500).json({ error: 'Links decryption failed.' });
     }
   });
 
@@ -559,60 +658,6 @@ const rateLimitMap = new Map<string, number[]>();
     res.json({ token });
   });
 
-  // API Route: Dynamic transient generator (Legacy interface)
-  app.post("/api/v1/generate-token", (req, res) => {
-    const { id, obfuscatedUrl, challengeResponse } = req.body;
-
-    if (isInvalidClient(req)) {
-      return res.status(404).json({ error: 'Not Found' });
-    }
-
-    if (challengeResponse !== "authorization_granted") {
-      return res.status(400).json({ error: 'Validation failed' });
-    }
-
-    if (!obfuscatedUrl || typeof obfuscatedUrl !== 'string') {
-      return res.status(400).json({ error: 'Invalid payload' });
-    }
-
-    let targetUrl = '';
-    try {
-      if (obfuscatedUrl.startsWith('U2FsdGVkX1')) {
-        const CryptoJS = require('crypto-js');
-        const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
-        const bytes = CryptoJS.AES.decrypt(obfuscatedUrl, AES_SECRET);
-        targetUrl = bytes.toString(CryptoJS.enc.Utf8);
-      } else {
-        throw new Error("Base64 links are deprecated. Authentic cryptographic encryption is required.");
-      }
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message || 'Decryption error' });
-    }
-
-    if (!targetUrl.startsWith('http')) {
-      targetUrl = 'https://' + targetUrl;
-    }
-
-    const token = crypto.randomBytes(24).toString('hex');
-    const EXPIRATION_TIME = 600 * 1000; // Increased to 10 minutes
-    const expiresAt = Date.now() + EXPIRATION_TIME;
-
-    // Use tokenStore for backwards-compatible simple validation
-    const tokenStoreData = {
-      targetUrl,
-      expiresAt,
-      ip: getIp(req)
-    };
-    // Map with type casting
-    (tokenStore as any).set(token, tokenStoreData);
-
-    res.json({
-      token,
-      expiresInMs: EXPIRATION_TIME,
-      clearanceUrl: `/api/v1/file-payload?token=${token}&url=${encodeURIComponent(obfuscatedUrl)}`
-    });
-  });
-
   // API Route: Process temporary dynamic download token
   app.get("/api/v1/file-payload", async (req, res) => {
     // Note: Checking is already completed on the upstream post endpoints (/api/v1/process-file)
@@ -672,20 +717,36 @@ const rateLimitMap = new Map<string, number[]>();
             const urlResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/secure_links`);
             const secureData = await urlResponse.json();
             
-            if (!secureData.error && secureData.fields?.items?.arrayValue?.values) {
-                const linksArray = secureData.fields.items.arrayValue.values;
+            if (!secureData.error) {
+              const fields = secureData.fields;
+              if (fields?.encryptedData?.stringValue) {
+                const encryptedBlob = fields.encryptedData.stringValue;
+                const bytes = CryptoJS.AES.decrypt(encryptedBlob, AES_SECRET);
+                const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+                if (decryptedText) {
+                  const linksArray = JSON.parse(decryptedText);
+                  const linkObj = linksArray.find((v: any) => v.id === appId);
+                  if (linkObj && linkObj.url) {
+                    const encryptedUrl = linkObj.url;
+                    const decryptBytes = CryptoJS.AES.decrypt(encryptedUrl, AES_SECRET);
+                    targetUrl = decryptBytes.toString(CryptoJS.enc.Utf8);
+                  }
+                }
+              } else if (fields?.items?.arrayValue?.values) {
+                // Backward compatibility for legacy unencrypted list schema
+                const linksArray = fields.items.arrayValue.values;
                 const linkObj = linksArray.find((v: any) => v.mapValue.fields.id.stringValue === appId);
                 if (linkObj && linkObj.mapValue.fields.url) {
-                    const encryptedUrl = linkObj.mapValue.fields.url.stringValue;
-                    if (encryptedUrl) {
-                        const CryptoJS = require('crypto-js');
-                        const bytes = CryptoJS.AES.decrypt(encryptedUrl, AES_SECRET);
-                        targetUrl = bytes.toString(CryptoJS.enc.Utf8);
-                    }
+                  const encryptedUrl = linkObj.mapValue.fields.url.stringValue;
+                  if (encryptedUrl) {
+                    const bytes = CryptoJS.AES.decrypt(encryptedUrl, AES_SECRET);
+                    targetUrl = bytes.toString(CryptoJS.enc.Utf8);
+                  }
                 }
+              }
             }
           } catch (err) {
-            console.warn("secure_links get failed, falling back to chunks scanner", err);
+            console.warn("secure_links get or decryption failed, falling back to chunks scanner", err);
           }
 
           if (!targetUrl || !targetUrl.startsWith('http')) {
@@ -707,7 +768,6 @@ const rateLimitMap = new Map<string, number[]>();
                         const encryptedUrlField = item.mapValue.fields.encrypted_download_url?.stringValue || item.mapValue.fields.download_url?.stringValue;
                         if (encryptedUrlField) {
                             if (encryptedUrlField.startsWith('U2FsdGVkX1')) {
-                                const CryptoJS = require('crypto-js');
                                 const bytes = CryptoJS.AES.decrypt(encryptedUrlField, AES_SECRET);
                                 targetUrl = bytes.toString(CryptoJS.enc.Utf8);
                             } else {
@@ -761,46 +821,6 @@ const rateLimitMap = new Map<string, number[]>();
 
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     res.redirect(302, tokenData.targetUrl);
-  });
-
-  // API Route: Legacy Link Fallback
-  app.get("/api/v1/fetch-file", (req, res) => {
-    const { id, timestamp } = req.query;
-    
-    // User-Agent validation
-    const userAgent = (req.headers['user-agent'] as string) || '';
-    if (!userAgent || /curl|wget|bot|spider|crawler/i.test(userAgent)) {
-      res.status(404).json({ error: 'Not Found' });
-      return;
-    }
-
-    if (!id || typeof id !== 'string') {
-      res.status(400).json({ error: 'Missing ID' });
-      return;
-    }
-
-    // Since we don't have Supabase, we mock fetching the real URL optionally passing it via query
-    let targetUrl = `https://example.com/download-file?fileId=${id}&token=${crypto.randomBytes(16).toString('hex')}`;
-    if (req.query.url && typeof req.query.url === 'string') {
-      try {
-        const queryUrl = req.query.url;
-        if (queryUrl.startsWith('U2FsdGVkX1')) {
-          const CryptoJS = require('crypto-js');
-          const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
-          const bytes = CryptoJS.AES.decrypt(queryUrl, AES_SECRET);
-          targetUrl = bytes.toString(CryptoJS.enc.Utf8);
-        } else {
-          // Reject cheap Base64 for safety
-          targetUrl = 'https://example.com/unauthorized-access-blocked';
-        }
-      } catch (e) {
-        targetUrl = 'https://example.com/unauthorized-access-blocked';
-      }
-    }
-    
-    // Server-side redirect (302) to mask real URL
-    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-    res.redirect(302, targetUrl);
   });
 
   // Vite middleware for development

@@ -6,8 +6,7 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth != null && 
              (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) || 
-              exists(/databases/$(database)/documents/admins/$(request.auth.token.email)) ||
-              request.auth.token.email == 'defentechscholar@gmail.com');
+              exists(/databases/$(database)/documents/admins/$(request.auth.token.email)));
     }
 
     // Default deny
@@ -23,11 +22,16 @@ service cloud.firestore {
     }
     
     // Support for metadata or other collections if they exist
-    match /secure_git_config/{docId} {
+    match /sec_git/{docId} {
       allow read, write: if isAdmin();
     }
 
     match /apps/{appId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /admins/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }

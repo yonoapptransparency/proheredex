@@ -797,7 +797,7 @@ export default function AdminDashboard() {
     if (bypassToken === 'authorized_dev') {
       setUser({
         uid: 'bypassed_admin',
-        email: 'defentechscholar@gmail.com',
+        email: 'developer-admin@local-development.internal',
         displayName: 'Developer Admin'
       });
       setIsAdminUser(true);
@@ -808,33 +808,23 @@ export default function AdminDashboard() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        const emailLower = currentUser.email?.toLowerCase() || 'none';
-        if (emailLower === 'defentechscholar@gmail.com') {
-          setIsAdminUser(true);
-          setCheckingAuth(false);
-          return;
-        }
-
         try {
-          // Check by UID first
-          const adminUidDoc = doc(db, 'admins', currentUser.uid);
-          const snapUid = await getDoc(adminUidDoc);
-          if (snapUid.exists() && snapUid.data()?.role === 'admin') {
-            setIsAdminUser(true);
-            setCheckingAuth(false);
-            return;
+          const idToken = await currentUser.getIdToken();
+          const verifyRes = await fetch('/api/v1/admin/verify', {
+            headers: {
+              'Authorization': `Bearer ${idToken}`
+            }
+          });
+          if (verifyRes.ok) {
+            const verifyData = await verifyRes.json();
+            if (verifyData.authorized) {
+              setIsAdminUser(true);
+            } else {
+              setIsAdminUser(false);
+            }
+          } else {
+            setIsAdminUser(false);
           }
-
-          // Check by email second
-          const adminEmailDoc = doc(db, 'admins', emailLower);
-          const snapEmail = await getDoc(adminEmailDoc);
-          if (snapEmail.exists() && snapEmail.data()?.role === 'admin') {
-            setIsAdminUser(true);
-            setCheckingAuth(false);
-            return;
-          }
-
-          setIsAdminUser(false);
         } catch (e) {
           console.warn("Database-driven administrator check failed or not permitted:", e);
           setIsAdminUser(false);
@@ -853,10 +843,36 @@ export default function AdminDashboard() {
   React.useEffect(() => {
     if (!loading && !isInitializedRef.current && isAdminUser !== null) {
       if (isAdminUser) {
-        getDoc(doc(db, 'store_data', 'secure_links')).then(snap => {
+        getDoc(doc(db, 'store_data', 'sec_vault')).then(async (snap) => {
           let secureMap = new Map();
-          if (snap.exists() && snap.data().items) {
-            snap.data().items.forEach((it: any) => secureMap.set(it.id, it.url));
+          if (snap.exists()) {
+            const snapData = snap.data();
+            if (snapData.encryptedData) {
+              try {
+                const idToken = await auth.currentUser?.getIdToken();
+                const res = await fetch('/api/v1/admin/decrypt-links', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`
+                  },
+                  body: JSON.stringify({ encryptedData: snapData.encryptedData })
+                });
+                if (res.ok) {
+                  const decrypted = await res.json();
+                  if (decrypted.items) {
+                    decrypted.items.forEach((it: any) => secureMap.set(it.id, it.url));
+                  }
+                } else {
+                  console.error("Server link decryption failed:", await res.text());
+                }
+              } catch (decErr) {
+                console.error("Failed to decrypt secure references:", decErr);
+              }
+            } else if (snapData.items) {
+              // Backward compatibility for legacy unencrypted database schema
+              snapData.items.forEach((it: any) => secureMap.set(it.id, it.url));
+            }
           }
           const mergedApps = mockApps.map(a => ({...a, encrypted_download_url: secureMap.get(a.id) || a.encrypted_download_url }));
           setAppsList(mergedApps);
@@ -1061,9 +1077,13 @@ export default function AdminDashboard() {
       const inputUrl = formData.get('download_url') as string;
       if (inputUrl && !inputUrl.startsWith('U2FsdGVkX1')) {
          try {
+            const idToken = await auth.currentUser?.getIdToken();
             const res = await fetch('/api/v1/admin/encrypt', {
                method: 'POST',
-               headers: {'Content-Type': 'application/json'},
+               headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${idToken}`
+               },
                body: JSON.stringify({ url: inputUrl })
             });
             if (res.ok) {
