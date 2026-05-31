@@ -551,7 +551,178 @@ app.get(["/api/v1/secure-fetch", "/api/v1/fetch-file"], (req, res) => {
 });
 
 // API Route: Secure Server-Side GitHub Synchronization Proxy (Bypasses CORS/sandboxing restrictions)
-app.post("/api/github-sync/commit", async (req, res) => {
+// Helper: Secure Admin validation middleware for API endpoints
+  const verifyAdminToken = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized: Missing verification token.' });
+    }
+    const idToken = authHeader.split('Bearer ')[1];
+    if (!idToken || idToken === 'null' || idToken === 'undefined') {
+      return res.status(401).json({ error: 'Unauthorized: Empty session verification token.' });
+    }
+
+    try {
+      const config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
+      
+      const lookupRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${config.apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken })
+      });
+      
+      if (!lookupRes.ok) {
+        console.log("lookupRes not ok", await lookupRes.text());
+        return res.status(401).json({ error: 'Unauthorized: Verification token lookup failed.' });
+      }
+      
+      const lookupData = await lookupRes.json() as any;
+      const user = lookupData.users?.[0];
+      if (!user) {
+        console.log("no user found in lookupData");
+        return res.status(401).json({ error: 'Unauthorized: Authenticated identity could not be located.' });
+      }
+      
+      const email = user.email?.toLowerCase() || '';
+      console.log("verifyAdminToken checking email:", email, user.localId);
+      
+      // Admin access check via firestore
+      let isDbAdmin = false;
+      if (email === 'defentechscholar@gmail.com') {
+        isDbAdmin = true;
+        console.log("verifyAdminToken: isDbAdmin via hardcoded email!");
+      }
+      if (!isDbAdmin) {
+        try {
+          const dbCheckRes = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/admins/${user.localId}`);
+          if (dbCheckRes.ok) {
+            isDbAdmin = true;
+          } else {
+            // Fallback check by email docId in case uid is not docId
+            const dbCheckResEmail = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/admins/${email}`);
+            if (dbCheckResEmail.ok) {
+              isDbAdmin = true;
+            } else {
+              console.log("dbCheckRes and dbCheckResEmail both not ok", await dbCheckRes.text(), await dbCheckResEmail.text());
+            }
+          }
+        } catch (err) {
+          console.error("verifyAdminToken database check failed:", err);
+        }
+      }
+      
+      console.log("verifyAdminToken: isDbAdmin final result:", isDbAdmin);
+      if (isDbAdmin) {
+        (req as any).adminUser = user;
+        return next();
+      }
+      
+      return res.status(403).json({ error: 'Forbidden: Admin authorization is required.' });
+    } catch (err: any) {
+      console.error("verifyAdminToken helper error:", err);
+      return res.status(500).json({ error: `Internal server security validation error: ${err.message || err}` });
+    }
+  };
+
+
+// Admin API: Secure Admin Verification
+  app.get("/api/v1/admin/verify", verifyAdminToken, (req, res) => {
+    res.json({ authorized: true, user: (req as any).adminUser });
+  });
+
+  // Admin API: Secure URL encryption
+  app.post("/api/v1/admin/encrypt", verifyAdminToken, (req, res) => {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ error: 'URL is required' });
+    try {
+      const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
+      const ciphertext = CryptoJS.AES.encrypt(url, AES_SECRET).toString();
+      res.json({ encrypted: ciphertext });
+    } catch (err) {
+      res.status(500).json({ error: 'Encryption failed' });
+    }
+  });
+
+  // Admin API: Encrypt secure links payload list
+  app.post("/api/v1/admin/encrypt-links", verifyAdminToken, (req, res) => {
+    const { items } = req.body;
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ error: 'Valid links array payload is required.' });
+    }
+    try {
+      const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
+      const plainText = JSON.stringify(items);
+      const ciphertext = CryptoJS.AES.encrypt(plainText, AES_SECRET).toString();
+      res.json({ encrypted: ciphertext });
+    } catch (err) {
+      res.status(500).json({ error: 'Links encryption failed' });
+    }
+  });
+
+  // Admin API: Decrypt secure links payload list
+  app.post("/api/v1/admin/decrypt-links", verifyAdminToken, (req, res) => {
+    const { encryptedData } = req.body;
+    if (!encryptedData) {
+      return res.status(400).json({ error: 'Encrypted payload ciphertext is required.' });
+    }
+    try {
+      const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
+      const bytes = CryptoJS.AES.decrypt(encryptedData, AES_SECRET);
+      const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+      if (!decryptedText) {
+        throw new Error("Empty decrypted block.");
+      }
+      const items = JSON.parse(decryptedText);
+      res.json({ items });
+    } catch (err) {
+      res.status(500).json({ error: 'Links decryption failed.' });
+    }
+  });
+
+  // Database fix endpoint - run once to fix broken secure links
+  app.get("/api/v1/admin/fix-db-links", async (req, res) => {
+     try {
+       const config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
+       
+       const chunkResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_chunk_0`);
+       const chunkData = await chunkResponse.json();
+       let apps = [];
+       if (!chunkData.error && chunkData.fields?.items?.arrayValue?.values) {
+           apps = chunkData.fields.items.arrayValue.values.map((v: any) => v.mapValue.fields.id.stringValue);
+       }
+       const chunk1Response = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_chunk_1`);
+       const chunk1Data = await chunk1Response.json();
+       if (!chunk1Data.error && chunk1Data.fields?.items?.arrayValue?.values) {
+           apps = apps.concat(chunk1Data.fields.items.arrayValue.values.map((v: any) => v.mapValue.fields.id.stringValue));
+       }
+       
+       const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
+       const sampleUrls = apps.map(id => ({ id, url: `https://example.com/demo/${id}` }));
+       const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(sampleUrls), AES_SECRET).toString();
+       
+       const idToken = req.query.token as string;
+       const response = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/secure_links`, {
+          method: 'PATCH',
+          headers: {
+             'Authorization': `Bearer ${idToken}`,
+             'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+             fields: {
+                encryptedData: { stringValue: ciphertext }
+             }
+          })
+       });
+       const data = await response.json();
+       res.json(data);
+     } catch (e: any) {
+       res.json({ error: e.message });
+     }
+  });
+
+  
+
+app.post("/api/github-sync/commit", verifyAdminToken, async (req, res) => {
   try {
     const { owner, repo, token, branch, path: filePath, content, message } = req.body || {};
     
@@ -737,6 +908,38 @@ app.post("/api/github-sync/commit", async (req, res) => {
 });
 
 // For any other api path, return a fallback 404
+// API Route: Image Proxy (Hide Upstream Image Service Accounts)
+  app.get("/api/v1/image", async (req, res) => {
+    const url = req.query.url as string;
+    if (!url) return res.status(400).send("Missing image URL");
+    try {
+      // Decode if base64, otherwise use directly
+      let targetUrl = url;
+      try {
+        if (!url.startsWith('http')) {
+            targetUrl = Buffer.from(url, 'base64').toString('utf-8');
+        }
+      } catch (e) {}
+
+      const response = await fetch(targetUrl, {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        }
+      });
+      if (!response.ok) throw new Error("Failed to fetch image");
+      
+      const buffer = await response.arrayBuffer();
+      const contentType = response.headers.get("content-type") || "image/jpeg";
+      
+      res.set("Content-Type", contentType);
+      res.set("Cache-Control", "public, max-age=86400");
+      res.send(Buffer.from(buffer));
+    } catch (e) {
+      res.status(500).send("Image proxy error");
+    }
+  });
+
+
 app.all("/api/*", (req, res) => {
   res.status(404).json({ error: "API Endpoint not found" });
 });
