@@ -37,6 +37,12 @@ export interface GlobalSettings {
   secure_index_title?: string;
   secure_index_subtitle?: string;
   trending_searches?: string[];
+  hero_title_text?: string;
+  hero_title_color?: string;
+  hero_title_style?: string;
+  hero_title_animation?: string;
+  hero_title_subtitle?: string;
+  hero_title_visible?: boolean;
 }
 
 export interface NewsItem {

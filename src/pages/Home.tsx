@@ -6,6 +6,7 @@ import { Search, ShieldAlert, ShieldCheck, Sparkles, ArrowRight, TrendingUp, Sta
 import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
 import { FeaturedBanner, PlayStoreTabs, TopChartItem, AppListItem, AppListItemSkeleton, TopChartItemSkeleton, NewAdditionItemSkeleton } from '../components/PlayStoreUI';
+import { WebsiteTitleHero } from '../components/WebsiteTitleHero';
 
 export default function Home() {
   const { apps: mockApps, settings: mockSettings, loading } = useData();
@@ -166,8 +167,9 @@ export default function Home() {
           })}
         </script>
       </Helmet>
-      {/* Restored top pacing for a minimal and modern entry design */}
-      <div className="pt-4 px-4" />
+      {!searchTerm && (
+        <WebsiteTitleHero settings={mockSettings} />
+      )}
 
       {!searchTerm && activeTab.toLowerCase() !== 'categories' && activeTab.toLowerCase() !== 'top charts' && (
         <FeaturedBanner items={bannerItems} />

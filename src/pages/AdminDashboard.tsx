@@ -537,6 +537,64 @@ const SettingsTab = React.memo(({ mockSettings, handleSaveSettings, saving }: an
       </div>
 
       <div className="space-y-6">
+        <h3 className="font-black text-pink-500 border-b border-pink-500/10 pb-2 uppercase tracking-widest text-xs italic">Custom Website Title Banner (Prominent Hero)</h3>
+        <div className="grid gap-6">
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div>
+              <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Enable Title Banner</label>
+              <select name="hero_title_visible" defaultValue={mockSettings.hero_title_visible !== false ? 'true' : 'false'} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-bold">
+                <option value="true" className="dark:bg-zinc-900">Show Hero Banner</option>
+                <option value="false" className="dark:bg-zinc-900">Hide Hero Banner</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Banner Writing Style (Font Concept)</label>
+              <select name="hero_title_style" defaultValue={mockSettings.hero_title_style || 'modern'} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-bold">
+                <option value="modern" className="dark:bg-zinc-900">Modern Display (Space Grotesk - Extra Black)</option>
+                <option value="serif" className="dark:bg-zinc-900">Elegant Editorial (Playfair - High Contrast)</option>
+                <option value="mono" className="dark:bg-zinc-900">Cyber Industrial (JetBrains Mono - Tech Accent)</option>
+                <option value="elegant" className="dark:bg-zinc-900">Neo-Minimal (Inter - Balanced Sans-Serif)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div>
+              <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Gradient Color Palette</label>
+              <select name="hero_title_color" defaultValue={mockSettings.hero_title_color || 'classic-dark'} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-bold">
+                <option value="classic-dark" className="dark:bg-zinc-900">Classic High-Contrast (Black to Solid Slate / Charcoal)</option>
+                <option value="emerald-indigo" className="dark:bg-zinc-900">Emerald To Indigo (Deep Mint to Vivid Violet)</option>
+                <option value="neon-sky" className="dark:bg-zinc-900">Neon Sky (Electric Cyan to Royal Blue)</option>
+                <option value="sunset-fire" className="dark:bg-zinc-900">Sunset Fire (Blazing Orange to Golden Crimson)</option>
+                <option value="cosmic-purple" className="dark:bg-zinc-900">Nebula Pink (Intense Magenta to Velvet Purple)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Animation Design</label>
+              <select name="hero_title_animation" defaultValue={mockSettings.hero_title_animation || 'fade-in'} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-bold">
+                <option value="fade-in" className="dark:bg-zinc-900">Fade In (Smooth Dissolve Transition)</option>
+                <option value="slide-up" className="dark:bg-zinc-900">Slide Up (Sleek Bottom-Up Gliding)</option>
+                <option value="bounce-in" className="dark:bg-zinc-900">Bounce Zoom (Snapping Elastic Expansion)</option>
+                <option value="zoom-out" className="dark:bg-zinc-900">Cinematic Zoom Out (Slow Depth Entrance)</option>
+                <option value="glow-pulse" className="dark:bg-zinc-900">Pulse Glow (Ethereal Periodic Illumination)</option>
+                <option value="none" className="dark:bg-zinc-900">No Animation (Static Plain Render)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Hero Banner Writing Text (Title)</label>
+            <input type="text" name="hero_title_text" defaultValue={mockSettings.hero_title_text || 'RUMMY STORE GAMING DIRECTORY'} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-bold" />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Hero Tagline / Subtitle</label>
+            <input type="text" name="hero_title_subtitle" defaultValue={mockSettings.hero_title_subtitle || 'COMPREHENSIVE SOCIAL CASUAL E-SPORTS METRICS & UNBIASED INTEGRITY REVIEWS'} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-bold" />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
         <h3 className="font-black text-pink-500 border-b border-pink-500/10 pb-2 uppercase tracking-widest text-xs italic">Support & Ticker</h3>
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
@@ -1148,6 +1206,13 @@ export default function AdminDashboard() {
         support_email: formData.get('support_email') as string || mockSettings.support_email,
         helpline_telegram: formData.get('helpline_telegram') as string || mockSettings.helpline_telegram,
         helpline_whatsapp: formData.get('helpline_whatsapp') as string || mockSettings.helpline_whatsapp,
+        
+        hero_title_visible: formData.get('hero_title_visible') === 'true',
+        hero_title_style: formData.get('hero_title_style') as string,
+        hero_title_color: formData.get('hero_title_color') as string,
+        hero_title_animation: formData.get('hero_title_animation') as string,
+        hero_title_text: formData.get('hero_title_text') as string,
+        hero_title_subtitle: formData.get('hero_title_subtitle') as string,
         
         categories: categoriesList,
         banners: banners

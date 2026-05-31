@@ -38,6 +38,7 @@ const getAvatarStyle = (name: string): string => {
 
 export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: UserReviewsProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [sortBy, setSortBy] = useState<'recent' | 'helpful'>('recent');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -183,12 +184,27 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
       setErrorText('Your name must be at least 2 characters.');
       return;
     }
+
+    // Validate that the username contains no special characters (only letters, numbers, and spaces)
+    const usernameRegex = /^[a-zA-Z0-9 ]+$/;
+    if (!usernameRegex.test(cleanUsername)) {
+      setErrorText('Username can only contain letters, numbers, and spaces.');
+      return;
+    }
+
     if (!cleanComment) {
       setErrorText('Please write a review comment.');
       return;
     }
     if (cleanComment.length < 10) {
       setErrorText('Your review must contain at least 10 characters.');
+      return;
+    }
+
+    // Enforce a minimum word count of 5 words
+    const wordCount = cleanComment.split(/\s+/).filter(w => w.trim().length > 0).length;
+    if (wordCount < 5) {
+      setErrorText('Your review must contain at least 5 words to ensure higher quality.');
       return;
     }
 
@@ -248,6 +264,21 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
       setSubmitting(false);
     }
   };
+
+  // Memoized sorted reviews based on selected sort option
+  const sortedReviews = React.useMemo(() => {
+    const list = [...reviews];
+    if (sortBy === 'helpful') {
+      return list.sort((a, b) => {
+        if (b.helpful_count !== a.helpful_count) {
+          return b.helpful_count - a.helpful_count;
+        }
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+    } else {
+      return list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+  }, [reviews, sortBy]);
 
   // Mock score statistics calculations to create immersive dashboard look
   const totalCount = reviews.length ? reviews.length * 9 + 42 : 124;
@@ -433,8 +464,44 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
             </form>
           </div>
 
-          {/* Feedback list */}
+          {/* Feedback list with beautiful sort control bar */}
           <div className="space-y-4">
+            {!loading && reviews.length > 0 && (
+              <div className="flex items-center justify-between gap-4 pb-3 border-b border-black/5 dark:border-white/5">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  Reviews ({reviews.length})
+                </h4>
+                <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-650 dark:text-zinc-400">
+                  <span>Sort:</span>
+                  <div className="flex bg-zinc-100 dark:bg-zinc-800/80 rounded-lg p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setSortBy('recent')}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                        sortBy === 'recent'
+                          ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
+                          : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                      }`}
+                    >
+                      Recent
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSortBy('helpful')}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer flex items-center gap-1 ${
+                        sortBy === 'helpful'
+                          ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
+                          : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                      }`}
+                    >
+                      <ThumbsUp className="w-2.5 h-2.5" />
+                      <span>Most Helpful</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {loading ? (
               <div className="flex flex-col items-center justify-center py-10">
                 <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
@@ -446,7 +513,7 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
               </div>
             ) : (
               <div className="space-y-3">
-                {reviews.map((rev) => {
+                {sortedReviews.map((rev) => {
                   const isLong = rev.comment.length > 150;
                   const isExpanded = expandedReviews[rev.id];
                   const displayedComment = isLong && !isExpanded 

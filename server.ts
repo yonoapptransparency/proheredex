@@ -60,6 +60,59 @@ function getIp(req: express.Request): string {
   return req.socket?.remoteAddress || "unknown";
 }
 
+// Helper to prevent SSRF by checking if a URL targets localhost or private IP addresses
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const parsedUrl = new URL(urlString);
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return false;
+    }
+    const hostname = parsedUrl.hostname.toLowerCase();
+    
+    // Strict match of local and loopback blocks
+    const isLocalOrPrivate = 
+      hostname === 'localhost' ||
+      hostname === 'loopback' ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.internal') ||
+      hostname === '127.0.0.1' ||
+      hostname === '0.0.0.0' ||
+      hostname === '169.254.169.254' ||
+      hostname === 'metadata' ||
+      hostname === 'metadata.google' ||
+      hostname === 'metadata.google.internal' ||
+      // Check for common private IP block prefixes in IPv4
+      hostname.startsWith('10.') ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('172.16.') ||
+      hostname.startsWith('172.17.') ||
+      hostname.startsWith('172.18.') ||
+      hostname.startsWith('172.19.') ||
+      hostname.startsWith('172.20.') ||
+      hostname.startsWith('172.21.') ||
+      hostname.startsWith('172.22.') ||
+      hostname.startsWith('172.23.') ||
+      hostname.startsWith('172.24.') ||
+      hostname.startsWith('172.25.') ||
+      hostname.startsWith('172.26.') ||
+      hostname.startsWith('172.27.') ||
+      hostname.startsWith('172.28.') ||
+      hostname.startsWith('172.29.') ||
+      hostname.startsWith('172.30.') ||
+      hostname.startsWith('172.31.') ||
+      hostname.startsWith('169.254.') ||
+      // Check for IPv6 patterns
+      hostname.startsWith('[fc00') ||
+      hostname.startsWith('[fe80') ||
+      hostname === '[::1]' ||
+      hostname === '::1';
+
+    return !isLocalOrPrivate;
+  } catch {
+    return false;
+  }
+}
+
 // Active dynamic challenge nonce memory repository (Expires in 2 minutes)
 interface NonceEntry {
   sessionId: string;
@@ -179,7 +232,7 @@ async function startServer() {
         }
 
         console.log('--- FAVICON/LOGO ROUTE RESOLVED ---', imageUrl);
-        if (typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+        if (typeof imageUrl === 'string' && imageUrl.startsWith('http') && isSafeUrl(imageUrl)) {
           try {
             // Dynamic image proxy to bypass CORS/Same-origin and 302 redirect failure in indexing scrapers
             const response = await fetch(imageUrl, {
@@ -561,6 +614,11 @@ async function startServer() {
         }
       } catch (e) {}
 
+      if (!isSafeUrl(targetUrl)) {
+        console.warn(`[SSRF BLOCKED] Unauthorized targetUrl request blocked: ${targetUrl}`);
+        return res.status(403).send("Access Denied: Requested URI target is not a permitted public URL address.");
+      }
+
       const response = await fetch(targetUrl, {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
@@ -634,7 +692,7 @@ async function startServer() {
   });
 
   // Database fix endpoint - run once to fix broken secure links
-  app.get("/api/v1/admin/fix-db-links", async (req, res) => {
+  app.get("/api/v1/admin/fix-db-links", verifyAdminToken, async (req, res) => {
      try {
        const config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
        
