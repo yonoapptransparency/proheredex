@@ -265,7 +265,7 @@ async function getPagePreRender(urlPath: string, data: any): Promise<string> {
 }
 
 function renderHeader(settings: any) {
-  const siteTitle = getField(settings, 'site_title', 'App Store');
+  const siteTitle = getField(settings, 'site_title');
   const logoUrl = getField(settings, 'logo_url');
   return `
     <header class="py-3 border-b border-black/5 dark:border-white/5 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md">
@@ -289,7 +289,7 @@ function renderHeader(settings: any) {
 }
 
 function renderFooter(settings: any) {
-  const siteTitle = getField(settings, 'site_title', 'App Store');
+  const siteTitle = getField(settings, 'site_title');
   const logoUrl = getField(settings, 'logo_url');
   const metaDescription = getField(settings, 'meta_description');
   const disclaimerText = getField(settings, 'disclaimer_text');
@@ -325,7 +325,7 @@ function renderFooter(settings: any) {
 }
 
 function renderHome(apps: any[], settings: any, news: any[], blogs: any[], videos: any[]) {
-  const siteTitle = getField(settings, 'site_title', 'App Store');
+  const siteTitle = getField(settings, 'site_title');
   const desc = getField(settings, 'meta_description');
   
   let appsHtml = '';
@@ -649,13 +649,17 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
   let data = await fetchStoreData();
   if (!data || !data.settings) return template;
 
-  const { apps, settings, news, blogs, videos } = data;
-  const siteTitle = getField(settings, 'site_title', 'App Store');
+  const apps = data.apps || [];
+  const settings = data.settings || {};
+  const news = data.news || [];
+  const blogs = data.blogs || [];
+  const videos = data.videos || [];
+  const siteTitle = getField(settings, 'site_title');
   let title = siteTitle;
   let description = getField(settings, 'meta_description', '');
   let keywords = getField(settings, 'seo_keywords', '');
   let ogImage = getField(settings, 'logo_url', '');
-  let author = 'App Store';
+  let author = siteTitle;
   
   if (urlPath.startsWith('/app/')) {
     const slug = decodeURIComponent(urlPath.split('/app/')[1].split('/')[0].split('?')[0]);
@@ -665,11 +669,10 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
     });
     
     if (app) {
-      const appName = getField(app, 'name', 'App');
+      const appName = getField(app, 'name');
       title = `${getField(app, 'seo_title') || appName}`;
       const descHtml = getField(app, 'description_html');
-      const fallbackDesc = `Download the verified ${appName} app instantly. Smooth gameplay, professional reviews, e-sports integration, and exclusive daily features.`;
-      description = cleanSeoDescription(getField(app, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : fallbackDesc);
+      description = cleanSeoDescription(getField(app, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : '');
       keywords = getField(app, 'seo_keywords');
       ogImage = getField(app, 'og_image_url') || getField(app, 'icon_url') || ogImage;
     }
@@ -682,12 +685,11 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
     });
     
     if (app) {
-      const appName = getField(app, 'name', 'App');
+      const appName = getField(app, 'name');
       title = `${getField(app, 'seo_title') || appName} - Technical Info`;
       const descHtml = getField(app, 'description_html');
-      const fallbackDesc = `Download options, package size, status, and technical specifications for ${appName}.`;
-      description = cleanSeoDescription(getField(app, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : fallbackDesc);
-      keywords = `${getField(app, 'seo_keywords')}, info ${appName}, secure ${appName}`;
+      description = cleanSeoDescription(getField(app, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : '');
+      keywords = getField(app, 'seo_keywords');
       ogImage = getField(app, 'og_image_url') || getField(app, 'icon_url') || ogImage;
     }
   } else if (urlPath.startsWith('/news/') && urlPath.length > 6) {
@@ -704,7 +706,7 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
       description = cleanSeoDescription(getField(newsItem, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : '');
       keywords = getField(newsItem, 'seo_keywords');
       ogImage = getField(newsItem, 'og_image_url') || getField(newsItem, 'logo_url') || ogImage;
-      author = getField(newsItem, 'ceo_name') || 'App Store';
+      author = getField(newsItem, 'ceo_name') || siteTitle;
     }
   } else if (urlPath.startsWith('/blog/') && urlPath.length > 6) {
     const slug = decodeURIComponent(urlPath.split('/blog/')[1].split('/')[0].split('?')[0]);
@@ -720,7 +722,7 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
       description = cleanSeoDescription(getField(blogItem, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : '');
       keywords = getField(blogItem, 'seo_keywords');
       ogImage = getField(blogItem, 'cover_url') || ogImage;
-      author = getField(blogItem, 'author') || 'App Store';
+      author = getField(blogItem, 'author') || siteTitle;
     }
   } else if (urlPath.startsWith('/videos/') && urlPath.length > 8) {
     const slug = decodeURIComponent(urlPath.split('/videos/')[1].split('/')[0].split('?')[0]);
@@ -845,8 +847,14 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
   // Insert new tags and configuration before head close
   newTemplate = newTemplate.replace('</head>', `${configScript}${tags}</head>`);
 
-  // Dynamic SEO meta head tag replacement is complete.
-  // We bypass full HTML body pre-rendering inside <div id="root"> to prevent duplicate markup or static layout conflicts behind the React client.
+  // Dynamically inject fully pre-rendered body content inside <div id="root"> for crawlers and indexers.
+  // When the React client mounts, it will cleanly overwrite the markup with interactive components.
+  try {
+    const preRenderedBody = await getPagePreRender(urlPath, data);
+    newTemplate = newTemplate.replace(/<div\s+id=["']root["']\s*>\s*<\/div>/ims, `<div id="root">${preRenderedBody}</div>`);
+  } catch (renderErr) {
+    console.error("Static pre-rendering body injection failed:", renderErr);
+  }
   
   return newTemplate;
 }

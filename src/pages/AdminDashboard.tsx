@@ -471,6 +471,10 @@ const SettingsTab = React.memo(({ mockSettings, handleSaveSettings, saving }: an
             <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Main Index Subtitle</label>
             <input type="text" name="secure_index_subtitle" defaultValue={mockSettings.secure_index_subtitle || 'Verified & Transparent App Marketplace'} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition-all dark:text-white font-bold" />
           </div>
+          <div className="sm:col-span-2">
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Trending Searches (Comma Separated)</label>
+            <input type="text" name="trending_searches" defaultValue={mockSettings.trending_searches ? (Array.isArray(mockSettings.trending_searches) ? mockSettings.trending_searches.join(', ') : mockSettings.trending_searches) : ''} placeholder="e.g. Yono, Rummy Game, Bingo 101" className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition-all dark:text-white font-bold" />
+          </div>
         </div>
       </div>
 
@@ -1125,6 +1129,7 @@ export default function AdminDashboard() {
         favicon_url: formData.get('favicon_url') as string || mockSettings.favicon_url,
         secure_index_title: formData.get('secure_index_title') as string || mockSettings.secure_index_title || 'Secure Index',
         secure_index_subtitle: formData.get('secure_index_subtitle') as string || mockSettings.secure_index_subtitle || 'Verified & Transparent App Marketplace',
+        trending_searches: (formData.get('trending_searches') as string || '').split(',').map((s: string) => s.trim()).filter(Boolean),
         
         about_content: formData.get('about_content') as string || mockSettings.about_content,
         privacy_content: formData.get('privacy_content') as string || mockSettings.privacy_content,

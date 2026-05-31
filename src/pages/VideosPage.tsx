@@ -52,7 +52,7 @@ export default function VideosPage() {
       </div>
 
       <Helmet>
-        <title>Video Transmissions - {mockSettings.site_title || 'App Store'}</title>
+        <title>Video Transmissions - {mockSettings.site_title}</title>
         <meta name="description" content="Watch high-quality video walkthroughs and tutorials of our catalog applications." />
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href={window.location.origin + "/videos"} />

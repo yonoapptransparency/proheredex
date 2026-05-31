@@ -81,6 +81,7 @@ export interface GlobalSettings {
   last_updated?: string;
   secure_index_title?: string;
   secure_index_subtitle?: string;
+  trending_searches?: string[];
 }
 
 export interface NewsItem {
@@ -118,7 +119,7 @@ export interface AppConfig {
   developer: string;
   icon_url: string;
   screenshots: string[];
-  more_information_url: string;
+  more_information_url?: string;
   description_html: string;
   red_box_msg: string;
   yellow_box_msg: string;

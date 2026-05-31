@@ -136,7 +136,7 @@ export default function NewsDetailPage() {
         <title>{newsItem.title} - {mockSettings.site_title}</title>
         <meta name="description" content={newsItem.description} />
         {newsItem.seo_keywords && <meta name="keywords" content={newsItem.seo_keywords} />}
-        <meta name="author" content={newsItem.ceo_name || "App Store"} />
+        <meta name="author" content={newsItem.ceo_name || mockSettings.site_title} />
         <meta name="robots" content="index, follow" />
         {newsItem.target_region && <meta name="geo.region" content={newsItem.target_region} />}
         {newsItem.target_region && <meta name="coverage" content={newsItem.target_region} />}

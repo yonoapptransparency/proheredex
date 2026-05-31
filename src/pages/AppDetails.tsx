@@ -6,6 +6,7 @@ import { cn } from '../lib/utils';
 import { useEffect, useMemo, useState } from 'react';
 import { AppListItem } from '../components/PlayStoreUI';
 import { motion, AnimatePresence } from 'framer-motion';
+import UserReviews from '../components/UserReviews';
 
 export default function AppDetails() {
   const { apps: mockApps, settings: mockSettings, loading, appsSyncedWithServer, serverAppsFetched, refreshAll } = useData();
@@ -255,7 +256,7 @@ export default function AppDetails() {
         <title>{title}</title>
         <meta name="description" content={desc} />
         {app.seo_keywords && <meta name="keywords" content={app.seo_keywords} />}
-        <meta name="author" content="App Store" />
+        <meta name="author" content={mockSettings.site_title} />
         <meta name="robots" content="index, follow" />
         {app.target_region && <meta name="geo.region" content={app.target_region} />}
         {app.target_region && <meta name="coverage" content={app.target_region} />}
@@ -452,6 +453,10 @@ export default function AppDetails() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="px-1 mb-8">
+        <UserReviews appId={app.id} appTitle={app.name} overallRating={app.rating} />
       </div>
       
       {app.faqs && app.faqs.length > 0 && (

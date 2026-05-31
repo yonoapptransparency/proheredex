@@ -342,3 +342,75 @@ export const TopChartItem = React.memo(({ rank, app }: TopChartItemProps) => {
     </motion.div>
   );
 });
+
+export const AppListItemSkeleton = () => {
+  return (
+    <div className="flex items-center gap-4 p-4 mb-2 animate-pulse rounded-2xl relative select-none">
+      <div className="w-6 sm:w-8 text-center shrink-0">
+        <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-4 mx-auto" />
+      </div>
+
+      <div className="relative w-16 h-16 sm:w-[72px] sm:h-[72px] shrink-0">
+        <div className="w-full h-full rounded-[18px] bg-zinc-200 dark:bg-zinc-700" />
+      </div>
+      
+      <div className="flex-1 min-w-0 flex flex-col justify-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="bg-zinc-200 dark:bg-zinc-800 rounded h-4 w-1/3" />
+        </div>
+
+        <div className="bg-zinc-200 dark:bg-zinc-800 rounded h-3 w-1/4" />
+
+        <div className="flex items-center gap-1 mt-0.5">
+          <div className="bg-zinc-200 dark:bg-zinc-800 rounded h-3 w-8" />
+        </div>
+      </div>
+      
+      <div className="shrink-0 pr-1">
+        <div className="w-14 h-7 bg-zinc-200 dark:bg-zinc-800 rounded-full" />
+      </div>
+      
+      <div className="absolute bottom-0 right-4 left-[104px] border-b border-black/5 dark:border-white/5 opacity-50" />
+    </div>
+  );
+};
+
+export const TopChartItemSkeleton = ({ rank }: { rank: number }) => {
+  return (
+    <div className="flex items-center gap-4 p-4 mb-2 animate-pulse rounded-2xl relative select-none">
+      <div className="w-6 sm:w-8 text-sm font-bold text-zinc-300 dark:text-zinc-700 text-center shrink-0">
+        {rank}
+      </div>
+      
+      <div className="relative w-16 h-16 sm:w-[72px] sm:h-[72px] shrink-0">
+        <div className="w-full h-full rounded-[18px] bg-zinc-200 dark:bg-zinc-800" />
+      </div>
+      
+      <div className="flex-1 min-w-0 flex flex-col justify-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="bg-zinc-200 dark:bg-zinc-800 rounded h-4 w-1/2" />
+        </div>
+        <div className="bg-zinc-200 dark:bg-zinc-800 rounded h-3 w-1/3" />
+        <div className="flex items-center gap-1 mt-0.5">
+          <div className="bg-zinc-200 dark:bg-zinc-800 rounded h-3 w-8" />
+        </div>
+      </div>
+      
+      <div className="shrink-0 pr-1">
+        <div className="w-14 h-7 bg-zinc-200 dark:bg-zinc-800 rounded-full" />
+      </div>
+      
+      <div className="absolute bottom-0 right-4 left-[104px] border-b border-black/5 dark:border-white/5 opacity-50 opacity-50" />
+    </div>
+  );
+};
+
+export const NewAdditionItemSkeleton = () => {
+  return (
+    <div className="flex flex-col gap-2 animate-pulse p-1 select-none">
+      <div className="aspect-square rounded-[18px] bg-zinc-200 dark:bg-zinc-800 w-full" />
+      <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-2/3 mx-auto mt-1" />
+    </div>
+  );
+};
+

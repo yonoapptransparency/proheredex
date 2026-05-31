@@ -265,7 +265,7 @@ function Header() {
             </nav>
             
             <div className="mt-auto pt-6 border-t border-black/5 dark:border-white/5 text-center shrink-0">
-              <span className="text-xs text-zinc-400 font-medium">&copy; {new Date().getFullYear()} {settings.site_title || 'App Store'}</span>
+              <span className="text-xs text-zinc-400 font-medium">&copy; {new Date().getFullYear()} {settings.site_title}</span>
             </div>
           </motion.div>
         )}
@@ -485,7 +485,7 @@ function LoadingScreen() {
 }
 
 function AppContent() {
-  const { settings } = useData();
+  const { settings, apps = [], news = [], blogs = [], videos = [] } = useData();
   const location = useLocation();
   const [isAgeVerified, setIsAgeVerified] = useState(true);
 
@@ -501,6 +501,180 @@ function AppContent() {
       }, 0);
     }
   };
+
+  // Dynamic SEO meta tag manager that reacts to the current page state, keeping it strictly in sync with the database settings and content models
+  useEffect(() => {
+    if (!settings) return;
+
+    const stripHtml = (html: string) => {
+      if (!html) return '';
+      return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+    };
+
+    const siteTitle = settings.site_title || 'App Store';
+    let pageTitle = siteTitle;
+    let pageDesc = settings.meta_description || '';
+    let pageKeywords = settings.seo_keywords || '';
+    let pageOgImage = settings.logo_url || '';
+    let pageAuthor = siteTitle;
+    let pageRobots = 'index, follow';
+
+    const path = location.pathname;
+
+    const setMetaTag = (nameOrProperty: string, content: string, isProperty: boolean = false) => {
+      const attributeName = isProperty ? 'property' : 'name';
+      const selector = `meta[${attributeName}="${nameOrProperty}"]`;
+      let element = document.querySelector(selector);
+      if (!content) {
+        if (element) element.remove();
+        return;
+      }
+      if (!element) {
+        element = document.createElement('meta');
+        element.setAttribute(attributeName, nameOrProperty);
+        document.head.appendChild(element);
+      }
+      element.setAttribute('content', content);
+    };
+
+    if (isAdminPath) {
+      pageTitle = `Admin Dashboard - ${siteTitle}`;
+      pageDesc = 'Admin authentication and management portal.';
+      pageKeywords = 'admin, dashboard';
+      pageRobots = 'noindex, nofollow, noarchive, nosnippet';
+    } else if (path === '/' || path === '') {
+      pageTitle = siteTitle;
+      pageDesc = settings.meta_description || '';
+      pageKeywords = settings.seo_keywords || '';
+      pageOgImage = settings.logo_url || '';
+    } else if (path === '/about') {
+      pageTitle = `About Us - ${siteTitle}`;
+      pageDesc = settings.meta_description || '';
+      pageKeywords = settings.seo_keywords || '';
+    } else if (path === '/contact') {
+      pageTitle = `Contact Us - ${siteTitle}`;
+      pageDesc = settings.meta_description || '';
+      pageKeywords = settings.seo_keywords || '';
+    } else if (path === '/privacy') {
+      pageTitle = `Privacy Policy - ${siteTitle}`;
+      pageDesc = settings.meta_description || '';
+      pageKeywords = settings.seo_keywords || '';
+    } else if (path === '/terms') {
+      pageTitle = `Terms and Conditions - ${siteTitle}`;
+      pageDesc = settings.meta_description || '';
+      pageKeywords = settings.seo_keywords || '';
+    } else if (path === '/responsibility') {
+      pageTitle = `Responsible Gaming - ${siteTitle}`;
+      pageDesc = settings.meta_description || '';
+      pageKeywords = settings.seo_keywords || '';
+    } else if (path === '/news') {
+      pageTitle = `Latest News - ${siteTitle}`;
+      pageDesc = 'Read our official news and verified coverage.';
+      pageKeywords = settings.seo_keywords || '';
+    } else if (path === '/blogs') {
+      pageTitle = `Expert Strategy Blogs - ${siteTitle}`;
+      pageDesc = 'Comprehensive casual gaming strategy breakdowns, tips, and tutorials.';
+      pageKeywords = settings.seo_keywords || '';
+    } else if (path === '/videos') {
+      pageTitle = `Video Interface Walkthroughs - ${siteTitle}`;
+      pageDesc = 'Watch video walkthroughs, system reviews, and strategic play-through breakdowns.';
+      pageKeywords = settings.seo_keywords || '';
+    } else if (path.startsWith('/app/')) {
+      const slug = decodeURIComponent(path.split('/app/')[1]?.split('/')[0]?.split('?')[0] || '');
+      const app = apps.find((a: any) => a?.slug?.toLowerCase() === slug.toLowerCase());
+      if (app) {
+        pageTitle = app.seo_title || app.name || siteTitle;
+        const rawDesc = app.seo_description || '';
+        const rawHtml = app.description_html || '';
+        pageDesc = rawDesc ? rawDesc : (rawHtml ? stripHtml(rawHtml).substring(0, 160) : '');
+        pageKeywords = app.seo_keywords || '';
+        pageOgImage = app.og_image_url || app.icon_url || settings.logo_url || '';
+      }
+    } else if (path.startsWith('/info/') || path.startsWith('/gateway/')) {
+      const parts = path.split('/');
+      const slug = decodeURIComponent(parts[2]?.split('?')[0] || '');
+      const app = apps.find((a: any) => a?.slug?.toLowerCase() === slug.toLowerCase());
+      if (app) {
+        pageTitle = `${app.seo_title || app.name || siteTitle} - Technical Specifications`;
+        const rawDesc = app.seo_description || '';
+        const rawHtml = app.description_html || '';
+        pageDesc = rawDesc ? rawDesc : (rawHtml ? stripHtml(rawHtml).substring(0, 160) : '');
+        pageKeywords = app.seo_keywords || '';
+        pageOgImage = app.og_image_url || app.icon_url || settings.logo_url || '';
+      }
+    } else if (path.startsWith('/news/') && path.length > 6) {
+      const slug = decodeURIComponent(path.split('/news/')[1]?.split('/')[0]?.split('?')[0] || '');
+      const newsItem = news.find((n: any) => n?.slug?.toLowerCase() === slug.toLowerCase());
+      if (newsItem) {
+        pageTitle = newsItem.title ? `${newsItem.title} - ${siteTitle}` : siteTitle;
+        const rawDesc = newsItem.seo_description || '';
+        const rawContent = newsItem.description || '';
+        pageDesc = rawDesc ? rawDesc : (rawContent ? stripHtml(rawContent).substring(0, 160) : '');
+        pageKeywords = newsItem.seo_keywords || '';
+        pageOgImage = newsItem.logo_url || settings.logo_url || '';
+        pageAuthor = newsItem.ceo_name || siteTitle;
+      }
+    } else if (path.startsWith('/blog/') && path.length > 6) {
+      const slug = decodeURIComponent(path.split('/blog/')[1]?.split('/')[0]?.split('?')[0] || '');
+      const blogItem = blogs.find((b: any) => b?.slug?.toLowerCase() === slug.toLowerCase());
+      if (blogItem) {
+        pageTitle = blogItem.title ? `${blogItem.title} - ${siteTitle}` : siteTitle;
+        const rawDesc = blogItem.seo_description || '';
+        const rawContent = blogItem.content || '';
+        pageDesc = rawDesc ? rawDesc : (rawContent ? stripHtml(rawContent).substring(0, 160) : '');
+        pageKeywords = blogItem.seo_keywords || '';
+        pageOgImage = blogItem.cover_url || settings.logo_url || '';
+        pageAuthor = blogItem.author || siteTitle;
+      }
+    } else if (path.startsWith('/videos/') && path.length > 8) {
+      const slug = decodeURIComponent(path.split('/videos/')[1]?.split('/')[0]?.split('?')[0] || '');
+      const videoItem = videos.find((v: any) => v?.slug?.toLowerCase() === slug.toLowerCase());
+      if (videoItem) {
+        const getYoutubeThumbnail = (url: string) => {
+          if (!url) return '';
+          const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+          const match = url.match(regExp);
+          if (match && match[2].length === 11) {
+            return `https://img.youtube.com/vi/${match[2]}/maxresdefault.jpg`;
+          }
+          return '';
+        };
+        pageTitle = videoItem.title ? `${videoItem.title} - ${siteTitle}` : siteTitle;
+        pageDesc = videoItem.seo_description || videoItem.description || '';
+        pageKeywords = settings.seo_keywords || '';
+        pageOgImage = getYoutubeThumbnail(videoItem.youtube_url) || settings.logo_url || '';
+      }
+    }
+
+    // Dynamic document title assignment
+    document.title = pageTitle;
+
+    // Standard Meta tags mapping
+    setMetaTag('description', pageDesc);
+    setMetaTag('keywords', pageKeywords);
+    setMetaTag('author', pageAuthor);
+    setMetaTag('robots', pageRobots);
+
+    // Dynamic social graph synchronization
+    setMetaTag('og:title', pageTitle, true);
+    setMetaTag('og:description', pageDesc, true);
+    setMetaTag('og:image', pageOgImage, true);
+    setMetaTag('og:url', window.location.href, true);
+
+    setMetaTag('twitter:title', pageTitle);
+    setMetaTag('twitter:description', pageDesc);
+    setMetaTag('twitter:image', pageOgImage);
+
+    // Frame synchronization logic
+    try {
+      if (window.parent && window.parent !== window && window.parent.document) {
+        window.parent.document.title = pageTitle;
+      }
+    } catch (e) {
+      // Bypassed for cross-origin compliance
+    }
+
+  }, [location.pathname, settings, apps, news, blogs, videos, isAdminPath]);
 
   // Memoize static layout parts to prevent redundant re-renders
   const memoizedHeader = useMemo(() => <Header />, [location.pathname, settings]);

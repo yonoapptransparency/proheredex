@@ -2,18 +2,20 @@ import { useState, useEffect, useMemo, useDeferredValue } from 'react';
 import { Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useData } from '../contexts/DataContext';
-import { Search, ShieldAlert, ShieldCheck, Sparkles, ArrowRight, TrendingUp } from 'lucide-react';
+import { Search, ShieldAlert, ShieldCheck, Sparkles, ArrowRight, TrendingUp, Star, SlidersHorizontal, ChevronDown, ListFilter } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
-import { FeaturedBanner, PlayStoreTabs, TopChartItem, AppListItem } from '../components/PlayStoreUI';
+import { FeaturedBanner, PlayStoreTabs, TopChartItem, AppListItem, AppListItemSkeleton, TopChartItemSkeleton, NewAdditionItemSkeleton } from '../components/PlayStoreUI';
 
 export default function Home() {
-  const { apps: mockApps, settings: mockSettings } = useData();
+  const { apps: mockApps, settings: mockSettings, loading } = useData();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || mockSettings.categories?.[0] || 'All Apps');
+  const [ratingFilter, setRatingFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('default');
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -34,9 +36,39 @@ export default function Home() {
 
   const filteredApps = useMemo(() => {
     const term = searchTerm.toLowerCase().trim();
-    if (!term) return [...mockApps].sort((a, b) => (a.serial_number || 0) - (b.serial_number || 0));
+    let baseApps = [...mockApps];
 
-    const scored = mockApps
+    // Filter by Rating
+    if (ratingFilter !== 'all') {
+      const minRating = parseFloat(ratingFilter);
+      if (!isNaN(minRating)) {
+        baseApps = baseApps.filter(app => {
+          const r = typeof app.rating === 'number' ? app.rating : parseFloat(app.rating) || 0;
+          return r >= minRating;
+        });
+      }
+    }
+
+    if (!term) {
+      if (sortBy === 'rating_desc') {
+        baseApps.sort((a, b) => {
+          const ra = typeof a.rating === 'number' ? a.rating : parseFloat(a.rating) || 0;
+          const rb = typeof b.rating === 'number' ? b.rating : parseFloat(b.rating) || 0;
+          return rb - ra;
+        });
+      } else if (sortBy === 'rating_asc') {
+        baseApps.sort((a, b) => {
+          const ra = typeof a.rating === 'number' ? a.rating : parseFloat(a.rating) || 0;
+          const rb = typeof b.rating === 'number' ? b.rating : parseFloat(b.rating) || 0;
+          return ra - rb;
+        });
+      } else {
+        baseApps.sort((a, b) => (a.serial_number || 0) - (b.serial_number || 0));
+      }
+      return baseApps;
+    }
+
+    const scored = baseApps
       .map(app => {
         let score = 0;
         const name = app.name.toLowerCase();
@@ -69,7 +101,7 @@ export default function Home() {
       })
       .filter(item => item.score > 0);
 
-    return scored
+    const resultingApps = scored
       .sort((a, b) => {
         // Sort by score first (highest first)
         if (b.score !== a.score) return b.score - a.score;
@@ -77,7 +109,23 @@ export default function Home() {
         return (a.app.serial_number || 0) - (b.app.serial_number || 0);
       })
       .map(item => item.app);
-  }, [mockApps, searchTerm]);
+
+    if (sortBy === 'rating_desc') {
+      resultingApps.sort((a, b) => {
+        const ra = typeof a.rating === 'number' ? a.rating : parseFloat(a.rating) || 0;
+        const rb = typeof b.rating === 'number' ? b.rating : parseFloat(b.rating) || 0;
+        return rb - ra;
+      });
+    } else if (sortBy === 'rating_asc') {
+      resultingApps.sort((a, b) => {
+        const ra = typeof a.rating === 'number' ? a.rating : parseFloat(a.rating) || 0;
+        const rb = typeof b.rating === 'number' ? b.rating : parseFloat(b.rating) || 0;
+        return ra - rb;
+      });
+    }
+
+    return resultingApps;
+  }, [mockApps, searchTerm, ratingFilter, sortBy]);
 
   const bannerItems = mockSettings.banners || [];
 
@@ -87,7 +135,7 @@ export default function Home() {
         <title>{mockSettings.site_title}</title>
         <meta name="description" content={mockSettings.meta_description} />
         {mockSettings.seo_keywords && <meta name="keywords" content={mockSettings.seo_keywords} />}
-        <meta name="author" content="App Store" />
+        <meta name="author" content={mockSettings.site_title} />
         <meta name="robots" content="index, follow" />
         
         <meta property="og:type" content="website" />
@@ -140,31 +188,37 @@ export default function Home() {
               Verified New Additions
             </h2>
             <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-3 px-1 mb-6">
-              {filteredApps.filter(app => app.is_new).slice(0, 10).map((app) => (
-                <motion.div
-                  key={app.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Link to={`/${app.slug}`} className="flex flex-col gap-2 group">
-                    <div className="aspect-square rounded-[18px] overflow-hidden bg-white/20 border border-black/5 dark:border-white/10 shadow-sm group-hover:shadow-[0_8px_20px_-8px_rgba(0,0,0,0.1)] transition-all relative">
-                      <img 
-                        src={app.icon_url || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop"} 
-                        alt={app.name} 
-                        referrerPolicy="no-referrer"
-                        loading="eager"
-                        width={128}
-                        height={128}
-                        className="w-full h-full object-cover group-hover:-translate-y-0.5 transition-transform duration-300" 
-                      />
-                    </div>
-                    <div className="px-1 text-center">
-                      <h3 className="text-[10px] sm:text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate">{app.name}</h3>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
+              {loading ? (
+                Array.from({ length: 10 }).map((_, i) => (
+                  <NewAdditionItemSkeleton key={i} />
+                ))
+              ) : (
+                filteredApps.filter(app => app.is_new).slice(0, 10).map((app) => (
+                  <motion.div
+                    key={app.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Link to={`/${app.slug}`} className="flex flex-col gap-2 group">
+                      <div className="aspect-square rounded-[18px] overflow-hidden bg-white/20 border border-black/5 dark:border-white/10 shadow-sm group-hover:shadow-[0_8px_20px_-8px_rgba(0,0,0,0.1)] transition-all relative">
+                        <img 
+                          src={app.icon_url || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop"} 
+                          alt={app.name} 
+                          referrerPolicy="no-referrer"
+                          loading="eager"
+                          width={128}
+                          height={128}
+                          className="w-full h-full object-cover group-hover:-translate-y-0.5 transition-transform duration-300" 
+                        />
+                      </div>
+                      <div className="px-1 text-center">
+                        <h3 className="text-[10px] sm:text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate">{app.name}</h3>
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))
+              )}
             </div>
           </div>
         );
@@ -172,15 +226,95 @@ export default function Home() {
 
       <PlayStoreTabs activeTab={activeTab} onTabChange={setActiveTab} hideOnSearch={!!searchTerm} />
 
+      {activeTab.toLowerCase() !== 'categories' && (
+        <div className="px-4 mb-4 flex flex-wrap items-center justify-between gap-3 bg-zinc-50/40 dark:bg-zinc-950/40 py-2.5 rounded-2xl border border-black/[0.03] dark:border-white/[0.03]">
+          <div className="flex items-center gap-2">
+            <ListFilter className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
+            <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 leading-none">
+              Filter Results
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Star Rating Dropdown */}
+            <div className="relative">
+              <label className="sr-only">Filter by Rating</label>
+              <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/10 rounded-xl px-3 py-1.5 shadow-sm text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer select-none">
+                <span className="flex items-center gap-1">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                  <span>Rating: {ratingFilter === 'all' ? 'All' : `${ratingFilter}+ Stars`}</span>
+                </span>
+                <select
+                  value={ratingFilter}
+                  onChange={(e) => setRatingFilter(e.target.value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                >
+                  <option value="all">All Ratings</option>
+                  <option value="4.5">4.5+ ★ Superior</option>
+                  <option value="4.0">4.0+ ★ Top Rated</option>
+                  <option value="3.5">3.5+ ★ Premium</option>
+                  <option value="3.0">3.0+ ★ Standard</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+              </div>
+            </div>
+
+            {/* Sort By Dropdown */}
+            <div className="relative">
+              <label className="sr-only">Sort by Order</label>
+              <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/10 rounded-xl px-3 py-1.5 shadow-sm text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer select-none">
+                <span className="flex items-center gap-1">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                  <span>Sort: {
+                    sortBy === 'default' ? 'Recommended' : 
+                    sortBy === 'rating_desc' ? 'Rating: High to Low' : 
+                    'Rating: Low to High'
+                  }</span>
+                </span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                >
+                  <option value="default">Recommended</option>
+                  <option value="rating_desc">Rating (Highest First)</option>
+                  <option value="rating_asc">Rating (Lowest First)</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+              </div>
+            </div>
+
+            {/* Clear filters if active */}
+            {(ratingFilter !== 'all' || sortBy !== 'default') && (
+              <button
+                onClick={() => {
+                  setRatingFilter('all');
+                  setSortBy('default');
+                }}
+                className="text-xs font-bold text-red-500 hover:text-red-650 transition-colors px-2 py-1 cursor-pointer"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {searchTerm && (
         <div className="px-1">
           <h2 className="text-xl font-bold mb-4 mt-6 text-zinc-900 dark:text-zinc-100 px-4">
             Search Results
           </h2>
           <div className="space-y-2">
-            {filteredApps.map((app, index) => (
-              <AppListItem key={app.id} app={app} index={index + 1} />
-            ))}
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <AppListItemSkeleton key={i} />
+              ))
+            ) : (
+              filteredApps.map((app, index) => (
+                <AppListItem key={app.id} app={app} index={index + 1} />
+              ))
+            )}
           </div>
         </div>
       )}
@@ -190,9 +324,15 @@ export default function Home() {
           <h2 className="text-xl font-bold mb-4 mt-6 text-zinc-900 dark:text-zinc-100 flex items-center gap-2 px-4">
             Top Charts
           </h2>
-          {filteredApps.map((app, index) => (
-            <TopChartItem key={app.id} rank={index + 1} app={app} />
-          ))}
+          {loading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <TopChartItemSkeleton key={i} rank={i + 1} />
+            ))
+          ) : (
+            filteredApps.map((app, index) => (
+              <TopChartItem key={app.id} rank={index + 1} app={app} />
+            ))
+          )}
         </div>
       )}
 
@@ -210,9 +350,15 @@ export default function Home() {
               Explore All
             </h2>
             <div className="space-y-2">
-              {filteredApps.map((app, index) => (
-                <AppListItem key={app.id} app={app} index={index + 1} />
-              ))}
+              {loading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <AppListItemSkeleton key={i} />
+                ))
+              ) : (
+                filteredApps.map((app, index) => (
+                  <AppListItem key={app.id} app={app} index={index + 1} />
+                ))
+              )}
             </div>
           </div>
         );
@@ -243,6 +389,11 @@ export default function Home() {
         return !isExcluded && (
         <div className="animate-fade-in space-y-2 px-1">
           {(() => {
+            if (loading) {
+              return Array.from({ length: 6 }).map((_, i) => (
+                <AppListItemSkeleton key={i} />
+              ));
+            }
             const currentTabLower = activeTab.toLowerCase().trim();
             const tabApps = filteredApps.filter(app => {
               if (searchTerm) return true;
@@ -261,7 +412,7 @@ export default function Home() {
         );
       })()}
 
-      {filteredApps.length === 0 && searchTerm && (
+      {!loading && filteredApps.length === 0 && searchTerm && (
         <div className="text-center py-20 text-slate-400">
           <p className="text-lg">No results found for "{searchTerm}"</p>
         </div>

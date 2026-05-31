@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, X, Loader2, ArrowRight, Zap } from 'lucide-react';
+import { Search, X, Loader2, ArrowRight, Zap, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useData } from '../contexts/DataContext';
 import { Link, useNavigate } from 'react-router-dom';
 
 export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [query, setQuery] = useState('');
-  const { apps } = useData();
+  const [history, setHistory] = useState<string[]>([]);
+  const { apps, settings } = useData();
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -14,11 +15,59 @@ export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onC
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
       document.body.style.overflow = 'hidden';
+      try {
+        const stored = localStorage.getItem('recent_searches');
+        if (stored) {
+          setHistory(JSON.parse(stored));
+        }
+      } catch (e) {
+        console.error('Error loading search history:', e);
+      }
     } else {
       document.body.style.overflow = 'auto';
       setQuery('');
     }
   }, [isOpen]);
+
+  const saveToHistory = (searchTerm: string) => {
+    const trimmed = searchTerm.trim();
+    if (!trimmed) return;
+    setHistory(prev => {
+      const next = [trimmed, ...prev.filter(item => item.toLowerCase() !== trimmed.toLowerCase())].slice(0, 5);
+      localStorage.setItem('recent_searches', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const removeFromHistory = (itemToRemove: string) => {
+    setHistory(prev => {
+      const next = prev.filter(item => item !== itemToRemove);
+      localStorage.setItem('recent_searches', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    localStorage.removeItem('recent_searches');
+  };
+
+  const getTrendingSearches = () => {
+    if (!settings?.trending_searches) return [];
+    if (Array.isArray(settings.trending_searches)) {
+      return settings.trending_searches.filter(Boolean).slice(0, 8);
+    }
+    if (typeof settings.trending_searches === 'string') {
+      return (settings.trending_searches as string)
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .slice(0, 8);
+    }
+    return [];
+  };
+
+  const trendingSearches = getTrendingSearches();
 
   const results = query.length > 0 
     ? apps.filter(app => {
@@ -66,6 +115,7 @@ export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onC
               onSubmit={(e) => {
                 e.preventDefault();
                 if (results.length > 0 && results[0]?.slug) {
+                  saveToHistory(query);
                   navigate(`/${results[0].slug}`);
                   onClose();
                 }
@@ -98,9 +148,91 @@ export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onC
               </button>
             </form>
 
-            <AnimatePresence>
-              {query.length > 0 && (
+            <AnimatePresence mode="wait">
+              {query.length === 0 && (history.length > 0 || trendingSearches.length > 0) ? (
+                <motion.div
+                  key="search-history-and-trends"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="mt-4 bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/10 rounded-3xl shadow-xl overflow-hidden py-4"
+                >
+                  {/* Recent Searches Section */}
+                  {history.length > 0 && (
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2 px-6">
+                        <span className="text-xs font-semibold text-zinc-400 tracking-wide uppercase flex items-center gap-1.5 dark:text-zinc-500">
+                          Recent Searches
+                        </span>
+                        <button 
+                          onClick={clearHistory}
+                          className="text-xs font-semibold text-red-500 hover:text-red-100/80 transition-colors cursor-pointer"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                      <div className="px-3 space-y-1">
+                        {history.map((item, idx) => (
+                          <div 
+                            key={idx}
+                            className="flex items-center justify-between p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 rounded-2xl transition-all group"
+                          >
+                            <button
+                              onClick={() => setQuery(item)}
+                              className="flex items-center gap-3 flex-1 text-left cursor-pointer"
+                            >
+                              <Search className="w-4 h-4 text-zinc-400 group-hover:text-blue-500" />
+                              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 group-hover:text-blue-500 transition-colors">
+                                {item}
+                              </span>
+                            </button>
+                            <button
+                              onClick={() => removeFromHistory(item)}
+                              className="p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Divider line between History and Trends if both exist */}
+                  {history.length > 0 && trendingSearches.length > 0 && (
+                    <div className="my-4 border-t border-black/5 dark:border-white/5 mx-6" />
+                  )}
+
+                  {/* Trending Searches Section */}
+                  {trendingSearches.length > 0 && (
+                    <div className="px-6">
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <TrendingUp className="w-4 h-4 text-blue-500" />
+                        <span className="text-xs font-semibold text-zinc-400 tracking-wide uppercase dark:text-zinc-500">
+                          Trending Searches
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-1 pb-2">
+                        {trendingSearches.map((item, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setQuery(item);
+                              saveToHistory(item);
+                            }}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400 border border-black/5 dark:border-white/5 hover:border-blue-500/10 dark:hover:border-blue-500/10 rounded-full text-xs font-semibold text-zinc-600 dark:text-zinc-300 transition-all cursor-pointer shadow-sm active:scale-95"
+                          >
+                            <TrendingUp className="w-3.5 h-3.5 opacity-60 text-current" />
+                            <span>{item}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              ) : query.length > 0 ? (
                 <motion.div 
+                  key="search-results"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
@@ -116,7 +248,10 @@ export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onC
                       <Link 
                         key={app.id} 
                         to={`/${app.slug}`}
-                        onClick={onClose}
+                        onClick={() => {
+                          saveToHistory(query);
+                          onClose();
+                        }}
                         className="flex items-center gap-4 p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-2xl transition-all group"
                       >
                         <div className="w-12 h-12 bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-black/5 dark:border-white/5 overflow-hidden shrink-0">
@@ -144,7 +279,7 @@ export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onC
                     </div>
                   )}
                 </motion.div>
-              )}
+              ) : null}
             </AnimatePresence>
           </motion.div>
         </div>
