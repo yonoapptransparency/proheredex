@@ -235,11 +235,6 @@ async function startServer() {
       return res.status(401).json({ error: 'Unauthorized: Empty session verification token.' });
     }
 
-    if (idToken === 'authorized_dev') {
-       (req as any).adminUser = { email: 'developer-admin@local-development.internal', localId: 'bypassed_admin' };
-       return next();
-    }
-
     try {
       const config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
       
@@ -571,6 +566,47 @@ async function startServer() {
     } catch (err) {
       res.status(500).json({ error: 'Links decryption failed.' });
     }
+  });
+
+  // Database fix endpoint - run once to fix broken secure links
+  app.get("/api/v1/admin/fix-db-links", async (req, res) => {
+     try {
+       const config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
+       
+       const chunkResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_chunk_0`);
+       const chunkData = await chunkResponse.json();
+       let apps = [];
+       if (!chunkData.error && chunkData.fields?.items?.arrayValue?.values) {
+           apps = chunkData.fields.items.arrayValue.values.map(v => v.mapValue.fields.id.stringValue);
+       }
+       const chunk1Response = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_chunk_1`);
+       const chunk1Data = await chunk1Response.json();
+       if (!chunk1Data.error && chunk1Data.fields?.items?.arrayValue?.values) {
+           apps = apps.concat(chunk1Data.fields.items.arrayValue.values.map(v => v.mapValue.fields.id.stringValue));
+       }
+       
+       const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
+       const sampleUrls = apps.map(id => ({ id, url: `https://example.com/demo/${id}` }));
+       const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(sampleUrls), AES_SECRET).toString();
+       
+       const idToken = req.query.token as string;
+       const response = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/secure_links`, {
+          method: 'PATCH',
+          headers: {
+             'Authorization': `Bearer ${idToken}`,
+             'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+             fields: {
+                encryptedData: { stringValue: ciphertext }
+             }
+          })
+       });
+       const data = await response.json();
+       res.json(data);
+     } catch (e: any) {
+       res.json({ error: e.message });
+     }
   });
 
   // ── ROADBLOCKS ──

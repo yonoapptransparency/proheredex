@@ -539,16 +539,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           const encJSON = await encRes.json();
           encryptedData = encJSON.encrypted;
         } else {
-          console.warn("Server encryption of secure links failed:", await encRes.text());
+          const errText = await encRes.text();
+          console.warn("Server encryption of secure links failed:", errText);
+          alert(`Server encryption of secure links failed: ${errText}`);
         }
-      } catch (encErr) {
+      } catch (encErr: any) {
         console.error("Encryption of secure links on save failed, falling back to plaintext compatibility", encErr);
+        alert(`Encryption of secure links on save failed: ${encErr.message}`);
       }
 
       if (encryptedData) {
         await setDoc(doc(db, 'store_data', 'secure_links'), { encryptedData });
       } else {
-        await setDoc(doc(db, 'store_data', 'secure_links'), { items: secureLinks });
+        console.error("Skipping secure_links update due to encryption failure to prevent data leak.");
+        throw new Error("Link encryption failed. Check network or auth token.");
       }
       
       console.log("Cloud: Apps update acknowledged by server.");

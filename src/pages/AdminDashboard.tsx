@@ -230,7 +230,7 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
           <div className="border border-black/10 dark:border-white/10 rounded-xl p-4 bg-black/5 dark:bg-white/5 space-y-4">
              <h3 className="font-bold text-lg dark:text-white flex items-center gap-2"><LinkIcon className="w-4 h-4 text-pink-500"/> File Access Config</h3>
              <label className="block text-sm font-medium opacity-60 dark:text-white">More Information URL (Ciphertext shown - input new http URL to change)</label>
-             <input type="text" name="download_url" defaultValue={editApp?.more_information_url} placeholder="https://..." className="w-full bg-white dark:bg-slate-900 border border-pink-500/30 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
+             <input type="text" name="more_information_url" defaultValue={editApp?.more_information_url} placeholder="https://..." className="w-full bg-white dark:bg-slate-900 border border-pink-500/30 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
           </div>
 
           {/* RESTORED UI ADMIN BOXES */}
@@ -855,24 +855,16 @@ export default function AdminDashboard() {
 
   // Use a ref to initialize state exactly once on first load
   // This shields active typed text fields from being silently discarded by background snapshots
+  const cachedSecureMapRef = React.useRef(new Map());
   const isInitializedRef = React.useRef(false);
 
   React.useEffect(() => {
-    // Development auto-bypass so the user can synchronize to GitHub
-    if (window.location.hostname.includes('run.app') || window.location.hostname.includes('localhost') || window.location.hostname.includes('ais-dev')) {
-       localStorage.setItem('_admin_session_bypass_token', 'authorized_dev');
-    }
-
+    // Note: Developer bypass has been disabled to ensure Firebase Auth and Firestore Security Rules operate correctly in production and staging environments.
     const bypassToken = localStorage.getItem('_admin_session_bypass_token');
-    if (bypassToken === 'authorized_dev') {
-      setUser({
-        uid: 'bypassed_admin',
-        email: 'developer-admin@local-development.internal',
-        displayName: 'Developer Admin'
-      });
-      setIsAdminUser(true);
-      setCheckingAuth(false);
-      return;
+    
+    // Fallback: If a stale token exists from past iterations, remove it.
+    if (bypassToken) {
+       localStorage.removeItem('_admin_session_bypass_token');
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -928,53 +920,68 @@ export default function AdminDashboard() {
 
   // Initialize local states once from loaded cloud data
   React.useEffect(() => {
-    if (!loading && !isInitializedRef.current && isAdminUser !== null) {
+    if (!loading && isAdminUser !== null) {
       if (isAdminUser) {
-        getDoc(doc(db, 'store_data', 'secure_links')).then(async (snap) => {
-          let secureMap = new Map();
-          let snapData = snap.exists() ? snap.data() : null;
-          
-          if (!snapData || (!snapData.encryptedData && !snapData.items)) {
-              const vaultSnap = await getDoc(doc(db, 'store_data', 'sec_vault'));
-              if (vaultSnap.exists()) snapData = vaultSnap.data();
-          }
-
-          if (snapData) {
-            if (snapData.encryptedData) {
-              try {
-                const idToken = await auth.currentUser?.getIdToken();
-                const res = await fetch('/api/v1/admin/decrypt-links', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${idToken}`
-                  },
-                  body: JSON.stringify({ encryptedData: snapData.encryptedData })
-                });
-                if (res.ok) {
-                  const decrypted = await res.json();
-                  if (decrypted.items) {
-                    decrypted.items.forEach((it: any) => secureMap.set(it.id, it.url));
-                  }
-                } else {
-                  console.error("Server link decryption failed:", await res.text());
-                }
-              } catch (decErr) {
-                console.error("Failed to decrypt secure references:", decErr);
-              }
-            } else if (snapData.items) {
-              // Backward compatibility for legacy unencrypted database schema
-              snapData.items.forEach((it: any) => secureMap.set(it.id, it.url));
+        if (!isInitializedRef.current) {
+          getDoc(doc(db, 'store_data', 'secure_links')).then(async (snap) => {
+            let secureMap = new Map();
+            let snapData = snap.exists() ? snap.data() : null;
+            
+            if (!snapData || (!snapData.encryptedData && !snapData.items)) {
+                const vaultSnap = await getDoc(doc(db, 'store_data', 'sec_vault'));
+                if (vaultSnap.exists()) snapData = vaultSnap.data();
             }
-          }
+
+            if (snapData) {
+              if (snapData.encryptedData) {
+                try {
+                  const idToken = await auth.currentUser?.getIdToken();
+                  const res = await fetch('/api/v1/admin/decrypt-links', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({ encryptedData: snapData.encryptedData })
+                  });
+                  if (res.ok) {
+                    const decrypted = await res.json();
+                    if (decrypted.items) {
+                      decrypted.items.forEach((it: any) => secureMap.set(it.id, it.url));
+                    }
+                  } else {
+                    console.error("Server link decryption failed:", await res.text());
+                  }
+                } catch (decErr) {
+                  console.error("Failed to decrypt secure references:", decErr);
+                }
+              } else if (snapData.items) {
+                snapData.items.forEach((it: any) => secureMap.set(it.id, it.url));
+              }
+            }
+            
+            cachedSecureMapRef.current = secureMap;
+            const mergedApps = mockApps.map(a => ({...a, more_information_url: secureMap.get(a.id) || a.more_information_url }));
+            setAppsList(mergedApps);
+          }).catch(err => {
+            console.error("Failed to load secure references:", err);
+            setAppsList(mockApps);
+          }).finally(() => {
+            isInitializedRef.current = true;
+          });
+        } else {
+          // If already initialized but mockApps changed (e.g. from background sync)
+          const secureMap = cachedSecureMapRef.current || new Map();
           const mergedApps = mockApps.map(a => ({...a, more_information_url: secureMap.get(a.id) || a.more_information_url }));
-          setAppsList(mergedApps);
-        }).catch(err => {
-          console.error("Failed to load secure references:", err);
-          setAppsList(mockApps);
-        }).finally(() => {
-          isInitializedRef.current = true;
-        });
+          
+          // Only update if structural changes actually happened to avoid overwriting pending edits
+          setAppsList(prev => {
+             if (JSON.stringify(prev.map(p => p.id)) !== JSON.stringify(mergedApps.map(m => m.id))) {
+                 return mergedApps;
+             }
+             return prev; 
+          });
+        }
       } else {
         setAppsList(mockApps);
         isInitializedRef.current = true;
@@ -1167,7 +1174,7 @@ export default function AdminDashboard() {
         
       const editApp = editingAppId ? appsList.find(a => a.id === editingAppId) : null;
       let encryptedUrlVal = editApp?.more_information_url || '';
-      const inputUrl = formData.get('download_url') as string;
+      const inputUrl = formData.get('more_information_url') as string;
       if (inputUrl && !inputUrl.startsWith('U2FsdGVkX1')) {
          try {
             const idToken = await auth.currentUser?.getIdToken();
@@ -1181,9 +1188,14 @@ export default function AdminDashboard() {
             });
             if (res.ok) {
                encryptedUrlVal = (await res.json()).encrypted;
+            } else {
+               alert(`Failed to encrypt URL: ${await res.text()}`);
+               return; // Abort save if encryption fails
             }
-         } catch (err) {
+         } catch (err: any) {
             console.error("Failed to encrypt URL", err);
+            alert(`Failed to encrypt URL: ${err.message}`);
+            return;
          }
       } else if (inputUrl) {
          encryptedUrlVal = inputUrl;
@@ -1227,6 +1239,12 @@ export default function AdminDashboard() {
         created_at: new Date().toISOString(),
         faqs: JSON.parse((formData.get('faqs_json') as string) || '[]')
       };
+      
+      if (encryptedUrlVal) {
+          cachedSecureMapRef.current.set(appData.id, encryptedUrlVal);
+      } else {
+          cachedSecureMapRef.current.delete(appData.id);
+      }
       
       let updatedApps;
       if (editingAppId) {

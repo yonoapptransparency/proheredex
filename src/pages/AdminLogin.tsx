@@ -15,6 +15,8 @@ export default function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [domainMismatch, setDomainMismatch] = useState(false);
   const [decryptionProgress, setDecryptionProgress] = useState(10);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
     const host = window.location.hostname;
@@ -53,11 +55,32 @@ export default function AdminLogin() {
     } catch (err: any) {
       if (err.code === 'auth/unauthorized-domain') {
         setError(<>
-          <p>Access Mismatch: This host domain ({window.location.hostname}) has not been authorized.</p>
+          <p>Access Mismatch: This host domain ({window.location.hostname}) has not been authorized in Firebase.</p>
+          <p className="mt-2 text-xs opacity-80">Google Auth requires this domain to be whitelisted. Please use Email/Password below or add the domain to Firebase.</p>
           </>);
       } else {
-        // Obfuscate federated login errors to prevent leaking admin details
-        setError("Unable to complete federated authentication. Please consult your administrator or try again.");
+        setError(`Error: ${err.message}`);
+      }
+      setIsLoading(false);
+    }
+  };
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Please enter both email and password.");
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err: any) {
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        setError("Invalid email or password.");
+      } else {
+        setError(`Login failed: ${err.message}`);
       }
       setIsLoading(false);
     }
@@ -96,6 +119,16 @@ export default function AdminLogin() {
           </div>
         )}
 
+        {window.location.hostname.includes('run.app') && (
+          <div className="mb-6 bg-blue-500/10 border border-blue-500/30 p-4 rounded-lg text-left">
+            <p className="text-xs text-blue-400 font-bold mb-2">PREVIEW MODE NOTICE</p>
+            <ol className="text-xs text-blue-200/80 space-y-1 list-decimal ml-4">
+              <li>Google Auth popups are blocked in embedded iframes. Please <strong>↗ Open in new tab</strong> using the button at the top right of this panel.</li>
+              <li>Or, go to your Firebase Console &rarr; Authentication, enable <strong>Email/Password</strong>, add a user with email <em>defentechscholar@gmail.com</em> and log in here directly without popups!</li>
+            </ol>
+          </div>
+        )}
+
 
 
         {error && (
@@ -120,6 +153,46 @@ export default function AdminLogin() {
             {isLoading ? 'Decrypting Access...' : 'Sign in with Google'}
           </button>
         </div>
+
+        <div className="my-6 flex items-center">
+          <div className="flex-1 h-px bg-white/10"></div>
+          <span className="px-3 text-[10px] text-slate-500 uppercase tracking-widest font-bold">OR EMAIL</span>
+          <div className="flex-1 h-px bg-white/10"></div>
+        </div>
+
+        <form onSubmit={handleEmailLogin} className="space-y-4">
+          <div className="space-y-2">
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Admin Email"
+                className="w-full bg-slate-900/50 border border-white/10 rounded-lg py-3 pl-10 pr-4 text-white placeholder:text-white/20 focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none transition-all font-mono text-sm"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="relative">
+              <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Master Password"
+                className="w-full bg-slate-900/50 border border-white/10 rounded-lg py-3 pl-10 pr-4 text-white placeholder:text-white/20 focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none transition-all font-mono text-sm"
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={`w-full bg-rose-600 hover:bg-rose-700 text-white font-black uppercase tracking-widest italic py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(244,63,94,0.2)] border border-rose-500 flex items-center justify-center gap-3 active:scale-95 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+          >
+            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'SECURE LOGIN'}
+          </button>
+        </form>
         
         <div className="mt-8 text-center text-[10px] opacity-40 font-mono">
           SYSTEM_VER: 2.4.9 • ENCRYPTION: AES-256
