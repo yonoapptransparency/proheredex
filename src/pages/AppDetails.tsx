@@ -286,13 +286,13 @@ export default function AppDetails() {
         )}
       </Helmet>
       <div className="w-full">
-        <div className="pt-2 pb-6 sm:pt-4 sm:pb-10 mb-6 flex flex-col items-center text-center relative transition-all duration-300 border-b border-black/5 dark:border-white/5">
-          <div className="relative mb-6">
-            <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-[22px] overflow-hidden shrink-0 shadow-lg bg-white border border-black/5 dark:border-white/10 group">
+        <div className="pt-0.5 pb-3 mb-3 flex flex-col items-center text-center relative transition-all duration-300 border-b border-black/5 dark:border-white/5">
+          <div className="relative mb-2">
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-[16px] overflow-hidden shrink-0 shadow-md bg-white border border-black/5 dark:border-white/10 group">
               {app.icon_url ? (
                 <img src={app.icon_url || undefined} alt={app.name} width={128} height={128} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-3xl sm:text-5xl font-bold bg-zinc-800 text-zinc-500">
+                <div className="w-full h-full flex items-center justify-center text-xl sm:text-3xl font-bold bg-zinc-800 text-zinc-500">
                   {(app.name || 'A').substring(0, 1)}
                 </div>
               )}
@@ -300,36 +300,38 @@ export default function AppDetails() {
           </div>
           
           <div className="flex flex-col items-center w-full max-w-2xl px-2">
-            <div className="mb-6">
-              <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight mb-4 break-words px-4">
+            <div className="mb-3">
+              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 leading-none mb-2.5 break-words px-4">
                 {app.name}
               </h1>
-              <div className="flex justify-center flex-wrap gap-2">
+              <div className="flex justify-center flex-wrap gap-1.5">
                 {app.is_new && (
-                  <div className="px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] font-semibold rounded-full uppercase tracking-wide border border-blue-500/10">
+                  <div className="px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded-full uppercase tracking-wide border border-blue-500/10">
                     New Release
                   </div>
                 )}
                 <div className={cn(
-                  "px-2.5 py-1 text-[11px] font-semibold rounded-full flex items-center gap-1.5 uppercase tracking-wide border",
-                  app.safety_status === 'Verified' ? "bg-green-500/10 text-green-600 border-green-500/10" : "bg-orange-500/10 text-orange-600 border-orange-500/10"
+                  "px-2 py-0.5 text-[10px] font-bold rounded-full flex items-center gap-1 uppercase tracking-wide border",
+                  app.safety_status === 'Verified' ? "bg-green-500/10 text-green-600 border-green-500/10" :
+                  app.safety_status === 'Unsafe' ? "bg-rose-500/10 text-rose-600 border-rose-500/10" :
+                  "bg-orange-500/10 text-orange-600 border-orange-500/10"
                 )}>
-                  {app.safety_status === 'Verified' ? <ShieldCheck className="w-3.5 h-3.5" /> : <ShieldAlert className="w-3.5 h-3.5" />}
+                  {app.safety_status === 'Verified' ? <ShieldCheck className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
                   {app.safety_status}
                 </div>
               </div>
             </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-[360px] mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 w-full max-w-[320px] mb-4">
               {[
                 { label: 'Version', value: app.version },
                 { label: 'Size', value: app.file_size },
                 { label: 'Type', value: app.category ? app.category.split(',')[0] : 'App' },
                 { label: 'Rating', value: app.rating ? app.rating.toFixed(1) : '5.0', icon: Star },
               ].map((item, i) => (
-                <div key={i} className="text-center py-2 px-1 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-black/5 dark:border-white/5">
-                  <div className="text-[10px] mb-1 font-semibold uppercase tracking-wider text-zinc-500">{item.label}</div>
-                  <div className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 flex items-center justify-center gap-1 tracking-tight">
+                <div key={i} className="text-center py-1 sm:py-1.5 px-0.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-black/5 dark:border-white/5">
+                  <div className="text-[9px] mb-0.5 font-bold uppercase tracking-wider text-zinc-500">{item.label}</div>
+                  <div className="font-bold text-xs text-zinc-900 dark:text-zinc-100 flex items-center justify-center gap-0.5 tracking-tight">
                     {item.icon && <item.icon className="w-3 h-3 text-orange-500 fill-orange-500 shrink-0" />}
                     <span className="truncate max-w-full">{item.value}</span>
                   </div>
@@ -337,30 +339,30 @@ export default function AppDetails() {
               ))}
             </div>
   
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto justify-center select-none mt-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto justify-center select-none mt-1">
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full sm:w-auto min-w-[200px]"
+                className="w-full sm:w-auto min-w-[130px] sm:min-w-[150px]"
               >
                 <Link 
                   to={`/info/${app.slug}`} 
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-[20px] flex items-center justify-center gap-2 transition-all text-[15px] shadow-lg shadow-blue-600/20"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-5 rounded-xl flex items-center justify-center gap-1.5 transition-all text-sm shadow-md"
                 >
-                  More <ArrowRight className="w-5 h-5" />
+                  More <ArrowRight className="w-4 h-4" />
                 </Link>
               </motion.div>
-
+ 
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full sm:w-auto min-w-[200px]"
+                className="w-full sm:w-auto min-w-[130px] sm:min-w-[150px]"
               >
                 <button 
                   onClick={handleShare}
-                  className="w-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-semibold py-4 px-8 rounded-[20px] flex items-center justify-center gap-2 transition-all text-[15px] border border-black/5 dark:border-white/5 shadow-sm"
+                  className="w-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-semibold py-2.5 px-5 rounded-xl flex items-center justify-center gap-1.5 transition-all text-sm border border-black/5 dark:border-white/5 shadow-sm"
                 >
-                  <Share2 className="w-5 h-5 text-blue-500" /> Share app
+                  <Share2 className="w-4 h-4 text-blue-500" /> Share app
                 </button>
               </motion.div>
             </div>

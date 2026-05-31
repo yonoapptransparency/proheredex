@@ -5,26 +5,27 @@ import { Menu, Shield, ShieldCheck, Info, ArrowRight, X, LayoutGrid, Newspaper, 
 import { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Direct Imports for Performance (No Lazy Loading for UI speed)
-import Home from './pages/Home';
-import AppDetails from './pages/AppDetails';
-import GatewayPage from './pages/GatewayPage';
-import About from './pages/About';
+// Code-Splitting: Lazy load main routes to reduce initial payload bundle and optimize speed
+const Home = lazy(() => import('./pages/Home'));
+const AppDetails = lazy(() => import('./pages/AppDetails'));
+const GatewayPage = lazy(() => import('./pages/GatewayPage'));
+const About = lazy(() => import('./pages/About'));
+const Contact = lazy(() => import('./pages/Contact'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Terms = lazy(() => import('./pages/Terms'));
+const Responsibility = lazy(() => import('./pages/Responsibility'));
+const NewApps = lazy(() => import('./pages/NewApps'));
+const NewsPage = lazy(() => import('./pages/NewsPage'));
+const NewsDetailPage = lazy(() => import('./pages/NewsDetailPage'));
+const Blogs = lazy(() => import('./pages/Blogs'));
+const BlogDetailPage = lazy(() => import('./pages/BlogDetailPage'));
+const VideosPage = lazy(() => import('./pages/VideosPage'));
+const VideoDetailPage = lazy(() => import('./pages/VideoDetailPage'));
 
 // Lazy load admin pages to keep admin code out of public bundle
 const AdminLogin = lazy(() => import('./pages/AdminLogin'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
-import Contact from './pages/Contact';
-import Privacy from './pages/Privacy';
-import Terms from './pages/Terms';
-import Responsibility from './pages/Responsibility';
-import NewApps from './pages/NewApps';
-import NewsPage from './pages/NewsPage';
-import NewsDetailPage from './pages/NewsDetailPage';
-import Blogs from './pages/Blogs';
-import BlogDetailPage from './pages/BlogDetailPage';
-import VideosPage from './pages/VideosPage';
-import VideoDetailPage from './pages/VideoDetailPage';
+
 import FallbackRouteMatcher from './components/FallbackRouteMatcher';
 
 import { getAdminPath } from './lib/utils';
