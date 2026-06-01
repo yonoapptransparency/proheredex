@@ -310,7 +310,7 @@ async function startServer() {
   });
 
   // API Route: Dynamic Sitemap Generation for SEO
-  app.get('/sitemap.xml', async (req, res) => {
+  app.get(['/sitemap.xml', '/sitemap', '/api/sitemap', '/api/sitemap.xml'], async (req, res) => {
     try {
       const data = await fetchStoreData();
       if (!data) {

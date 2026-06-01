@@ -6,6 +6,7 @@ import fs from "fs";
 import path from "path";
 import CryptoJS from "crypto-js";
 import { fetchStoreData, getField } from "../src/seoHelper";
+import firebaseConfig from "../firebase-applet-config.json";
 
 const app = express();
 
@@ -16,22 +17,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 function getRawFirebaseConfig(): any {
-  try {
-    const possiblePaths = [
-      path.join(__dirname, 'firebase-applet-config.json'),
-      path.join(__dirname, '../firebase-applet-config.json'),
-      path.join(__dirname, '../../firebase-applet-config.json'),
-      path.join(process.cwd(), 'firebase-applet-config.json')
-    ];
-    for (const p of possiblePaths) {
-      if (fs.existsSync(p)) {
-        return JSON.parse(fs.readFileSync(p, 'utf8'));
-      }
-    }
-  } catch (err) {
-    console.error("Error reading firebase config search in api/index.ts:", err);
-  }
-  return null;
+  return firebaseConfig;
 }
 
 // Cryptographic secrets for hashing, signature verification, and session identifiers
@@ -104,7 +90,7 @@ interface TokenData {
 const tokenStore = new Map<string, TokenData>();
 
 // Routine cleanup timer to prevent RAM leaks
-setInterval(() => {
+const cleanupTimer = setInterval(() => {
   const now = Date.now();
   // Clear expired nonces
   for (const [nonce, data] of nonceStore.entries()) {
@@ -119,6 +105,9 @@ setInterval(() => {
     }
   }
 }, 30000);
+if (cleanupTimer.unref) {
+  cleanupTimer.unref();
+}
 
 // Assign persistent cryptographic session identifiers to each portal client
 function ensureSession(req: express.Request, res: express.Response): string {
@@ -944,7 +933,7 @@ app.post("/api/github-sync/commit", verifyAdminToken, async (req, res) => {
 
 
   // API Route: Dynamic Sitemap Generation for SEO
-  app.get('/sitemap.xml', async (req, res) => {
+  app.get(['/sitemap.xml', '/sitemap', '/api/sitemap', '/api/sitemap.xml'], async (req, res) => {
     try {
       const data = await fetchStoreData();
       if (!data) {

@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { mockApps, mockSettings, mockNews, mockBlogs, mockVideos } from './lib/staticData';
 import { getAdminPath } from './lib/utils';
+import firebaseConfig from '../firebase-applet-config.json';
 
 let cachedData: any = null;
 let lastFetchTime = 0;
@@ -9,22 +10,7 @@ const CACHE_TTL = 120000; // 2 minutes cache to prevent extreme blocking on each
 let isFetchingStoreData = false;
 
 function getRawFirebaseConfig(): any {
-  try {
-    const possiblePaths = [
-      path.join(__dirname, 'firebase-applet-config.json'),
-      path.join(__dirname, '../firebase-applet-config.json'),
-      path.join(__dirname, '../../firebase-applet-config.json'),
-      path.join(process.cwd(), 'firebase-applet-config.json')
-    ];
-    for (const p of possiblePaths) {
-      if (fs.existsSync(p)) {
-        return JSON.parse(fs.readFileSync(p, 'utf8'));
-      }
-    }
-  } catch (err) {
-    console.error("Error reading firebase config search:", err);
-  }
-  return null;
+  return firebaseConfig;
 }
 
 function parseFirestoreValue(value: any): any {
