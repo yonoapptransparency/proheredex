@@ -101,11 +101,11 @@ export async function fetchStoreData() {
         };
 
         const [settingsRes, newsRes, blogsRes, videosRes, metaRes] = await Promise.all([
-          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/settings`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null),
-          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/news`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null),
-          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/blogs`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null),
-          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/videos`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null),
-          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_meta`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null)
+          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/settings`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
+          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/news`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
+          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/blogs`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
+          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/videos`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
+          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_meta`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null)
         ]);
 
         let numChunks = 5;
@@ -119,7 +119,8 @@ export async function fetchStoreData() {
         const chunkPromises = Array.from({ length: numChunks }).map((_, i) => 
           fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_chunk_${i}`, {
             cache: 'no-store',
-            headers: cacheHeaders
+            headers: cacheHeaders,
+            signal: AbortSignal.timeout(8000)
           })
             .then(res => res.ok ? res.json() : null)
             .catch(() => null)
@@ -210,11 +211,11 @@ export async function fetchStoreData() {
     };
 
     const [settingsRes, newsRes, blogsRes, videosRes, metaRes] = await Promise.all([
-      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/settings`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null),
-      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/news`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null),
-      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/blogs`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null),
-      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/videos`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null),
-      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_meta`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null)
+      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/settings`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
+      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/news`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
+      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/blogs`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
+      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/videos`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
+      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_meta`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null)
     ]);
 
     let numChunks = 5;
@@ -228,7 +229,8 @@ export async function fetchStoreData() {
     const chunkPromises = Array.from({ length: numChunks }).map((_, i) => 
       fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_chunk_${i}`, {
         cache: 'no-store',
-        headers: cacheHeaders
+        headers: cacheHeaders,
+        signal: AbortSignal.timeout(8000)
       })
         .then(res => res.ok ? res.json() : null)
         .catch(() => null)
