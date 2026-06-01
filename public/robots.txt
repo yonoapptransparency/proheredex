@@ -3,4 +3,4 @@ Disallow: /.env
 Disallow: /.git
 Allow: /
 
-Sitemap: https://rummystore.in/sitemap.xml
+Sitemap: https://rummyapp.online/sitemap.xml
