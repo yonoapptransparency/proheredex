@@ -5,7 +5,7 @@ import compression from "compression";
 import fs from "fs";
 import path from "path";
 import CryptoJS from "crypto-js";
-import { fetchStoreData, getField } from "../src/seoHelper";
+import { fetchStoreData, getField } from "../src/seoHelper.js";
 
 const app = express();
 
