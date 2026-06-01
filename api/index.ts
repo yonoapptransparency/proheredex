@@ -6,7 +6,6 @@ import fs from "fs";
 import path from "path";
 import CryptoJS from "crypto-js";
 import { fetchStoreData, getField } from "../src/seoHelper";
-import firebaseConfig from "../firebase-applet-config.json";
 
 const app = express();
 
@@ -17,7 +16,18 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 function getRawFirebaseConfig(): any {
-  return firebaseConfig;
+  try {
+    const rawData = fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8');
+    return JSON.parse(rawData);
+  } catch (err) {
+    try {
+      const rawData = fs.readFileSync(path.resolve('firebase-applet-config.json'), 'utf8');
+      return JSON.parse(rawData);
+    } catch(e) {
+      console.error("Error reading config:", err);
+    }
+  }
+  return null;
 }
 
 // Cryptographic secrets for hashing, signature verification, and session identifiers
