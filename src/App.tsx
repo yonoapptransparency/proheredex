@@ -840,7 +840,11 @@ function AppContent() {
     document.title = pageTitle;
 
     // Dynamic favicon update
-    const siteFavicon = settings.logo_url || 'https://y4q7avawns.ucarecd.net/b391a2fa-42f7-4b3a-a0d5-605cb22aead4/-/preview/1000x1000/';
+    const siteFaviconRaw = settings.logo_url || 'https://y4q7avawns.ucarecd.net/b391a2fa-42f7-4b3a-a0d5-605cb22aead4/-/preview/500x500/-/format/png/';
+    const siteFavicon = siteFaviconRaw.includes('ucarecd.net') && !siteFaviconRaw.includes('/format/') 
+      ? siteFaviconRaw.replace(/\/$/, '') + '/-/format/png/' 
+      : siteFaviconRaw;
+      
     let linkIcon = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
     if (!linkIcon) {
       linkIcon = document.createElement('link');

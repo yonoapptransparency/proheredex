@@ -268,6 +268,11 @@ async function startServer() {
 
         console.log('--- FAVICON/LOGO ROUTE RESOLVED ---', imageUrl);
         if (typeof imageUrl === 'string' && imageUrl.startsWith('http') && isSafeUrl(imageUrl)) {
+          // Force Uploadcare URL to PNG for favicons to ensure search engine compatibility
+          if (imageUrl.includes('ucarecd.net') && !imageUrl.includes('/format/')) {
+            imageUrl = imageUrl.replace(/\/$/, '') + '/-/format/png/';
+          }
+          
           try {
             // Dynamic image proxy to bypass CORS/Same-origin and 302 redirect failure in indexing scrapers
             const response = await fetch(imageUrl, {
@@ -478,7 +483,7 @@ async function startServer() {
         }
       }
       
-      console.log("verifyAdminToken: isDbAdmin final result:", isDbAdmin);
+      // console.log("verifyAdminToken: isDbAdmin final result:", isDbAdmin);
       if (isDbAdmin) {
         (req as any).adminUser = user;
         return next();

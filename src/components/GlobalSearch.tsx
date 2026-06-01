@@ -75,7 +75,8 @@ export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onC
         const searchLower = query.toLowerCase();
         return app.name.toLowerCase().includes(searchLower) || 
                app.seo_title?.toLowerCase().includes(searchLower) ||
-               app.category?.toLowerCase().includes(searchLower);
+               app.category?.toLowerCase().includes(searchLower) ||
+               app.seo_keywords?.toLowerCase().includes(searchLower);
       }).sort((a, b) => {
         // Direct matches first
         const aName = (a.name || '').toLowerCase();
@@ -114,9 +115,9 @@ export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onC
             <form 
               onSubmit={(e) => {
                 e.preventDefault();
-                if (results.length > 0 && results[0]?.slug) {
-                  saveToHistory(query);
-                  navigate(`/${results[0].slug}`);
+                if (query.trim()) {
+                  saveToHistory(query.trim());
+                  navigate(`/?q=${encodeURIComponent(query.trim())}`);
                   onClose();
                 }
               }}
@@ -178,7 +179,11 @@ export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onC
                             className="flex items-center justify-between p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 rounded-2xl transition-all group"
                           >
                             <button
-                              onClick={() => setQuery(item)}
+                              onClick={() => {
+                                saveToHistory(item);
+                                navigate(`/?q=${encodeURIComponent(item)}`);
+                                onClose();
+                              }}
                               className="flex items-center gap-3 flex-1 text-left cursor-pointer"
                             >
                               <Search className="w-4 h-4 text-zinc-400 group-hover:text-blue-500" />
@@ -217,8 +222,9 @@ export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onC
                           <button
                             key={idx}
                             onClick={() => {
-                              setQuery(item);
                               saveToHistory(item);
+                              navigate(`/?q=${encodeURIComponent(item)}`);
+                              onClose();
                             }}
                             className="flex items-center gap-1.5 px-4 py-2 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400 border border-black/5 dark:border-white/5 hover:border-blue-500/10 dark:hover:border-blue-500/10 rounded-full text-xs font-semibold text-zinc-600 dark:text-zinc-300 transition-all cursor-pointer shadow-sm active:scale-95"
                           >

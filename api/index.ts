@@ -609,7 +609,7 @@ app.get(["/api/v1/secure-fetch", "/api/v1/fetch-file"], (req, res) => {
         }
       }
       
-      console.log("verifyAdminToken: isDbAdmin final result:", isDbAdmin);
+      // console.log("verifyAdminToken: isDbAdmin final result:", isDbAdmin);
       if (isDbAdmin) {
         (req as any).adminUser = user;
         return next();
