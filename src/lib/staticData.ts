@@ -1,4 +1,4 @@
-import { secureStorage } from './secureStorage';
+import { secureStorage } from './secureStorage.js';
 
 export interface Banner {
   id: string;
