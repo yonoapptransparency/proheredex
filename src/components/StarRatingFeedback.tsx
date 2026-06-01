@@ -303,34 +303,46 @@ export default function StarRatingFeedback() {
           /* Submission Screen State */
           <motion.div
             key="feedback-success"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
             className="py-8 text-center"
           >
-            <div className="inline-flex p-3 bg-emerald-500/10 text-emerald-500 rounded-full mb-4">
+            <motion.div 
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 220, damping: 16, delay: 0.1 }}
+              className="inline-flex p-3 bg-emerald-500/10 text-emerald-500 rounded-full mb-4"
+            >
               <Check className="w-8 h-8" />
-            </div>
+            </motion.div>
             
-            <h3 
+            <motion.h3 
               id="feedback-success-title" 
+              initial={{ y: 12, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.5, delay: 0.18 }}
               className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2"
             >
               Feedback Successfully Logged!
-            </h3>
+            </motion.h3>
             
-            <p 
+            <motion.p 
               id="feedback-success-desc" 
+              initial={{ y: 8, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.5, delay: 0.24 }}
               className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto mb-6 leading-relaxed"
             >
               Thank you for verifying your visit. Every rating allows us to maintain stable server mirrors and clean APK audits.
-            </p>
+            </motion.p>
 
             {rating && rating >= 4 && !hasReviewedOnGoogle && (
               <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+                initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 140, damping: 18, delay: 0.32 }}
                 className="bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/10 dark:border-blue-500/20 p-5 rounded-2xl max-w-md mx-auto"
               >
                 <p className="text-xs text-zinc-650 dark:text-zinc-400 mb-3.5 leading-relaxed">
@@ -351,8 +363,11 @@ export default function StarRatingFeedback() {
               </motion.div>
             )}
 
-            <button
+            <motion.button
               id="feedback-re-evaluate-button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.45 }}
               onClick={() => {
                 try {
                   localStorage.removeItem('user_feedback_submitted');
@@ -364,7 +379,7 @@ export default function StarRatingFeedback() {
               className="text-xs text-blue-500 hover:text-blue-600 font-bold mt-6 underline cursor-pointer"
             >
               Update my review / Change rating
-            </button>
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>

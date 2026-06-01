@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Star, ShieldCheck, Check, Loader2, ThumbsUp, AlertCircle, Sparkles, MessageSquare, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Star, ShieldCheck, Check, Loader2, ThumbsUp, AlertCircle, Sparkles, MessageSquare, Plus, ChevronDown, ChevronUp, Flag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db, isFirebaseConfigured } from '../lib/firebase';
-import { collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, orderBy, doc, updateDoc } from 'firebase/firestore';
 
 interface Review {
   id: string;
@@ -12,6 +12,9 @@ interface Review {
   comment: string;
   created_at: string;
   helpful_count: number;
+  source?: 'google' | 'community' | string;
+  reported?: boolean;
+  report_count?: number;
 }
 
 interface UserReviewsProps {
@@ -39,6 +42,7 @@ const getAvatarStyle = (name: string): string => {
 export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: UserReviewsProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [sortBy, setSortBy] = useState<'recent' | 'helpful'>('recent');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'positive' | 'critical'>('all');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -56,6 +60,9 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
   // Help voted list (to prevent double voting in the current session)
   const [votedReviews, setVotedReviews] = useState<Record<string, boolean>>({});
 
+  // Reported list (to prevent double reporting in the current session)
+  const [reportedReviews, setReportedReviews] = useState<Record<string, boolean>>({});
+
   // Base list of premium, highly authentic mock reviews to guarantee beautiful content immediately
   const getMockReviews = (): Review[] => [
     {
@@ -64,8 +71,11 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
       username: 'Amit Verma',
       rating: 5,
       comment: `The absolute best e-sports portal I have ever used for researching ${appTitle}. All specs are thoroughly verified, and the interface responsiveness metrics provided are extremely accurate. I highly recommend checking out their detailed tutorials before you play!`,
-      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1050).toISOString(),
       helpful_count: 32,
+      source: 'community',
+      reported: false,
+      report_count: 0
     },
     {
       id: `mock-2-${appId}`,
@@ -73,17 +83,23 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
       username: 'Priyanka Sen',
       rating: 4,
       comment: `Great UI analysis. The touch lag test reports and detailed screenshots helped me decide whether to use this app on my device. The strict ethics and zero-download protocols keep players fully safe. Submitting my 4-star rating gladly.`,
-      created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1050).toISOString(),
       helpful_count: 14,
+      source: 'community',
+      reported: false,
+      report_count: 0
     },
     {
       id: `mock-3-${appId}`,
       app_id: appId,
       username: 'Karan Malhotra',
       rating: 5,
-      comment: `Very clean and highly optimized layout. I love the eye-safe dark mode features and visual layouts detailed in the reviews. The FAQ section answered all my minor questions about virtual chips and age guidelines.`,
+      comment: `Very clean and highly optimized layout. I love the eye-safe dark mode features and visual layouts detailed in the reviews. The FAQ section answered all my minor questions about virtual chips and age guidelines. Written with complete pleasure.`,
       created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
       helpful_count: 8,
+      source: 'community',
+      reported: false,
+      report_count: 0
     },
   ];
 
@@ -100,7 +116,12 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
       try {
         const stored = localStorage.getItem(`local_user_reviews_${appId}`);
         if (stored) {
-          localReviews = JSON.parse(stored);
+          const parsed = JSON.parse(stored);
+          localReviews = parsed.map((r: any) => ({
+            ...r,
+            reported: r.reported || false,
+            report_count: r.report_count || 0
+          }));
         }
       } catch (err) {
         console.error('Failed to parse local cached reviews', err);
@@ -127,6 +148,9 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
               comment: data.comment || '',
               created_at: data.created_at || new Date().toISOString(),
               helpful_count: data.helpful_count || 0,
+              source: data.source || 'community',
+              reported: data.reported || false,
+              report_count: data.report_count || 0
             };
           });
 
@@ -166,6 +190,61 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
       })
     );
     setVotedReviews(prev => ({ ...prev, [id]: true }));
+  };
+
+  const handleReportReview = async (id: string) => {
+    if (reportedReviews[id]) return;
+
+    // 1. Update component local state immediately
+    setReportedReviews(prev => ({ ...prev, [id]: true }));
+    setReviews(prev =>
+      prev.map(r => {
+        if (r.id === id) {
+          return { 
+            ...r, 
+            reported: true, 
+            report_count: (r.report_count || 0) + 1 
+          };
+        }
+        return r;
+      })
+    );
+
+    // 2. If review is from local storage cache, update local storage cache too
+    try {
+      const stored = localStorage.getItem(`local_user_reviews_${appId}`);
+      if (stored) {
+        const parsed: Review[] = JSON.parse(stored);
+        const updated = parsed.map(r => {
+          if (r.id === id) {
+            return {
+              ...r,
+              reported: true,
+              report_count: (r.report_count || 0) + 1
+            };
+          }
+          return r;
+        });
+        localStorage.setItem(`local_user_reviews_${appId}`, JSON.stringify(updated));
+      }
+    } catch (e) {
+      console.error('Failed to update local storage review report status', e);
+    }
+
+    // 3. If Firebase is active and it's a remote review (not mock), update in Firestore
+    if (isFirebaseConfigured && !id.startsWith('mock')) {
+      try {
+        const reviewRef = doc(db, 'reviews', id);
+        const targetReview = reviews.find(r => r.id === id);
+        const currentReportCount = targetReview ? (targetReview.report_count || 0) : 0;
+        await updateDoc(reviewRef, {
+          reported: true,
+          report_count: currentReportCount + 1
+        });
+      } catch (firebaseErr) {
+        console.error('Could not update report status in Firestore:', firebaseErr);
+      }
+    }
   };
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
@@ -219,6 +298,7 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
       comment: cleanComment,
       created_at: new Date().toISOString(),
       helpful_count: 0,
+      source: 'community'
     };
 
     try {
@@ -242,7 +322,8 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
           comment: cleanComment,
           created_at: newSubmission.created_at,
           helpful_count: 0,
-          is_approved: true
+          is_approved: true,
+          source: newSubmission.source
         });
       }
 
@@ -467,36 +548,83 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
           {/* Feedback list with beautiful sort control bar */}
           <div className="space-y-4">
             {!loading && reviews.length > 0 && (
-              <div className="flex items-center justify-between gap-4 pb-3 border-b border-black/5 dark:border-white/5">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                  Reviews ({reviews.length})
-                </h4>
-                <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-650 dark:text-zinc-400">
-                  <span>Sort:</span>
-                  <div className="flex bg-zinc-100 dark:bg-zinc-800/80 rounded-lg p-0.5">
+              <div className="flex flex-col gap-3 pb-3 border-b border-black/5 dark:border-white/5">
+                {/* Search / Explanation alert addressing user's Google reviews concern */}
+                <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-3.5 mb-2">
+                  <div className="flex gap-2 items-start">
+                    <Sparkles className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-zinc-600 dark:text-zinc-450 leading-normal font-semibold">
+                      <strong>Google Review Integration Info:</strong> Officially submitted Google Business & Play Store reviews are hosted in Google\'s closed database sandbox and do not sync automatically with third-party sites. To see your feedback directly on this portal immediately, please write/post user reviews in this designated community panel!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
                     <button
                       type="button"
-                      onClick={() => setSortBy('recent')}
-                      className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
-                        sortBy === 'recent'
-                          ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
-                          : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                      onClick={() => setActiveFilter('all')}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer ${
+                        activeFilter === 'all'
+                          ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm'
+                          : 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750 text-zinc-500 dark:text-zinc-400'
                       }`}
                     >
-                      Recent
+                      All ({reviews.length})
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSortBy('helpful')}
-                      className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer flex items-center gap-1 ${
-                        sortBy === 'helpful'
-                          ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
-                          : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                      onClick={() => setActiveFilter('positive')}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+                        activeFilter === 'positive'
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 dark:bg-emerald-500/10 hover:bg-emerald-500/10'
                       }`}
                     >
-                      <ThumbsUp className="w-2.5 h-2.5" />
-                      <span>Most Helpful</span>
+                      <Star className="w-3 h-3 fill-current" />
+                      Positive ({reviews.filter(r => r.rating >= 4).length})
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveFilter('critical')}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+                        activeFilter === 'critical'
+                          ? 'bg-rose-600 text-white shadow-sm'
+                          : 'bg-rose-500/5 text-rose-650 dark:text-rose-450 dark:bg-rose-500/10 hover:bg-rose-500/10'
+                      }`}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      Critical ({reviews.filter(r => r.rating <= 3).length})
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-650 dark:text-zinc-400 shrink-0 select-none">
+                    <span>Sort:</span>
+                    <div className="flex bg-zinc-100 dark:bg-zinc-800/80 rounded-lg p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setSortBy('recent')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                          sortBy === 'recent'
+                            ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
+                            : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                        }`}
+                      >
+                        Recent
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSortBy('helpful')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer flex items-center gap-1 ${
+                          sortBy === 'helpful'
+                            ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
+                            : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                        }`}
+                      >
+                        <ThumbsUp className="w-2.5 h-2.5" />
+                        <span>Most Helpful</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -513,91 +641,125 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
               </div>
             ) : (
               <div className="space-y-3">
-                {sortedReviews.map((rev) => {
-                  const isLong = rev.comment.length > 150;
-                  const isExpanded = expandedReviews[rev.id];
-                  const displayedComment = isLong && !isExpanded 
-                    ? `${rev.comment.substring(0, 150)}...` 
-                    : rev.comment;
+                {sortedReviews
+                  .filter(rev => {
+                    if (activeFilter === 'positive') return rev.rating >= 4;
+                    if (activeFilter === 'critical') return rev.rating <= 3;
+                    return true;
+                  })
+                  .map((rev) => {
+                    const isLong = rev.comment.length > 150;
+                    const isExpanded = expandedReviews[rev.id];
+                    const displayedComment = isLong && !isExpanded 
+                      ? `${rev.comment.substring(0, 150)}...` 
+                      : rev.comment;
 
-                  return (
-                    <motion.div
-                      layout
-                      key={rev.id}
-                      className="p-5 bg-zinc-50/50 dark:bg-zinc-900/30 border border-black/5 dark:border-white/5 rounded-2xl flex gap-4 transition-colors"
-                    >
-                      {/* Avatar */}
-                      <div className={`w-9 h-9 rounded-full font-black text-sm flex items-center justify-center shrink-0 uppercase shadow-sm ${getAvatarStyle(rev.username)}`}>
-                        {rev.username ? rev.username.charAt(0) : 'G'}
-                      </div>
-
-                      {/* Content column */}
-                      <div className="flex-1 flex flex-col min-w-0">
-                        {/* Header */}
-                        <div className="flex items-center justify-between gap-4 mb-1">
-                          <span className="font-bold text-sm text-zinc-800 dark:text-zinc-200 truncate">
-                            {rev.username}
-                          </span>
-                          <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase">
-                            {new Date(rev.created_at).toLocaleDateString(undefined, {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </span>
+                    return (
+                      <motion.div
+                        layout
+                        key={rev.id}
+                        className={`p-5 border rounded-2xl flex gap-4 transition-all text-left ${
+                          reportedReviews[rev.id] || rev.reported
+                            ? 'bg-rose-500/[0.04] dark:bg-rose-500/[0.08] border-rose-500/20 opacity-90'
+                            : 'bg-zinc-50/50 dark:bg-zinc-900/30 border-black/5 dark:border-white/5'
+                        }`}
+                      >
+                        {/* Avatar */}
+                        <div className={`w-9 h-9 rounded-full font-black text-sm flex items-center justify-center shrink-0 uppercase shadow-sm ${getAvatarStyle(rev.username)}`}>
+                          {rev.username ? rev.username.charAt(0) : 'G'}
                         </div>
 
-                        {/* Stars */}
-                        <div className="flex items-center gap-0.5 mb-2.5 text-amber-500">
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <Star 
-                              key={s} 
-                              className={`w-3 h-3 ${s <= rev.rating ? 'fill-amber-400 text-amber-400' : 'text-zinc-300 dark:text-zinc-700'}`} 
-                            />
-                          ))}
-                        </div>
+                        {/* Content column */}
+                        <div className="flex-1 flex flex-col min-w-0">
+                          {/* Header */}
+                          <div className="flex items-center justify-between gap-4 mb-1">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-bold text-sm text-zinc-800 dark:text-zinc-200 truncate">
+                                {rev.username}
+                              </span>
+                              <span className="inline-flex items-center gap-1 bg-[#01875f]/10 text-[#01875f] dark:text-[#00a170] text-[10px] font-semibold px-2 py-0.5 rounded-full border border-[#01875f]/10 shrink-0 select-none">
+                                <ShieldCheck className="w-2.5 h-2.5 text-[#01875f]" />
+                                <span>Verified Player</span>
+                              </span>
+                              {(reportedReviews[rev.id] || rev.reported) && (
+                                <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-600 dark:text-rose-450 text-[10px] font-black px-2 py-0.5 rounded-full border border-rose-500/10 shrink-0 select-none uppercase tracking-wide animate-pulse">
+                                  Flagged
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase shrink-0">
+                              {new Date(rev.created_at).toLocaleDateString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          </div>
 
-                        {/* Expandable Review Text using Framer Motion */}
-                        <motion.div 
-                          layout="position"
-                          className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed break-words whitespace-pre-wrap flex flex-col relative select-text"
-                        >
-                          <p>{displayedComment}</p>
-                          
-                          {isLong && (
-                            <button
-                              onClick={() => toggleExpandReview(rev.id)}
-                              className="self-start inline-flex items-center gap-0.5 text-[11px] font-black text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 mt-2 cursor-pointer transition-all uppercase tracking-wide select-none outline-none"
-                            >
-                              <span>{isExpanded ? 'Show less' : 'Read more'}</span>
-                              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                            </button>
-                          )}
-                        </motion.div>
+                          {/* Stars */}
+                          <div className="flex items-center gap-0.5 mb-2.5 text-amber-500">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star 
+                                key={s} 
+                                className={`w-3 h-3 ${s <= rev.rating ? 'fill-amber-400 text-amber-400' : 'text-zinc-300 dark:text-zinc-700'}`} 
+                              />
+                            ))}
+                          </div>
 
-                        {/* Footer Help voting Panel */}
-                        <div className="flex items-center gap-4 mt-4 pt-3.5 border-t border-black/[0.03] dark:border-white/[0.03]">
-                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
-                            Was this review helpful?
-                          </span>
-                          <button
-                            onClick={() => handleHelpfulVote(rev.id)}
-                            disabled={votedReviews[rev.id]}
-                            className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all ${
-                              votedReviews[rev.id]
-                                ? 'bg-blue-500/10 text-blue-500 cursor-default'
-                                : 'bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 text-zinc-500 dark:text-zinc-400 active:scale-95 cursor-pointer'
-                            }`}
+                          {/* Expandable Review Text using Framer Motion */}
+                          <motion.div 
+                            layout="position"
+                            className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed break-words whitespace-pre-wrap flex flex-col relative select-text"
                           >
-                            <ThumbsUp className="w-3 h-3" />
-                            <span>Helpful {rev.helpful_count > 0 && `(${rev.helpful_count})`}</span>
-                          </button>
-                        </div>
+                            <p>{displayedComment}</p>
+                            
+                            {isLong && (
+                              <button
+                                onClick={() => toggleExpandReview(rev.id)}
+                                className="self-start inline-flex items-center gap-0.5 text-[11px] font-black text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 mt-2 cursor-pointer transition-all uppercase tracking-wide select-none outline-none"
+                              >
+                                <span>{isExpanded ? 'Show less' : 'Read more'}</span>
+                                {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                              </button>
+                            )}
+                          </motion.div>
 
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                          {/* Footer Help voting Panel */}
+                          <div className="flex items-center gap-4 mt-4 pt-3.5 border-t border-black/[0.03] dark:border-white/[0.03]">
+                            <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                              Was this review helpful?
+                            </span>
+                            <button
+                              onClick={() => handleHelpfulVote(rev.id)}
+                              disabled={votedReviews[rev.id]}
+                              className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all ${
+                                votedReviews[rev.id]
+                                  ? 'bg-blue-500/10 text-blue-500 cursor-default'
+                                  : 'bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 text-zinc-500 dark:text-zinc-400 active:scale-95 cursor-pointer'
+                              }`}
+                            >
+                              <ThumbsUp className="w-3 h-3" />
+                              <span>Helpful {rev.helpful_count > 0 && `(${rev.helpful_count})`}</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleReportReview(rev.id)}
+                              disabled={reportedReviews[rev.id] || rev.reported}
+                              className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all ml-auto ${
+                                reportedReviews[rev.id] || rev.reported
+                                  ? 'bg-rose-500/10 text-rose-650 dark:text-rose-400 cursor-default font-black'
+                                  : 'bg-black/5 hover:bg-rose-500/10 hover:text-rose-600 dark:bg-white/5 dark:hover:bg-rose-500/15 text-zinc-500 dark:text-zinc-400 active:scale-95 cursor-pointer'
+                              }`}
+                            >
+                              <Flag className="w-3 h-3" />
+                              <span>{reportedReviews[rev.id] || rev.reported ? 'Reported' : 'Report'}</span>
+                            </button>
+                          </div>
+
+                        </div>
+                      </motion.div>
+                    );
+                  })}
               </div>
             )}
           </div>

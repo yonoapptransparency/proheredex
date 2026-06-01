@@ -6,6 +6,7 @@ import { getAdminPath } from './lib/utils';
 let cachedData: any = null;
 let lastFetchTime = 0;
 const CACHE_TTL = 120000; // 2 minutes cache to prevent extreme blocking on each pageload
+let isFetchingStoreData = false;
 
 function parseFirestoreValue(value: any): any {
   if (!value) return null;
@@ -52,7 +53,108 @@ export function getField(obj: any, key: string, fallback = ''): string {
 
 export async function fetchStoreData() {
   const now = Date.now();
-  if (cachedData && (now - lastFetchTime) < CACHE_TTL) {
+
+  // If we have cached data, always serve it instantly
+  if (cachedData) {
+    if ((now - lastFetchTime) >= CACHE_TTL && !isFetchingStoreData) {
+      isFetchingStoreData = true;
+      // Fetch updated data in background, allowing this function to return the cached data immediately
+      (async () => {
+        let config;
+        try {
+          config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
+        } catch (e) {
+          return;
+        }
+
+        const isApiKeyEmptyOrPlaceholder = 
+          !config.apiKey || 
+          config.apiKey.trim() === "" || 
+          config.apiKey.includes("YOUR_API_KEY");
+
+        if (isApiKeyEmptyOrPlaceholder) {
+          cachedData = {
+            apps: mockApps,
+            settings: mockSettings,
+            news: mockNews,
+            blogs: mockBlogs,
+            videos: mockVideos
+          };
+          lastFetchTime = Date.now();
+          return;
+        }
+
+        const cacheHeaders = {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        };
+
+        const [settingsRes, newsRes, blogsRes, videosRes, metaRes] = await Promise.all([
+          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/settings`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null),
+          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/news`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null),
+          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/blogs`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null),
+          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/videos`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null),
+          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_meta`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null)
+        ]);
+
+        let numChunks = 5;
+        if (metaRes && metaRes.ok) {
+          const metaData = await metaRes.json();
+          if (metaData && metaData.fields && metaData.fields.numChunks && metaData.fields.numChunks.integerValue) {
+            numChunks = parseInt(metaData.fields.numChunks.integerValue, 10) || 5;
+          }
+        }
+
+        const chunkPromises = Array.from({ length: numChunks }).map((_, i) => 
+          fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_chunk_${i}`, {
+            cache: 'no-store',
+            headers: cacheHeaders
+          })
+            .then(res => res.ok ? res.json() : null)
+            .catch(() => null)
+        );
+
+        const chunkResults = await Promise.all(chunkPromises);
+
+        let apps: any[] = [];
+        for (const chunkData of chunkResults) {
+          if (chunkData && chunkData.fields && chunkData.fields.items && chunkData.fields.items.arrayValue && chunkData.fields.items.arrayValue.values) {
+            apps = apps.concat(chunkData.fields.items.arrayValue.values.map((v: any) => v.mapValue.fields));
+          }
+        }
+        
+        let settings = null;
+        const settingsData = settingsRes && settingsRes.ok ? await settingsRes.json() : null;
+        if (settingsData && settingsData.fields) {
+          settings = settingsData.fields;
+        }
+
+        let news: any[] = [];
+        const newsData = newsRes && newsRes.ok ? await newsRes.json() : null;
+        if (newsData && newsData.fields && newsData.fields.items && newsData.fields.items.arrayValue && newsData.fields.items.arrayValue.values) {
+          news = newsData.fields.items.arrayValue.values.map((v: any) => v.mapValue.fields);
+        }
+
+        let blogs: any[] = [];
+        const blogsData = blogsRes && blogsRes.ok ? await blogsRes.json() : null;
+        if (blogsData && blogsData.fields && blogsData.fields.items && blogsData.fields.items.arrayValue && blogsData.fields.items.arrayValue.values) {
+          blogs = blogsData.fields.items.arrayValue.values.map((v: any) => v.mapValue.fields);
+        }
+
+        let videos: any[] = [];
+        const videosData = videosRes && videosRes.ok ? await videosRes.json() : null;
+        if (videosData && videosData.fields && videosData.fields.items && videosData.fields.items.arrayValue && videosData.fields.items.arrayValue.values) {
+          videos = videosData.fields.items.arrayValue.values.map((v: any) => v.mapValue.fields);
+        }
+
+        cachedData = { apps, settings, news, blogs, videos };
+        lastFetchTime = Date.now();
+      })().catch(err => {
+        console.error("Background fetchStoreData failed:", err);
+      }).finally(() => {
+        isFetchingStoreData = false;
+      });
+    }
     return cachedData;
   }
 
@@ -64,8 +166,6 @@ export async function fetchStoreData() {
     return null;
   }
 
-  // Support offline / secret configuration: if keys are empty or dummy placeholder,
-  // do not query Firebase end-points. Directly use local mock/fallback datasets.
   const isApiKeyEmptyOrPlaceholder = 
     !config.apiKey || 
     config.apiKey.trim() === "" || 
@@ -85,12 +185,12 @@ export async function fetchStoreData() {
   }
 
   try {
+    isFetchingStoreData = true;
     const cacheHeaders = {
       'Cache-Control': 'no-cache',
       'Pragma': 'no-cache'
     };
 
-    // Parallel Group 1: Fetch metadata and global collections concurrently
     const [settingsRes, newsRes, blogsRes, videosRes, metaRes] = await Promise.all([
       fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/settings`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null),
       fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/news`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null),
@@ -99,7 +199,7 @@ export async function fetchStoreData() {
       fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_meta`, { cache: 'no-store', headers: cacheHeaders }).catch(() => null)
     ]);
 
-    let numChunks = 5; // Default fallback chunks
+    let numChunks = 5;
     if (metaRes && metaRes.ok) {
       const metaData = await metaRes.json();
       if (metaData && metaData.fields && metaData.fields.numChunks && metaData.fields.numChunks.integerValue) {
@@ -107,7 +207,6 @@ export async function fetchStoreData() {
       }
     }
 
-    // Parallel Group 2: Fetch only the necessary app chunks
     const chunkPromises = Array.from({ length: numChunks }).map((_, i) => 
       fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_chunk_${i}`, {
         cache: 'no-store',
@@ -156,8 +255,15 @@ export async function fetchStoreData() {
   } catch (error) {
     console.error('Failed to fetch store data for SEO:', error);
     return cachedData;
+  } finally {
+    isFetchingStoreData = false;
   }
 }
+
+// Pre-load data in background on server start to completely eliminate first-load blocking latency
+fetchStoreData().catch(err => {
+  console.warn("Initial data pre-load failed (will retry dynamically on demand):", err);
+});
 
 function escapeHtml(unsafe: string) {
   if (!unsafe) return '';

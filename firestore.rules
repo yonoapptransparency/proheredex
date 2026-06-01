@@ -35,7 +35,8 @@ service cloud.firestore {
     match /reviews/{reviewId} {
       allow read: if true;
       allow create: if true;
-      allow update, delete: if isAdmin();
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reported', 'report_count']) || isAdmin();
+      allow delete: if isAdmin();
     }
     
     match /admins/{docId} {
