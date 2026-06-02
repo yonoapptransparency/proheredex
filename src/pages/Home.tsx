@@ -184,14 +184,14 @@ export default function Home() {
                           activeTabLower === 'all' || 
                           activeTabLower === 'home' || 
                           activeTabLower === 'apps';
-        const hasNewApps = loading ? true : filteredApps.some(app => app.is_new);
+        const hasNewApps = false ? true : filteredApps.some(app => app.is_new);
         return isHomeTab && hasNewApps && (
           <div className="px-2 animate-fade-in">
             <h2 className="text-xl font-bold mb-4 mt-6 text-zinc-900 dark:text-zinc-100 flex items-center px-2">
               Verified New Additions
             </h2>
             <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-3 px-1 mb-6">
-              {loading ? (
+              {false ? (
                 Array.from({ length: 10 }).map((_, i) => (
                   <NewAdditionItemSkeleton key={i} />
                 ))
@@ -309,7 +309,7 @@ export default function Home() {
             Search Results
           </h2>
           <div className="space-y-2">
-            {loading ? (
+            {false ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <AppListItemSkeleton key={i} />
               ))
@@ -327,7 +327,7 @@ export default function Home() {
           <h2 className="text-xl font-bold mb-4 mt-6 text-zinc-900 dark:text-zinc-100 flex items-center gap-2 px-4">
             Top Charts
           </h2>
-          {loading ? (
+          {false ? (
             Array.from({ length: 6 }).map((_, i) => (
               <TopChartItemSkeleton key={i} rank={i + 1} />
             ))
@@ -353,7 +353,7 @@ export default function Home() {
               Explore All
             </h2>
             <div className="space-y-2">
-              {loading ? (
+              {false ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <AppListItemSkeleton key={i} />
                 ))
@@ -392,7 +392,7 @@ export default function Home() {
         return !isExcluded && (
         <div className="animate-fade-in space-y-2 px-1">
           {(() => {
-            if (loading) {
+            if (false) {
               return Array.from({ length: 6 }).map((_, i) => (
                 <AppListItemSkeleton key={i} />
               ));

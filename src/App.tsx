@@ -7,12 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // Polished, high-performance loading screen that can be referenced by the preloader system
 function LoadingScreen() {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 min-h-[40vh]">
-      <div className="w-8 h-8 border-[3px] border-black/10 dark:border-white/10 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-      <p className="text-sm font-medium tracking-wide text-zinc-500 animate-pulse">Loading...</p>
-    </div>
-  );
+  return null;
 }
 
 // --- HIGH PERFORMANCE CUSTOM ROUTE PRELOADER ENGINE ---
@@ -848,10 +843,7 @@ function AppContent() {
     document.title = pageTitle;
 
     // Dynamic favicon update
-    const siteFaviconRaw = settings.logo_url || 'https://y4q7avawns.ucarecd.net/b391a2fa-42f7-4b3a-a0d5-605cb22aead4/-/preview/500x500/-/format/png/';
-    const siteFavicon = siteFaviconRaw.includes('ucarecd.net') && !siteFaviconRaw.includes('/format/') 
-      ? siteFaviconRaw.replace(/\/$/, '') + '/-/format/png/' 
-      : siteFaviconRaw;
+    const siteFavicon = settings.logo_url || 'https://y4q7avawns.ucarecd.net/b391a2fa-42f7-4b3a-a0d5-605cb22aead4/-/preview/1000x1000/';
       
     let linkIcon = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
     if (!linkIcon) {
@@ -859,7 +851,9 @@ function AppContent() {
       linkIcon.rel = 'icon';
       document.head.appendChild(linkIcon);
     }
-    linkIcon.href = siteFavicon;
+    if (linkIcon.href !== siteFavicon) {
+      linkIcon.href = siteFavicon;
+    }
     
     let linkAppleIcon = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement;
     if (!linkAppleIcon) {
@@ -867,7 +861,9 @@ function AppContent() {
       linkAppleIcon.rel = 'apple-touch-icon';
       document.head.appendChild(linkAppleIcon);
     }
-    linkAppleIcon.href = siteFavicon;
+    if (linkAppleIcon.href !== siteFavicon) {
+      linkAppleIcon.href = siteFavicon;
+    }
 
     // Standard Meta tags mapping
     setMetaTag('description', pageDesc);

@@ -53,18 +53,25 @@ export default function GlobalSearch({ isOpen, onClose }: { isOpen: boolean; onC
   };
 
   const getTrendingSearches = () => {
-    if (!settings?.trending_searches) return [];
-    if (Array.isArray(settings.trending_searches)) {
-      return settings.trending_searches.filter(Boolean).slice(0, 8);
+    let trends: string[] = [];
+    if (settings?.trending_searches && Array.isArray(settings.trending_searches) && settings.trending_searches.length > 0) {
+      trends = settings.trending_searches.filter(Boolean);
+    } else if (settings?.trending_searches && typeof settings.trending_searches === 'string') {
+      trends = (settings.trending_searches as string).split(',').map(s => s.trim()).filter(Boolean);
     }
-    if (typeof settings.trending_searches === 'string') {
-      return (settings.trending_searches as string)
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean)
-        .slice(0, 8);
+    
+    // If the admin didn't configure dedicated trending searches, fallback to generating them from actual App SEO keywords
+    if (trends.length === 0 && apps.length > 0) {
+      const allAppKeywords = new Set<string>();
+      apps.forEach(a => {
+        if (a.seo_keywords) {
+          a.seo_keywords.split(',').forEach(k => allAppKeywords.add(k.trim()));
+        }
+      });
+      trends = Array.from(allAppKeywords).filter(Boolean);
     }
-    return [];
+    
+    return trends.slice(0, 8);
   };
 
   const trendingSearches = getTrendingSearches();

@@ -50,7 +50,7 @@ export default function NewApps() {
         animate="show"
         className="grid grid-cols-1 md:grid-cols-2 gap-3"
       >
-        {loading ? (
+        {false ? (
           Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="animate-pulse bg-white dark:bg-zinc-900 p-4 rounded-[20px] border border-black/5 dark:border-white/5 flex gap-4 items-center h-[100px] select-none">
               <div className="w-16 h-16 shrink-0 rounded-2xl bg-zinc-200 dark:bg-zinc-800" />

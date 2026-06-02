@@ -145,13 +145,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   });
   // Fast persistent loading state management - initialized dynamically based on cache
-  const [loading, setLoading] = useState(() => {
-    try {
-      return !secureStorage.getItem('rummystore_apps');
-    } catch {
-      return true;
-    }
-  });
+  const [loading, setLoading] = useState(false);
   
   const [loadedFromServer, setLoadedFromServer] = useState(() => {
     try {
