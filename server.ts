@@ -742,7 +742,20 @@ async function startServer() {
     }
     try {
       const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
-      const plainText = JSON.stringify(items);
+      
+      // Double encrypt: Encrypt the URL individually first
+      const processedItems = items.map((item: any) => {
+        let finalUrl = item.url || '';
+        if (finalUrl && !finalUrl.startsWith('U2FsdGVkX1')) {
+          finalUrl = CryptoJS.AES.encrypt(finalUrl, AES_SECRET).toString();
+        }
+        return {
+          ...item,
+          url: finalUrl
+        };
+      });
+      
+      const plainText = JSON.stringify(processedItems);
       const ciphertext = CryptoJS.AES.encrypt(plainText, AES_SECRET).toString();
       res.json({ encrypted: ciphertext });
     } catch (err) {
@@ -763,7 +776,22 @@ async function startServer() {
       if (!decryptedText) {
         throw new Error("Empty decrypted block.");
       }
-      const items = JSON.parse(decryptedText);
+      
+      let items = JSON.parse(decryptedText);
+      // Decrypt individual URLs back to plaintext for admin viewing
+      items = items.map((item: any) => {
+        let finalUrl = item.url || '';
+        if (finalUrl.startsWith('U2FsdGVkX1')) {
+          try {
+            finalUrl = CryptoJS.AES.decrypt(finalUrl, AES_SECRET).toString(CryptoJS.enc.Utf8);
+          } catch(e) {}
+        }
+        return {
+          ...item,
+          url: finalUrl
+        };
+      });
+      
       res.json({ items });
     } catch (err) {
       res.status(500).json({ error: 'Links decryption failed.' });

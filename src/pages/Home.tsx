@@ -14,7 +14,7 @@ export default function Home() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || mockSettings.categories?.[0] || 'All Apps');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'All Apps');
   const [ratingFilter, setRatingFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('default');
 
@@ -26,12 +26,6 @@ export default function Home() {
     const tab = searchParams.get('tab');
     if (tab) {
       setActiveTab(tab);
-    } else if (mockSettings.categories && mockSettings.categories.length > 0) {
-      // Default to first category if no tab in search params
-      const hasAllApps = mockSettings.categories.some(c => c.toLowerCase() === 'all apps' || c.toLowerCase() === 'all');
-      if (!tab && (activeTab === 'All Apps' || activeTab === 'All') && !hasAllApps) {
-        setActiveTab(mockSettings.categories[0]);
-      }
     }
   }, [searchParams, location, mockSettings.categories]);
 
@@ -179,8 +173,7 @@ export default function Home() {
       {(() => {
         if (searchTerm) return null;
         const activeTabLower = activeTab.toLowerCase();
-        const isHomeTab = activeTabLower === (mockSettings.categories?.[0]?.toLowerCase() || 'all apps') || 
-                          activeTabLower === 'all apps' || 
+        const isHomeTab = activeTabLower === 'all apps' || 
                           activeTabLower === 'all' || 
                           activeTabLower === 'home' || 
                           activeTabLower === 'apps';
@@ -342,8 +335,7 @@ export default function Home() {
       {(() => {
         if (searchTerm) return null;
         const activeTabLower = activeTab.toLowerCase();
-        const isHomeTab = activeTabLower === (mockSettings.categories?.[0]?.toLowerCase() || 'all apps') || 
-                          activeTabLower === 'all apps' || 
+        const isHomeTab = activeTabLower === 'all apps' || 
                           activeTabLower === 'all' || 
                           activeTabLower === 'home' || 
                           activeTabLower === 'apps';
@@ -382,8 +374,7 @@ export default function Home() {
 
       {(() => {
         const activeTabLower = activeTab.toLowerCase();
-        const isHomeTab = activeTabLower === (mockSettings.categories?.[0]?.toLowerCase() || 'all apps') || 
-                          activeTabLower === 'all apps' || 
+        const isHomeTab = activeTabLower === 'all apps' || 
                           activeTabLower === 'all' || 
                           activeTabLower === 'home' || 
                           activeTabLower === 'apps';

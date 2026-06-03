@@ -233,9 +233,13 @@ export const PlayStoreTabs = React.memo(({ activeTab, onTabChange, hideOnSearch 
   
   if (hideOnSearch) return null;
 
-  const tabs = settings.categories && settings.categories.length > 0 
+  let tabs = settings.categories && settings.categories.length > 0 
     ? settings.categories 
-    : ["All", "Games", "Apps", "Entertainment"];
+    : ["All Apps", "Games", "Apps", "Entertainment"];
+    
+  if (tabs.length > 0 && !tabs.some(c => c.toLowerCase() === 'all' || c.toLowerCase() === 'all apps' || c.toLowerCase() === 'home' || c.toLowerCase() === 'apps')) {
+    tabs = ["All Apps", ...tabs];
+  }
   
   return (
     <div className="mb-6 sticky top-16 z-40 bg-zinc-50/80 dark:bg-zinc-950/80 backdrop-blur-md py-2 -mx-4 px-4 sm:mx-0 sm:px-0">

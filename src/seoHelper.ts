@@ -153,6 +153,14 @@ export async function fetchStoreData() {
         apps = apps.concat(chunkData.fields.items.arrayValue.values.map((v: any) => parseFirestoreValue(v)));
       }
     }
+
+    // Top Security: Scrub the apps before caching or returning, ensuring sensitive URLs NEVER reach __INITIAL_DATA__ mapping in the HTML response
+    apps = apps.map(app => {
+      delete app.more_information_url;
+      delete app.encrypted_download_url;
+      delete app.download_url;
+      return app;
+    });
     
     let settings = null;
     const settingsData = settingsRes && settingsRes.ok ? await settingsRes.json() : null;

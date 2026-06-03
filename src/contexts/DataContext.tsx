@@ -183,12 +183,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(() => {
     if (initialData) return false;
     try {
-      const cached = secureStorage.getItem('rummystore_settings');
-      return !cached;
+      const cachedApps = secureStorage.getItem('rummystore_apps');
+      return !cachedApps || cachedApps === '[]';
     } catch {
       return true;
     }
   });
+  
+  useEffect(() => {
+    if (apps && apps.length > 0) setLoading(false);
+  }, [apps]);
   
   const [loadedFromServer, setLoadedFromServer] = useState(() => {
     if (initialData) return true;
@@ -343,19 +347,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const checkLoaded = (docName: keyof typeof loadedDocs) => {
       loadedDocs[docName] = true;
-      if (loadedDocs.apps && loadedDocs.settings && loadedDocs.news && loadedDocs.blogs && loadedDocs.videos) {
+      if (loadedDocs.apps && loadedDocs.settings) {
         setLoading(false);
+      }
+      if (loadedDocs.apps && loadedDocs.settings && loadedDocs.news && loadedDocs.blogs && loadedDocs.videos) {
         setLoadedFromServer(true);
       }
     };
 
-    // Safety fallback - prevent any hanging sync loops after max 3 seconds
+    // Safety fallback - prevent any hanging sync loops after max 1.5 seconds
     const timeout = setTimeout(() => {
       setLoading(false);
       setLoadedFromServer(true);
-    }, 3000);
+    }, 1500);
 
-    // Fast sync fallback for deep links (especially new apps not in cache) - set to 3 seconds for snappy visual performance
+    // Fast sync fallback for deep links (especially new apps not in cache) - set to 1.5 seconds for snappy visual performance
     const syncTimeout = setTimeout(() => {
       setLoadedFromServer(true);
       setAppsSyncedWithServer(true);
@@ -369,7 +375,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setServerBlogsFetched(true);
       setServerVideosFetched(true);
       setLoading(false);
-    }, 3000);
+    }, 1500);
 
     const checkConnection = async () => {
       if (!isFirebaseConfigured) {
@@ -445,7 +451,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           for (let i = 0; i < numChunks; i++) {
             fetchPromises.push((async () => {
               try {
-                const chunkSnap = await getDocFromServer(doc(db, 'store_data', `apps_chunk_${i}`));
+                const chunkSnap = await getDoc(doc(db, 'store_data', `apps_chunk_${i}`));
                 if (chunkSnap.exists() && chunkSnap.data().items) {
                   return chunkSnap.data().items;
                 }
@@ -476,7 +482,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
         
         if (fetchedData) {
-          const data = loadedApps;
+          const data = loadedApps.map((app: any) => {
+            delete app.more_information_url;
+            delete app.encrypted_download_url;
+            delete app.download_url;
+            return app;
+          });
           setApps(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
           secureStorage.setItem('rummystore_apps', JSON.stringify(data));
           
@@ -626,6 +637,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       
       for (let i = 0; i < numChunks; i++) {
         const chunk = JSON.parse(JSON.stringify(newApps.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE)));
+        chunk.forEach((app: any) => { 
+          delete app.more_information_url; 
+          delete app.encrypted_download_url;
+          delete app.download_url;
+        });
         await setDoc(doc(db, 'store_data', `apps_chunk_${i}`), { items: chunk });
       }
       
@@ -906,13 +922,24 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                   console.warn(`Failed to chunk ${i} on manual refresh`, e);
                 }
               }
-              setApps(allApps);
-              secureStorage.setItem('rummystore_apps', JSON.stringify(allApps));
+              const cleanApps = allApps.map((a: any) => {
+                delete a.more_information_url;
+                delete a.encrypted_download_url;
+                delete a.download_url;
+                return a;
+              });
+              setApps(cleanApps);
+              secureStorage.setItem('rummystore_apps', JSON.stringify(cleanApps));
             } else {
               // Fallback to old document
               const oldSnap = await withServerConfirmation(() => getDoc(doc(db, 'store_data', 'apps')), 10000);
               if (oldSnap.exists() && oldSnap.data().items) {
-                const data = oldSnap.data().items;
+                const data = oldSnap.data().items.map((a: any) => {
+                  delete a.more_information_url;
+                  delete a.encrypted_download_url;
+                  delete a.download_url;
+                  return a;
+                });
                 setApps(data);
                 secureStorage.setItem('rummystore_apps', JSON.stringify(data));
               } else {
