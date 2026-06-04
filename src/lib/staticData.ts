@@ -59,6 +59,14 @@ export interface NewsItem {
   seo_title: string;
   seo_description: string;
   seo_keywords?: string;
+  ceo_name?: string;
+  ceo_description?: string;
+  og_image_url?: string;
+  canonical_url?: string;
+  target_region?: string;
+  content?: string;
+  link?: string;
+  published_at?: string;
 }
 
 export interface AppConfig {
@@ -92,6 +100,8 @@ export interface AppConfig {
   seo_keywords?: string;
   faqs?: { question: string; answer: string }[];
   created_at: string;
+  more_information_url?: string;
+  serial_number?: number;
 }
 
 export interface BlogPost {
@@ -110,6 +120,10 @@ export interface BlogPost {
   tags: string[];
   created_at: string;
   published_at: string;
+  content?: string;
+  cover_url?: string;
+  canonical_url?: string;
+  target_region?: string;
 }
 
 export interface VideoItem {

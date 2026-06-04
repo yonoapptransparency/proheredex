@@ -1462,12 +1462,17 @@ export default function AdminDashboard() {
   };
 
   const handleAddNews = () => {
-    const newItem = {
+    const newItem: NewsItem = {
       id: Math.random().toString(36).substr(2, 9),
       slug: 'new-news',
       title: 'New News',
       logo_url: '',
       description: 'News description...',
+      description_html: '<p>News HTML...</p>',
+      date: new Date().toISOString(),
+      author: 'Admin',
+      read_time: '2 min',
+      tags: [],
       ceo_name: 'CEO Name',
       ceo_description: 'CEO Description',
       seo_title: 'News SEO Title',
@@ -1513,10 +1518,16 @@ export default function AdminDashboard() {
   };
 
   const handleAddBlog = () => {
-    const newBlog = {
+    const newBlog: BlogPost = {
       id: Math.random().toString(36).substr(2, 9),
       slug: 'new-blog-' + Math.random().toString(36).substr(2, 4),
       title: 'New Blog Post',
+      description: 'Read our latest blog post.',
+      description_html: '<p>Read our latest blog post.</p>',
+      thumbnail_url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80',
+      publish_date: new Date().toISOString(),
+      read_time_minutes: 5,
+      tags: [],
       content: 'Write something amazing...',
       author: 'Admin Team',
       cover_url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80',
@@ -1525,7 +1536,8 @@ export default function AdminDashboard() {
       seo_description: 'Read our latest blog post.',
       seo_keywords: '',
       canonical_url: '',
-      target_region: 'Global'
+      target_region: 'Global',
+      created_at: new Date().toISOString()
     };
     setBlogs([...blogs, newBlog]);
   };

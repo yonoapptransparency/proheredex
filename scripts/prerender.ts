@@ -21,6 +21,11 @@ async function prerender() {
     // without running a React SPA or pointing to a Cloud Run node server.
     template = await injectSeoTags(template, '/', 'https://rummyapp.online');
     
+    // REMOVE the hardcoded `og:url` for the root path from the static file so that if this is served
+    // statically via Firebase Hosting on sub-paths (e.g. /app/yono-rummy), social crawlers will automatically
+    // fallback to using the requested link rather than forcing every share to look like the homepage.
+    template = template.replace(/<meta property=["']og:url["'] [^>]*\/>/gi, '');
+    
     fs.writeFileSync(indexHtmlPath, template, 'utf-8');
     console.log('Successfully injected static HTML and metadata into dist/index.html');
   } catch (err) {

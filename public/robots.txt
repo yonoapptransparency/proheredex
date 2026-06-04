@@ -1,6 +1,0 @@
-User-agent: *
-Disallow: /.env
-Disallow: /.git
-Allow: /
-
-Sitemap: https://rummyapp.online/sitemap.xml

@@ -310,6 +310,29 @@ async function startServer() {
     return next();
   });
 
+  // API Route: Dynamic robots.txt
+  app.get('/robots.txt', async (req, res) => {
+    try {
+      const data = await fetchStoreData();
+      if (!data) throw new Error("No data");
+      const { news = [], blogs = [], videos = [] } = data;
+      
+      let robots = `User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/\n`;
+      
+      // Block crawling of empty section pages
+      if (blogs.length === 0) robots += `Disallow: /blogs\n`;
+      if (news.length === 0) robots += `Disallow: /news\n`;
+      if (videos.length === 0) robots += `Disallow: /videos\n`;
+      
+      robots += `\nSitemap: https://rummyapp.online/sitemap.xml\n`;
+      res.set('Content-Type', 'text/plain');
+      res.send(robots);
+    } catch (err) {
+      res.set('Content-Type', 'text/plain');
+      res.send(`User-agent: *\nAllow: /\nDisallow: /admin/\nSitemap: https://rummyapp.online/sitemap.xml\n`);
+    }
+  });
+
   // API Route: Dynamic Sitemap Generation for SEO
   app.get(['/sitemap.xml', '/sitemap', '/api/sitemap', '/api/sitemap.xml'], async (req, res) => {
     try {

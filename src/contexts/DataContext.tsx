@@ -955,7 +955,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
               d.setter(data);
               secureStorage.setItem(`rummystore_${d.path}`, JSON.stringify(data));
             } else if ((d as any).key === 'items') {
-              d.setter([]);
+              d.setter([] as any);
               secureStorage.setItem(`rummystore_${d.path}`, JSON.stringify([]));
             }
           }

@@ -707,6 +707,13 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
   let title = siteTitle;
   let description = getField(settings, 'meta_description', '');
   let keywords = getField(settings, 'seo_keywords', '');
+  // Limit keywords to 15 terms to prevent keyword stuffing penalties
+  if (keywords) {
+    const keywordArray = keywords.split(',').map(k => k.trim()).filter(Boolean);
+    if (keywordArray.length > 15) {
+      keywords = keywordArray.slice(0, 15).join(', ');
+    }
+  }
   let ogImage = getField(settings, 'logo_url', '');
   let author = siteTitle;
   
@@ -860,7 +867,6 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
   ` : `
     <title>${escapeHtml(title)}</title>
     <meta name="description" content="${escapeHtml(description)}" />
-    ${keywords ? `<meta name="keywords" content="${escapeHtml(keywords)}" />` : ''}
     <meta name="author" content="${escapeHtml(author)}" />
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
