@@ -901,7 +901,7 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
   // When the React client mounts, it will cleanly overwrite the markup with interactive components.
   try {
     const preRenderedBody = await getPagePreRender(urlPath, data);
-    newTemplate = newTemplate.replace(/<div\s+id=["']root["']\s*>\s*<\/div>/ims, `<div id="root">${preRenderedBody}</div>`);
+    newTemplate = newTemplate.replace(/<div\s+id=["']root["'][^>]*>.*?<\/div>/ims, `<div id="root">${preRenderedBody}</div>`);
   } catch (renderErr) {
     console.error("Static pre-rendering body injection failed:", renderErr);
   }
