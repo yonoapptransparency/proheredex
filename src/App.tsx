@@ -793,7 +793,7 @@ function AppContent() {
       const slug = decodeURIComponent(parts[2]?.split('?')[0] || '');
       const app = apps.find((a: any) => a?.slug?.toLowerCase() === slug.toLowerCase());
       if (app) {
-        pageTitle = `${app.seo_title || app.name || siteTitle} - Technical Specifications`;
+        pageTitle = `${app.seo_title || app.name || siteTitle} - Info`;
         const rawDesc = app.seo_description || '';
         const rawHtml = app.description_html || '';
         pageDesc = rawDesc ? rawDesc : (rawHtml ? stripHtml(rawHtml).substring(0, 160) : '');

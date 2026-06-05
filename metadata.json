@@ -1,6 +1,6 @@
 {
-  "name": "RummyApp Online",
-  "description": "Step into the world of Rummy — compete, challenge friends, and rise to the top on RummyApp Online!",
+  "name": "Application Hub",
+  "description": "Discover applications and tools.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

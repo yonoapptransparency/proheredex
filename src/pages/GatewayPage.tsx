@@ -123,7 +123,7 @@ export default function GatewayPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 min-h-[40vh]">
         <div className="w-8 h-8 border-[3px] border-black/10 dark:border-white/10 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-        <p className="text-sm font-medium tracking-wide text-zinc-500 animate-pulse">Preparing information gateway...</p>
+        <p className="text-sm font-medium tracking-wide text-zinc-500 animate-pulse">Loading information...</p>
       </div>
     );
   }
@@ -265,7 +265,7 @@ export default function GatewayPage() {
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold mb-3 tracking-tight text-zinc-900 dark:text-zinc-100 flex flex-wrap items-center justify-center gap-3">
           <Info className="w-6 h-6 text-blue-500" />
-          <span>More Information Gateway</span>
+          <span>More Information</span>
         </h1>
         <p className="font-medium text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
           Specifications and details for <span className="font-semibold text-zinc-900 dark:text-zinc-100">{app.name}</span>.

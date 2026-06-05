@@ -536,10 +536,10 @@ function renderGateway(slug: string, apps: any[], settings: any) {
       <div class="text-center">
         <img src="${icon || 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&fit=crop'}" class="w-20 h-20 rounded-2xl object-cover mx-auto mb-4 border" alt="icon"/>
         <h1 class="text-2xl font-bold text-zinc-900 dark:text-white leading-snug mb-1">${escapeHtml(name)}</h1>
-        <p class="text-xs text-zinc-400 uppercase tracking-widest font-black mb-6">Download Redirection Hub</p>
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed font-semibold mb-8">You are accessing the download redirect portal to initiate the application package extraction on your device. Ensure you have a stable network connection.</p>
-        <a href="/" class="block w-full py-4 bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 text-white font-bold rounded-2xl">Download / Install Client</a>
-        <a href="/${encodeURIComponent(slug)}" class="block text-xs font-semibold text-blue-500 hover:underline mt-4">Read Technical Security Description</a>
+        <p class="text-xs text-zinc-400 uppercase tracking-widest font-black mb-6">Information Hub</p>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed font-semibold mb-8">Access the application details and specifications below.</p>
+        <a href="/" class="block w-full py-4 bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 text-white font-bold rounded-2xl">Return Home</a>
+        <a href="/${encodeURIComponent(slug)}" class="block text-xs font-semibold text-blue-500 hover:underline mt-4">Read Technical Description</a>
       </div>
     </div>
   `;
@@ -635,7 +635,7 @@ function renderVideoDetail(slug: string, videos: any[], settings: any) {
 }
 
 function renderAbout(settings: any) {
-  const content = getField(settings, 'about_content') || 'About our Rummy verification services.';
+  const content = getField(settings, 'about_content') || 'About our application services.';
   return `<div class="max-w-3xl mx-auto py-12 text-left bg-white p-8 rounded-3xl border border-black/5"><h1 class="text-4xl font-bold mb-6">About Us</h1><article class="prose text-zinc-750 leading-relaxed font-semibold">${content.replace(/\n\n/g, '<br/><br/>').replace(/\n/g, '<br/>')}</article></div>`;
 }
 
@@ -809,10 +809,10 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
     if (possibleSlug && possibleSlug !== '') {
       const app = apps.find((a: any) => getField(a, 'slug')?.toLowerCase() === possibleSlug.toLowerCase());
       if (app) {
-        const appName = getField(app, 'name', 'Rummy App');
-        title = `${getField(app, 'seo_title') || appName} | ${siteTitle}`;
+        const appName = getField(app, 'name', 'App');
+        title = getField(app, 'seo_title') || appName;
         const descHtml = getField(app, 'description_html');
-        const fallbackDesc = `Download the verified ${appName} app instantly. Smooth gameplay, professional reviews, e-sports integration, and exclusive daily features.`;
+        const fallbackDesc = `Discover the ${appName} app today. Enjoy smooth gameplay, professional reviews, e-sports integration, and exclusive features.`;
         description = cleanSeoDescription(getField(app, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : fallbackDesc);
         keywords = getField(app, 'seo_keywords');
         ogImage = getField(app, 'og_image_url') || getField(app, 'icon_url') || ogImage;
