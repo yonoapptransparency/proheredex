@@ -141,6 +141,10 @@ export default function GatewayPage() {
     );
   }
 
+  if (app?.is_coming_soon) {
+    return <Navigate to={`/${app.slug}`} replace />;
+  }
+
   if (!app) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center px-4 max-w-md mx-auto">
