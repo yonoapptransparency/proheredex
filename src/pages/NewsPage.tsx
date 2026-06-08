@@ -10,9 +10,9 @@ export default function NewsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   
   const filteredNews = mockNews.filter(item => 
-    item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.ceo_name.toLowerCase().includes(searchTerm.toLowerCase())
+    item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.ceo_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -60,7 +60,7 @@ export default function NewsPage() {
             className="group flex flex-col"
           >
             <Link to={`/news/${item.slug}`} className="block h-64 sm:h-80 rounded-[24px] overflow-hidden mb-6 shadow-sm border border-black/5">
-              <img src={item.logo_url} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <img src={item.logo_url} alt={item.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             </Link>
             <div className="flex flex-col">
               <div className="flex items-center gap-3 mb-3">

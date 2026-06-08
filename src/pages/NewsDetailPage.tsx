@@ -3,7 +3,6 @@ import { useParams, Navigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useData } from '../contexts/DataContext';
 import { ArrowLeft, MessageSquare, Send, ShieldAlert } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 
 interface Comment {
@@ -194,18 +193,19 @@ export default function NewsDetailPage() {
 
         {newsItem.logo_url && (
             <div className="w-full aspect-video mb-12 rounded-3xl overflow-hidden shadow-sm border border-black/5 dark:border-white/5 bg-zinc-50 dark:bg-zinc-900">
-                <img src={newsItem.logo_url} alt={newsItem.title} className="w-full h-full object-cover" />
+                <img src={newsItem.logo_url} alt={newsItem.title} loading="eager" decoding="async" className="w-full h-full object-cover" />
             </div>
         )}
         
         <div className="prose prose-zinc dark:prose-invert max-w-none mb-16">
             <p className="text-xl sm:text-2xl font-medium mb-12 text-zinc-700 dark:text-zinc-300 leading-relaxed">{newsItem.description}</p>
-            <div className="font-normal text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              <ReactMarkdown>{newsItem.content}</ReactMarkdown>
-            </div>
+            <div 
+              className="font-normal text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-none prose prose-zinc dark:prose-invert"
+              dangerouslySetInnerHTML={{ __html: newsItem.description_html || '' }} 
+            />
         </div>
 
-        {newsItem.link && (
+        {(newsItem as any).link && (
             <div className="mb-20">
                 <a href={newsItem.link} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold rounded-[16px] hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all active:scale-[0.98] shadow-md">
                     Access External Feed
