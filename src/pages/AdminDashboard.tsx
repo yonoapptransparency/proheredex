@@ -1530,6 +1530,11 @@ export default function AdminDashboard() {
   };
 
   const handleNewsChange = (id: string, field: string, value: string) => {
+    if (field === 'slug') {
+      const cleanSlug = value.toLowerCase().replace(/https?:\/\//g, '').replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+      setNewsList(newsList.map(n => n.id === id ? { ...n, [field]: cleanSlug } : n));
+      return;
+    }
     setNewsList(newsList.map(n => n.id === id ? { ...n, [field]: value } : n));
   };
 
@@ -1614,6 +1619,11 @@ export default function AdminDashboard() {
   };
 
   const handleBlogChange = (id: string, field: string, value: string) => {
+    if (field === 'slug') {
+      const cleanSlug = value.toLowerCase().replace(/https?:\/\//g, '').replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+      setBlogs(blogs.map(b => b.id === id ? { ...b, [field]: cleanSlug } : b));
+      return;
+    }
     setBlogs(blogs.map(b => b.id === id ? { ...b, [field]: value } : b));
   };
 
@@ -1656,6 +1666,11 @@ export default function AdminDashboard() {
   };
 
   const handleVideosChange = (id: string, field: string, value: string) => {
+    if (field === 'slug') {
+      const cleanSlug = value.toLowerCase().replace(/https?:\/\//g, '').replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+      setVideosList(videosList.map(v => v.id === id ? { ...v, [field]: cleanSlug } : v));
+      return;
+    }
     setVideosList(videosList.map(v => v.id === id ? { ...v, [field]: value } : v));
   };
 

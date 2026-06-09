@@ -53,7 +53,7 @@ export default function Blogs() {
                animate={{ opacity: 1 }}
                className="group flex flex-col"
             >
-              <Link to={`/blog/${blog.slug}`} className="block h-64 sm:h-80 rounded-[24px] overflow-hidden mb-6 shadow-sm border border-black/5">
+              <Link to={`/blog/${encodeURIComponent(blog.slug || blog.id)}`} className="block h-64 sm:h-80 rounded-[24px] overflow-hidden mb-6 shadow-sm border border-black/5">
                 <img src={blog.cover_url || `https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&h=400&fit=crop`} alt={blog.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </Link>
               <div className="flex flex-col">
@@ -64,14 +64,14 @@ export default function Blogs() {
                     {new Date(blog.published_at).toLocaleDateString()}
                   </div>
                 </div>
-                <Link to={`/blog/${blog.slug}`} className="text-2xl sm:text-3xl font-bold mb-3 text-zinc-900 leading-tight hover:text-blue-600 transition-colors">
+                <Link to={`/blog/${encodeURIComponent(blog.slug || blog.id)}`} className="text-2xl sm:text-3xl font-bold mb-3 text-zinc-900 leading-tight hover:text-blue-600 transition-colors">
                   {blog.title}
                 </Link>
                 <div className="flex items-center gap-2 mb-4">
                   <div className="text-xs font-semibold text-zinc-500">By {blog.author}</div>
                 </div>
                 <p className="text-base text-zinc-500 mb-6 line-clamp-3 leading-relaxed">{blog.content.substring(0, 150)}...</p>
-                <Link to={`/blog/${blog.slug}`} className="inline-flex items-center gap-2 text-blue-600 font-semibold text-sm group-hover:gap-3 transition-all">
+                <Link to={`/blog/${encodeURIComponent(blog.slug || blog.id)}`} className="inline-flex items-center gap-2 text-blue-600 font-semibold text-sm group-hover:gap-3 transition-all">
                   Read Article <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>

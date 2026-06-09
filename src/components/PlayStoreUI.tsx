@@ -194,7 +194,7 @@ export const PromotionSection = React.memo(() => {
             frameBorder="0" 
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
             allowFullScreen
-            loading="eager"
+            loading="lazy"
           ></iframe>
         </div>
 
@@ -311,7 +311,7 @@ export const AppListItem = React.memo(({ app, index }: { app: any; index?: numbe
             <img 
               src={app.icon_url || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop"} 
               alt={app.name} 
-              loading="eager"
+              loading="lazy"
               decoding="async"
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover"
@@ -403,7 +403,7 @@ export const TopChartItem = React.memo(({ rank, app }: TopChartItemProps) => {
             <img 
               src={app.icon_url || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop"} 
               alt={app.name} 
-              loading="eager"
+              loading="lazy"
               decoding="async"
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover"

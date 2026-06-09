@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 export default function BlogDetailPage() {
   const { blogs: mockBlogs, settings: mockSettings, loading, blogsSyncedWithServer, serverBlogsFetched, refreshAll } = useData();
   const { slug } = useParams();
-  const blog = mockBlogs.find(b => b.slug?.toLowerCase() === slug?.toLowerCase());
+  const blog = mockBlogs.find(b => b.slug?.toLowerCase() === slug?.toLowerCase() || b.id?.toLowerCase() === slug?.toLowerCase());
   
   const [triedRefresh, setTriedRefresh] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -22,7 +22,7 @@ export default function BlogDetailPage() {
   useEffect(() => {
     let active = true;
     const fetchLatestBlog = async () => {
-      const found = mockBlogs.some(b => b.slug?.toLowerCase() === slug?.toLowerCase());
+      const found = mockBlogs.some(b => b.slug?.toLowerCase() === slug?.toLowerCase() || b.id?.toLowerCase() === slug?.toLowerCase());
       if (!found && !triedRefresh && !isRefreshing) {
         if (active) {
           setIsRefreshing(true);
@@ -98,7 +98,7 @@ export default function BlogDetailPage() {
         <meta name="robots" content="index, follow" />
         {blog.target_region && <meta name="geo.region" content={blog.target_region} />}
         {blog.target_region && <meta name="coverage" content={blog.target_region} />}
-        <link rel="canonical" href={window.location.origin + "/blog/" + blog.slug} />
+        <link rel="canonical" href={window.location.origin + "/blog/" + encodeURIComponent(blog.slug || blog.id)} />
 
         <meta property="og:title" content={blog.title} />
         <meta property="og:description" content={blog.content.substring(0, 160).replace(/<[^>]*>?/gm, '')} />

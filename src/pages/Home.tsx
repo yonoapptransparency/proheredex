@@ -204,7 +204,7 @@ export default function Home() {
                           src={app.icon_url || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop"} 
                           alt={app.name} 
                           referrerPolicy="no-referrer"
-                          loading="eager"
+                          loading="lazy"
                           width={128}
                           height={128}
                           className="w-full h-full object-cover group-hover:-translate-y-0.5 transition-transform duration-300" 
