@@ -173,7 +173,7 @@ export default function NewsDetailPage() {
       >
         <header className="mb-12">
             <div className="flex items-center gap-2 mb-6">
-                <span className="bg-blue-50 text-blue-600 text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Official Report</span>
+                <span className="bg-blue-50 text-blue-600 text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">{newsItem.category || 'Official Report'}</span>
                 <span className="text-zinc-400 text-[10px] font-medium tracking-wider uppercase">Code: NT-{newsItem.id}</span>
             </div>
             <h1 className="text-3xl sm:text-5xl font-bold mb-6 text-zinc-900 dark:text-zinc-100 tracking-tight leading-[1.1]">

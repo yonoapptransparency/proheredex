@@ -103,6 +103,7 @@ export interface NewsItem {
   seo_title: string;
   seo_description: string;
   seo_keywords?: string;
+  category?: string;
   og_image_url?: string;
   canonical_url?: string;
   target_region?: string;

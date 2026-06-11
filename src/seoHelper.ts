@@ -564,7 +564,8 @@ function renderNewsList(news: any[], settings: any) {
   news.forEach(n => {
     cards += `
       <a href="/news/${encodeURIComponent(getField(n, 'slug'))}" class="block p-6 bg-white dark:bg-zinc-900 border border-black/5 hover:border-blue-500/25 rounded-3xl transition text-left">
-        <span class="text-[10px] font-bold text-zinc-400 uppercase">${escapeHtml(getField(n, 'created_at') || 'May 2026')}</span>
+        <span class="text-[10px] font-bold text-blue-500 uppercase">${escapeHtml(getField(n, 'category') || 'Report')}</span>
+        <span class="text-[10px] font-bold text-zinc-400 uppercase ml-2">${escapeHtml(getField(n, 'created_at') || 'May 2026')}</span>
         <h3 class="text-xl font-bold mt-1 mb-2 text-zinc-900 dark:text-white leading-snug">${escapeHtml(getField(n, 'title'))}</h3>
         <p class="text-sm text-zinc-500 max-w-3xl line-clamp-2 leading-relaxed">${escapeHtml(getField(n, 'description'))}</p>
       </a>
@@ -581,11 +582,12 @@ function renderNewsDetail(slug: string, news: any[], settings: any) {
   const title = getField(item, 'title');
   const dateStr = getField(item, 'created_at') || 'May 2026';
   const author = getField(item, 'ceo_name', 'System Author');
+  const cat = getField(item, 'category', 'Report');
   const content = getField(item, 'content') || getField(item, 'description', '');
 
   return `
     <article class="max-w-3xl mx-auto py-12 px-4 text-left">
-      <header class="mb-6"><span class="text-xs text-zinc-400 uppercase font-bold">${dateStr} | By ${escapeHtml(author)}</span><h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight mt-2 leading-tight">${escapeHtml(title)}</h1></header>
+      <header class="mb-6"><span class="text-xs text-blue-500 uppercase font-bold mr-2">${escapeHtml(cat)}</span><span class="text-xs text-zinc-400 uppercase font-bold">${dateStr} | By ${escapeHtml(author)}</span><h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight mt-2 leading-tight">${escapeHtml(title)}</h1></header>
       <section class="prose dark:prose-invert text-zinc-700 leading-relaxed font-semibold">${content.replace(/\n\n/g, '<br/><br/>').replace(/\n/g, '<br/>')}</section>
     </article>
   `;

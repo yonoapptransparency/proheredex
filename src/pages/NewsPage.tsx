@@ -64,7 +64,7 @@ export default function NewsPage() {
             </Link>
             <div className="flex flex-col">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full">Report</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full">{item.category || 'Report'}</span>
                 <span className="text-[10px] font-medium tracking-wider text-zinc-400 uppercase">NT-{item.id}</span>
               </div>
               <Link to={`/news/${item.slug}`} className="text-2xl sm:text-3xl font-bold mb-3 text-zinc-900 leading-tight hover:text-blue-600 transition-colors">
