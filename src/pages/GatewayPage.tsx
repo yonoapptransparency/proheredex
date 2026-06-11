@@ -411,6 +411,16 @@ export default function GatewayPage() {
           className="w-full text-base text-zinc-700 dark:text-zinc-300 [&_strong]:font-semibold [&_p]:mb-4 [&_p]:leading-relaxed [&_a]:text-blue-500 [&_a]:hover:underline [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-6 [&_h1]:mb-4 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-5 [&_h2]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
           dangerouslySetInnerHTML={{ __html: app.description_html || '<p>App details and technical specifications.</p>' }}
         />
+
+        {app.features_html && (
+           <div className="mt-12 pt-12 border-t border-black/5 dark:border-white/5">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-10 tracking-tight text-zinc-900 dark:text-zinc-100 px-1 sm:px-0">App Features</h2>
+              <div 
+                className="w-full text-base text-zinc-700 dark:text-zinc-300 [&_strong]:font-semibold [&_p]:mb-4 [&_p]:leading-relaxed [&_a]:text-blue-500 [&_a]:hover:underline [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-6 [&_h1]:mb-4 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-5 [&_h2]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-2"
+                dangerouslySetInnerHTML={{ __html: app.features_html }}
+              />
+           </div>
+        )}
       </div>
 
       {/* Strict Section Order 3: Peer Reviews */}

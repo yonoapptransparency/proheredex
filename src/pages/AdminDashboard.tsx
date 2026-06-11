@@ -274,6 +274,10 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
 
           <div className="grid gap-4">
             <div>
+              <label className="block text-sm font-medium text-purple-500 mb-1">Features Section (HTML)</label>
+              <textarea name="features_html" defaultValue={editApp?.features_html || ''} rows={6} className="w-full bg-purple-500/5 border border-purple-500/20 rounded-sm p-1.5 dark:text-white font-mono text-sm" placeholder="<ul class='list-disc pl-5'><li>Feature 1</li></ul>"></textarea>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-purple-500 mb-1">Extended Info Box Heading</label>
               <input type="text" name="custom_admin_box_heading" defaultValue={editApp?.custom_admin_box_heading || ''} className="w-full bg-purple-500/5 border border-purple-500/20 rounded-lg p-3 dark:text-white" />
             </div>
@@ -1457,6 +1461,7 @@ export default function AdminDashboard() {
         description_html: formData.get('description_html') as string || '<p>A new application.</p>',
         custom_admin_box_heading: formData.get('custom_admin_box_heading') as string,
         custom_admin_box_html: formData.get('custom_admin_box_html') as string,
+        features_html: formData.get('features_html') as string,
         red_box_msg: formData.get('red_box_msg') as string,
         yellow_box_msg: formData.get('yellow_box_msg') as string,
         idea_box_msg: formData.get('idea_box_msg') as string,

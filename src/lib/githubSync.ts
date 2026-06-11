@@ -143,6 +143,7 @@ export interface AppConfig {
   created_at: string;
   custom_admin_box_html?: string;
   custom_admin_box_heading?: string;
+  features_html?: string;
   faqs?: {question: string; answer: string}[];
 }
 

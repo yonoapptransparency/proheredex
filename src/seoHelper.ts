@@ -496,6 +496,8 @@ function renderAppDetails(slug: string, apps: any[], settings: any) {
   const rating = getField(app, 'rating', '5.0');
   const icon = getField(app, 'icon_url');
   const desc = getField(app, 'description_html') || `<p>No comprehensive details are configured yet for ${escapeHtml(name)}.</p>`;
+  const features = getField(app, 'features_html');
+  const featureSectionContext = features ? `<h2 class="text-lg font-bold mt-8 mb-4">App Features</h2><div class="prose dark:prose-invert text-zinc-650 leading-relaxed font-semibold">${features}</div>` : '';
   const pkg = getField(app, 'package_name', 'Not published');
 
   return `
@@ -522,6 +524,7 @@ function renderAppDetails(slug: string, apps: any[], settings: any) {
         <div class="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-black/5 shadow-sm text-left">
           <h2 class="text-lg font-bold mb-4">Detailed Game Review & Safe Guidelines</h2>
           <div class="prose dark:prose-invert text-zinc-650 leading-relaxed font-semibold">${desc}</div>
+          ${featureSectionContext}
         </div>
         <div class="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-black/5 shadow-sm h-fit text-left">
           <h3 class="text-sm font-bold mb-4 uppercase tracking-wider text-zinc-400">Specifications</h3>

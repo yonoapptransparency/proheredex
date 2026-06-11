@@ -86,6 +86,7 @@ export interface AppConfig {
   description_html: string;
   custom_admin_box_html?: string;
   custom_admin_box_heading?: string;
+  features_html?: string;
   red_box_msg?: string;
   yellow_box_msg?: string;
   idea_box_msg?: string;
