@@ -985,20 +985,21 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
   // Insert new tags and configuration before head close
   newTemplate = newTemplate.replace('</head>', `${configScript}${tags}</head>`);
 
-  // Dynamically inject fully pre-rendered body content directly into <div id="root"> ONLY for crawlers and indexers.
-  // This avoids visual flashes of mismatched SSR HTML before client-side hydration for normal users.
+  // Dynamically inject fully pre-rendered body content robustly for ALL users and bots.
+  // This allows Edge Caching (Vercel) to cache a single version of the HTML while maintaining 100% SEO capability.
   try {
-    const isBot = /bot|google|baidu|bing|msn|duckduckbot|teoma|slurp|yandex|craw|spider|gpt|claude/i.test(userAgent);
     const preRenderedBody = await getPagePreRender(urlPath, data);
     
-    if (isBot) {
-      newTemplate = newTemplate.replace(/<div\s+id=["']root["'][^>]*>.*?<\/div>/ims, `<div id="root">${preRenderedBody}</div>`);
-    } else {
-      // For real human browsers, we inject it into the hidden SEO div so that it's there but doesn't cause a visual flash 
-      // over the root, and then we remove it immediately when JS takes over.
-      const seoDiv = `<div id="seo-prerender" class="ssr-seo-content">${preRenderedBody}</div>`;
-      newTemplate = newTemplate.replace('</body>', `${seoDiv}\n  </body>`);
-    }
+    // Instead of branching by bot which breaks CDN Edge caching, we universally include it in a semantically
+    // sound <noscript> block, AND an accessible off-screen div that React will clean up.
+    // This allows Claude, ChatGPT, and GoogleBot to instantly parse the text without needing JS.
+    const seoDiv = `
+      <noscript>${preRenderedBody}</noscript>
+      <div id="seo-prerender" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;">
+        ${preRenderedBody}
+      </div>
+    `;
+    newTemplate = newTemplate.replace('</body>', `${seoDiv}\n  </body>`);
   } catch (renderErr) {
     console.error("Static pre-rendering body injection failed:", renderErr);
   }

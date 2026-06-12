@@ -480,8 +480,8 @@ export default function ClearanceButton({ appId, status }: ClearanceButtonProps)
   if (errorMsg) {
     return (
       <div className="flex flex-col items-center gap-3">
-        <div className="bg-red-50 text-red-600 p-4 rounded-xl text-xs font-semibold w-full sm:w-96 mb-2">
-          Action could not be completed. Please retry.
+        <div className="bg-red-50 text-red-600 p-4 rounded-xl text-xs font-semibold w-full sm:w-96 mb-2 text-center">
+          {errorMsg || "Action could not be completed. Please retry."}
         </div>
         <button 
           onClick={() => { setErrorMsg(''); handleClearance(); }} 
