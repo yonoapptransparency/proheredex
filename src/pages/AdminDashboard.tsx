@@ -557,6 +557,10 @@ const SettingsTab = React.memo(({ mockSettings, handleSaveSettings, saving }: an
             <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Global SEO Keywords (Comma Separated)</label>
             <input type="text" name="seo_keywords" defaultValue={mockSettings.seo_keywords} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition-all dark:text-white font-bold" />
           </div>
+          <div className="sm:col-span-2">
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Google Analytics ID (e.g. G-XXXXXXX)</label>
+            <input type="text" name="ga_tracking_id" defaultValue={mockSettings.ga_tracking_id || mockSettings.google_analytics_id} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition-all dark:text-white font-bold" placeholder="G-XXXXXXXXXX" />
+          </div>
           <div>
             <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Main Logo URL</label>
             <input type="text" name="logo_url" defaultValue={mockSettings.logo_url} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition-all dark:text-white font-bold" />
@@ -1345,6 +1349,7 @@ export default function AdminDashboard() {
         site_title: formData.get('site_title') as string || mockSettings.site_title,
         meta_description: formData.get('meta_description') as string || mockSettings.meta_description,
         seo_keywords: formData.get('seo_keywords') as string || mockSettings.seo_keywords,
+        ga_tracking_id: formData.get('ga_tracking_id') as string || mockSettings.ga_tracking_id,
         logo_url: formData.get('logo_url') as string || mockSettings.logo_url,
         favicon_url: formData.get('favicon_url') as string || mockSettings.favicon_url,
         secure_index_title: formData.get('secure_index_title') as string || mockSettings.secure_index_title || 'Secure Index',

@@ -23,7 +23,7 @@ function safeDecrypt(ciphertext: string, primarySecret: string) {
     return '';
 }
 
-import { fetchStoreData, getField } from "../src/seoHelper.js";
+import { fetchStoreData, getField, injectSeoTags } from "../src/seoHelper.js";
 
 const app = express();
 
@@ -1085,6 +1085,47 @@ app.post("/api/github-sync/commit", verifyAdminToken, async (req, res) => {
 
 app.all("/api/*", (req, res) => {
   res.status(404).json({ error: "API Endpoint not found" });
+});
+
+// Vercel Serverless SSR Fallback / SEO Injection
+app.get('*', async (req, res) => {
+  // Pass through asset requests (so Vercel serves them directly if they missed the static matching somehow)
+  if (req.originalUrl.includes('.') && !req.originalUrl.includes('?')) {
+    return res.status(404).send('Not found');
+  }
+  
+  try {
+    const distPath = path.join(process.cwd(), 'dist', 'index.html');
+    const indexFallback = path.join(process.cwd(), 'index.html');
+    let template = '';
+    try {
+      template = fs.readFileSync(distPath, 'utf-8');
+    } catch(e) {
+      template = fs.readFileSync(indexFallback, 'utf-8');
+    }
+    
+    // Attempt standard SEO injection using dynamic user DB data
+    const protocol = req.headers["x-forwarded-proto"] || req.protocol || "https";
+    const host = req.headers["x-forwarded-host"] || req.get("host") || "localhost:3000";
+    const hostUrl = `${String(protocol).split(',')[0].trim()}://${String(host).split(',')[0].trim()}`;
+    const userAgent = (req.headers['user-agent'] as string) || '';
+    
+    template = await injectSeoTags(template, req.originalUrl, hostUrl, userAgent);
+    
+    res.status(200).set({
+      'Content-Type': 'text/html',
+      'Cache-Control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=86400'
+    }).send(template);
+  } catch(e) {
+    console.error("SSR HTML Server Error:", e);
+    // Serve unmodified HTML if injection fails (failsafe mechanism)
+    try {
+       const template = fs.readFileSync(path.join(process.cwd(), 'dist', 'index.html'), 'utf8');
+       res.status(200).set('Content-Type', 'text/html').send(template);
+    } catch {
+       res.status(500).send('Server Error');
+    }
+  }
 });
 
 // Export default app instance as Vercel expects

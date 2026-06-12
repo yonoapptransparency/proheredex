@@ -181,6 +181,10 @@ async function doFetchStoreData() {
     if (settingsData && settingsData.fields) {
       settings = parseFirestoreValue({ mapValue: { fields: settingsData.fields } });
     }
+    
+    if (!settings || Object.keys(settings).length === 0) {
+      settings = mockSettings;
+    }
 
     let news: any[] = [];
     const newsData = newsRes && newsRes.ok ? await newsRes.json() : null;
@@ -725,7 +729,10 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
   const siteTitle = getField(settings, 'site_title');
   let title = siteTitle;
   let description = getField(settings, 'meta_description', '');
+  if (!description) description = "A premium digital platform for applications and tools.";
+  
   let keywords = getField(settings, 'seo_keywords', '');
+  if (!keywords) keywords = "app download, digital tools, platform, premium applications, safe download";
   // Limit keywords to 15 terms to prevent keyword stuffing penalties
   if (keywords) {
     const keywordArray = keywords.split(',').map(k => k.trim()).filter(Boolean);
@@ -734,7 +741,9 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
     }
   }
   let ogImage = getField(settings, 'logo_url', '');
-  let author = siteTitle;
+  // Default fallback image if none provided
+  if (!ogImage) ogImage = "https://res.cloudinary.com/dq34n0ncz/image/upload/v1713280000/default_og_image.png";
+  let author = siteTitle || "Platform Administrator";
   
   if (urlPath.startsWith('/app/')) {
     const slug = decodeURIComponent(urlPath.split('/app/')[1].split('/')[0].split('?')[0]);
@@ -747,8 +756,8 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
       const appName = getField(app, 'name');
       title = `${getField(app, 'seo_title') || appName}`;
       const descHtml = getField(app, 'description_html');
-      description = cleanSeoDescription(getField(app, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : '');
-      keywords = getField(app, 'seo_keywords');
+      description = cleanSeoDescription(getField(app, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : '') || description;
+      keywords = getField(app, 'seo_keywords') || keywords;
       ogImage = getField(app, 'og_image_url') || getField(app, 'icon_url') || ogImage;
     }
   } else if (urlPath.startsWith('/info/') || urlPath.startsWith('/gateway/')) {
@@ -763,8 +772,8 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
       const appName = getField(app, 'name');
       title = `${getField(app, 'seo_title') || appName} - Technical Info`;
       const descHtml = getField(app, 'description_html');
-      description = cleanSeoDescription(getField(app, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : '');
-      keywords = getField(app, 'seo_keywords');
+      description = cleanSeoDescription(getField(app, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : '') || description;
+      keywords = getField(app, 'seo_keywords') || keywords;
       ogImage = getField(app, 'og_image_url') || getField(app, 'icon_url') || ogImage;
     }
   } else if (urlPath.startsWith('/news/') && urlPath.length > 6) {
@@ -778,8 +787,8 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
       const itemTitle = getField(newsItem, 'title', 'Latest News');
       title = `${getField(newsItem, 'seo_title') || itemTitle} | ${siteTitle}`;
       const descHtml = getField(newsItem, 'description') || getField(newsItem, 'content');
-      description = cleanSeoDescription(getField(newsItem, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : '');
-      keywords = getField(newsItem, 'seo_keywords');
+      description = cleanSeoDescription(getField(newsItem, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : '') || description;
+      keywords = getField(newsItem, 'seo_keywords') || keywords;
       ogImage = getField(newsItem, 'og_image_url') || getField(newsItem, 'logo_url') || ogImage;
       author = getField(newsItem, 'ceo_name') || siteTitle;
     }
@@ -794,8 +803,8 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
       const itemTitle = getField(blogItem, 'title', 'Blog Post');
       title = `${getField(blogItem, 'seo_title') || itemTitle} | ${siteTitle}`;
       const descHtml = getField(blogItem, 'excerpt') || getField(blogItem, 'content');
-      description = cleanSeoDescription(getField(blogItem, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : '');
-      keywords = getField(blogItem, 'seo_keywords');
+      description = cleanSeoDescription(getField(blogItem, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : '') || description;
+      keywords = getField(blogItem, 'seo_keywords') || keywords;
       ogImage = getField(blogItem, 'cover_url') || ogImage;
       author = getField(blogItem, 'author') || siteTitle;
     }
@@ -873,6 +882,58 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
 
   const isAdmin = urlPath.startsWith(`/${getAdminPath()}`);
 
+  const gaId = getField(settings, 'google_analytics_id', '') || getField(settings, 'ga_tracking_id', '');
+  const gaScript = gaId ? `
+    <script async src="https://www.googletagmanager.com/gtag/js?id=${escapeHtml(gaId)}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '${escapeHtml(gaId)}');
+    </script>
+  ` : '';
+
+  let schemaOrg: any = null;
+  if (!isAdmin) {
+    if (urlPath.startsWith('/app/') || urlPath.startsWith('/gateway/')) {
+       schemaOrg = {
+         "@context": "https://schema.org",
+         "@type": "SoftwareApplication",
+         "name": title,
+         "operatingSystem": "Android, iOS",
+         "applicationCategory": "GameApplication",
+         "description": description,
+         "url": absoluteUrl,
+         "offers": {
+           "@type": "Offer",
+           "price": "0",
+           "priceCurrency": "USD"
+         }
+       };
+    } else if (urlPath.startsWith('/news/') || urlPath.startsWith('/blog/')) {
+       schemaOrg = {
+         "@context": "https://schema.org",
+         "@type": "Article",
+         "headline": title,
+         "description": description,
+         "image": absoluteOgImage || [],
+         "author": {
+            "@type": "Person",
+            "name": author
+         }
+       };
+    } else {
+       schemaOrg = {
+         "@context": "https://schema.org",
+         "@type": "WebSite",
+         "name": siteTitle,
+         "url": absoluteUrl,
+       };
+    }
+  }
+
+  const schemaScript = schemaOrg ? `<script type="application/ld+json">${JSON.stringify(schemaOrg)}</script>` : '';
+
   // Construct replacement tags
   const tags = isAdmin ? `
     <title>Admin Portal</title>
@@ -885,6 +946,7 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
   ` : `
     <title>${escapeHtml(title)}</title>
     <meta name="description" content="${escapeHtml(description)}" />
+    <meta name="keywords" content="${escapeHtml(keywords)}" />
     <meta name="author" content="${escapeHtml(author)}" />
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
@@ -895,11 +957,15 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
     ${absoluteOgImage ? `<meta name="twitter:image" content="${escapeHtml(absoluteOgImage)}" />` : ''}
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="${escapeHtml(absoluteUrl)}" />
     ${absoluteFaviconUrl ? `
     <link rel="icon" type="image/x-icon" href="${escapeHtml(absoluteFaviconUrl)}" />
     <link rel="shortcut icon" href="${escapeHtml(absoluteFaviconUrl)}" />
     <link rel="apple-touch-icon" href="${escapeHtml(absoluteFaviconUrl)}" />
     ` : ''}
+    ${schemaScript}
+    ${gaScript}
   `;
 
   // Regex to remove any existing <title>, OpenGraph and favicon tags

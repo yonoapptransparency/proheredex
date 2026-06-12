@@ -25,6 +25,7 @@ export interface GlobalSettings {
   ticker_text: string;
   animations_enabled: boolean;
   seo_keywords?: string;
+  ga_tracking_id?: string;
   about_content?: string;
   contact_content?: string;
   privacy_content?: string;
@@ -147,6 +148,7 @@ export const mockApps: AppConfig[] = [];
 export const mockSettings: GlobalSettings = {
   site_title: "",
   meta_description: "",
+  ga_tracking_id: "",
   logo_url: "",
   favicon_url: "",
   helpline_whatsapp: "",
