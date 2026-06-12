@@ -381,7 +381,7 @@ export default function ClearanceButton({ appId, status }: ClearanceButtonProps)
       const [fingerprint, solution] = await Promise.all([
         getFingerprint(),
         solveVerification(nonce, difficulty),
-        new Promise(resolve => setTimeout(resolve, 3000)) // Force minimum 3s timer for smooth UX interaction
+        new Promise(resolve => setTimeout(resolve, 1750)) // Force minimum 1.75s timer for smooth UX interaction
       ]);
 
       // Step 3: Server validation handshake exchange
@@ -536,7 +536,7 @@ export default function ClearanceButton({ appId, status }: ClearanceButtonProps)
           <div className="w-full h-1 bg-red-100 rounded-full overflow-hidden">
             <div 
               className="h-full bg-red-600 transition-all duration-[50ms] ease-linear rounded-full"
-              style={{ width: `${Math.min((elapsedMs / 3000) * 100, 100)}%` }}
+              style={{ width: `${Math.min((elapsedMs / 1750) * 100, 100)}%` }}
             />
           </div>
         </div>
