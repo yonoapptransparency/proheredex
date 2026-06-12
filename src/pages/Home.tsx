@@ -198,7 +198,7 @@ export default function Home() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <Link to={`/${app.slug}`} className="flex flex-col gap-2 group">
+                    <Link to={`/${app.slug}`} className="flex flex-col gap-2 group active:scale-[0.98] transition-transform">
                       <div className="aspect-square rounded-[18px] overflow-hidden bg-white/20 border border-black/5 dark:border-white/10 shadow-sm group-hover:shadow-[0_8px_20px_-8px_rgba(0,0,0,0.1)] transition-all relative">
                         <img 
                           src={app.icon_url || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=128&h=128&fit=crop"} 

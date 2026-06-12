@@ -3,11 +3,6 @@ import { useLocation, BrowserRouter as Router, Routes, Route, Link, Navigate } f
 import { HelmetProvider } from 'react-helmet-async';
 import { Menu, Shield, ShieldCheck, Info, ArrowRight, X, LayoutGrid, Newspaper, Sparkles, Send, MoreHorizontal, Search, Video } from 'lucide-react';
 import Home from './pages/Home';
-import AppDetails from './pages/AppDetails';
-import GatewayPage from './pages/GatewayPage';
-import NewApps from './pages/NewApps';
-import NewsPage from './pages/NewsPage';
-import VideosPage from './pages/VideosPage';
 import React, { useState, useEffect, useMemo, Suspense, lazy, ComponentType, LazyExoticComponent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -125,19 +120,37 @@ const loaders = {
 
 // Start prefetching page assets at parse-time before React bundle initialization even finishes!
 const initialPath = window.location.pathname;
-if (initialPath === '/' || initialPath === '') {
-  preloadComponent('Home', loaders.Home).catch(() => {});
-  // Pre-fetch details bundle 200ms later during blank network periods
-  setTimeout(() => preloadComponent('AppDetails', loaders.AppDetails).catch(() => {}), 200);
-} else if (initialPath.startsWith('/app/')) {
-  preloadComponent('AppDetails', loaders.AppDetails).catch(() => {});
-  // Pre-fetch home bundle 200ms later
-  setTimeout(() => preloadComponent('Home', loaders.Home).catch(() => {}), 200);
-} else {
-  preloadComponent('Home', loaders.Home).catch(() => {});
-  preloadComponent('AppDetails', loaders.AppDetails).catch(() => {});
+
+function prefetchOtherRoutes() {
+  const routes = [
+    'AppDetails', 'GatewayPage', 'NewApps', 'NewsPage', 'VideosPage',
+    'About', 'Contact', 'Privacy', 'Terms', 'Responsibility',
+    'NewsDetailPage', 'Blogs', 'BlogDetailPage', 'VideoDetailPage'
+  ];
+  let delay = 500;
+  routes.forEach((route) => {
+    setTimeout(() => {
+      // @ts-ignore
+      preloadComponent(route, loaders[route]).catch(() => {});
+    }, delay);
+    delay += 300;
+  });
 }
 
+if (initialPath === '/' || initialPath === '') {
+  setTimeout(prefetchOtherRoutes, 800);
+} else if (initialPath.startsWith('/app/')) {
+  preloadComponent('AppDetails', loaders.AppDetails).catch(() => {});
+  setTimeout(prefetchOtherRoutes, 1000);
+} else {
+  setTimeout(prefetchOtherRoutes, 500);
+}
+
+const AppDetails = lazyRetry(loaders.AppDetails);
+const GatewayPage = lazyRetry(loaders.GatewayPage);
+const NewApps = lazyRetry(loaders.NewApps);
+const NewsPage = lazyRetry(loaders.NewsPage);
+const VideosPage = lazyRetry(loaders.VideosPage);
 const About = lazyRetry(loaders.About);
 const Contact = lazyRetry(loaders.Contact);
 const Privacy = lazyRetry(loaders.Privacy);
@@ -954,11 +967,11 @@ function AppContent() {
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className="will-change-[opacity,transform]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.1, ease: "linear" }}
+              className="will-change-[opacity]"
             >
               <Routes location={location}>
                 <Route path="/" element={<Home />} />

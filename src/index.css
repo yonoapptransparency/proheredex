@@ -72,6 +72,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 a {
@@ -104,6 +105,11 @@ a {
 
 .dark .glass-panel:hover {
   box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.6);
+}
+
+.glass-panel:active, button:active, .will-scale:active, a:active .glass-panel, a.group:active {
+  transform: scale(0.97) !important;
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .glass-nav {

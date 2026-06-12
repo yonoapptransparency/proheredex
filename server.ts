@@ -749,7 +749,7 @@ async function startServer() {
     const { url } = req.body;
     if (!url) return res.status(400).json({ error: 'URL is required' });
     try {
-      const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
+      const AES_SECRET = process.env.AES_SECRET; if (!AES_SECRET) throw new Error('AES_SECRET is required');
       const ciphertext = CryptoJS.AES.encrypt(url, AES_SECRET).toString();
       res.json({ encrypted: ciphertext });
     } catch (err) {
@@ -764,7 +764,7 @@ async function startServer() {
       return res.status(400).json({ error: 'Valid links array payload is required.' });
     }
     try {
-      const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
+      const AES_SECRET = process.env.AES_SECRET; if (!AES_SECRET) throw new Error('AES_SECRET is required');
       
       // Double encrypt: Encrypt the URL individually first
       const processedItems = items.map((item: any) => {
@@ -793,7 +793,7 @@ async function startServer() {
       return res.status(400).json({ error: 'Encrypted payload ciphertext is required.' });
     }
     try {
-      const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
+      const AES_SECRET = process.env.AES_SECRET; if (!AES_SECRET) throw new Error('AES_SECRET is required');
       const bytes = CryptoJS.AES.decrypt(encryptedData, AES_SECRET);
       const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
       if (!decryptedText) {
@@ -838,7 +838,7 @@ async function startServer() {
            apps = apps.concat(chunk1Data.fields.items.arrayValue.values.map(v => v.mapValue.fields.id.stringValue));
        }
        
-       const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
+       const AES_SECRET = process.env.AES_SECRET; if (!AES_SECRET) throw new Error('AES_SECRET is required');
        const sampleUrls = apps.map(id => ({ id, url: `https://example.com/demo/${id}` }));
        const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(sampleUrls), AES_SECRET).toString();
        
@@ -1017,7 +1017,7 @@ const rateLimitMap = new Map<string, number[]>();
 
         let targetUrl = '';
         try {
-          const AES_SECRET = process.env.AES_SECRET || 'RUMMY_APP_SECRET_2026';
+          const AES_SECRET = process.env.AES_SECRET; if (!AES_SECRET) throw new Error('AES_SECRET is required');
           const config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
           
           try {
@@ -1109,8 +1109,6 @@ const rateLimitMap = new Map<string, number[]>();
           console.error("Firestore retrieval or decryption failed", err);
         }
         
-        console.log("FINAL TARGET URL:", targetUrl, "appId:", appId);
-
         if (!targetUrl || !targetUrl.startsWith('http')) {
           console.log("Rejecting targetUrl: redirecting to home page.");
           return res.redirect(302, "/");
