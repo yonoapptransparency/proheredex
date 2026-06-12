@@ -1410,7 +1410,7 @@ export default function AdminDashboard() {
       if (inputUrl && !inputUrl.startsWith('U2FsdGVkX1')) {
          try {
             const idToken = await auth.currentUser?.getIdToken();
-            const res = await fetch('/api/v1/adminURL/g', {
+            const res = await fetch('/api/v1/admin/encrypt', {
                method: 'POST',
                headers: {
                   'Content-Type': 'application/json',
