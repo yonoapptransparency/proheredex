@@ -1384,7 +1384,22 @@ const rateLimitMap = new Map<string, number[]>();
     });
 
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const getDistPath = (): string => {
+      const pathsToTry = [
+        path.join(process.cwd(), 'dist'),
+        path.resolve(__dirname, 'dist'),
+        path.resolve(__dirname, '..', 'dist'),
+        __dirname
+      ];
+      for (const p of pathsToTry) {
+        if (fs.existsSync(path.join(p, 'index.html'))) {
+          return p;
+        }
+      }
+      return path.join(process.cwd(), 'dist'); // failsafe fallback
+    };
+
+    const distPath = getDistPath();
 
     // Specifically handle assets (JS, CSS, Images, Fonts) with long-term immutable caching FIRST
     app.use('/assets', express.static(path.join(distPath, 'assets'), {
@@ -1402,7 +1417,10 @@ const rateLimitMap = new Map<string, number[]>();
     }));
     
     app.get('*', async (req, res) => {
-      const templatePath = path.join(distPath, 'index.html');
+      let templatePath = path.join(distPath, 'index.html');
+      if (!fs.existsSync(templatePath)) {
+        templatePath = path.join(process.cwd(), 'index.html');
+      }
       try {
         let template = fs.readFileSync(templatePath, 'utf-8');
         const protocol = req.headers["x-forwarded-proto"] || req.protocol || "https";
@@ -1417,8 +1435,9 @@ const rateLimitMap = new Map<string, number[]>();
           'Expires': '0'
         }).send(template);
       } catch (e) {
-        console.error(e);
+        console.error("SEO fallback error in catch-all, serving file as-is:", e);
         res.status(200).set({
+          'Content-Type': 'text/html',
           'Cache-Control': 'no-cache, no-store, must-revalidate'
         }).sendFile(templatePath);
       }

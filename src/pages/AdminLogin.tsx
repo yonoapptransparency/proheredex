@@ -89,7 +89,7 @@ export default function AdminLogin() {
 
 
   if (authenticated) {
-    return <Navigate to={`/${getAdminPath()}`} />;
+    return <Navigate to={`/${getAdminPath()}/dashboard`} replace />;
   }
 
   return (

@@ -1176,7 +1176,22 @@ app.get("/api/v1/download/:id", async (req, res) => {
 });
 
 // Serve static assets from the compiled dist directory FIRST
-const distPath = path.join(process.cwd(), 'dist');
+const getDistPath = (): string => {
+  const pathsToTry = [
+    path.join(process.cwd(), 'dist'),
+    path.resolve(__dirname, 'dist'),
+    path.resolve(__dirname, '..', 'dist'),
+    __dirname
+  ];
+  for (const p of pathsToTry) {
+    if (fs.existsSync(path.join(p, 'index.html'))) {
+      return p;
+    }
+  }
+  return path.join(process.cwd(), 'dist'); // failsafe fallback
+};
+
+const distPath = getDistPath();
 
 app.use('/assets', express.static(path.join(distPath, 'assets'), {
   maxAge: '1y',
@@ -1209,13 +1224,15 @@ app.get('*', async (req, res) => {
   }
   
   try {
-    const distPath = path.join(process.cwd(), 'dist', 'index.html');
-    const indexFallback = path.join(process.cwd(), 'index.html');
+    let templatePath = path.join(distPath, 'index.html');
+    if (!fs.existsSync(templatePath)) {
+      templatePath = path.join(process.cwd(), 'index.html');
+    }
     let template = '';
     try {
-      template = fs.readFileSync(distPath, 'utf-8');
+      template = fs.readFileSync(templatePath, 'utf-8');
     } catch(e) {
-      template = fs.readFileSync(indexFallback, 'utf-8');
+      template = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf-8');
     }
     
     // Attempt standard SEO injection using dynamic user DB data
@@ -1234,7 +1251,11 @@ app.get('*', async (req, res) => {
     console.error("SSR HTML Server Error:", e);
     // Serve unmodified HTML if injection fails (failsafe mechanism)
     try {
-       const template = fs.readFileSync(path.join(process.cwd(), 'dist', 'index.html'), 'utf8');
+       let templatePath = path.join(distPath, 'index.html');
+       if (!fs.existsSync(templatePath)) {
+         templatePath = path.join(process.cwd(), 'index.html');
+       }
+       const template = fs.readFileSync(templatePath, 'utf8');
        res.status(200).set('Content-Type', 'text/html').send(template);
     } catch {
        res.status(500).send('Server Error');
