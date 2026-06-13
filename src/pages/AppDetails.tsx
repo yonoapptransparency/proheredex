@@ -122,17 +122,6 @@ export default function AppDetails() {
 
   const isActuallyComingSoon = app?.is_coming_soon && (timeRemaining === null || timeRemaining > 0);
 
-  // Dynamic array decoding to completely hide "/info/" from static regex scraper bots sniffing JS bundles
-  const handleMoreDetails = () => {
-    if (!app || !app.slug) return;
-    if (window.navigator && window.navigator.vibrate) {
-      window.navigator.vibrate(10);
-    }
-    const parts = ['i', 'n', 'f', 'o'];
-    const p = '/' + parts.join('') + '/';
-    navigate(`${p}${app.slug}`);
-  };
-
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [slug]);
@@ -482,12 +471,12 @@ export default function AppDetails() {
                     )}
                   </div>
                 ) : (
-                  <button 
-                    onClick={handleMoreDetails} 
+                  <Link 
+                    to={`/gateway/${app.slug}`}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all text-sm shadow-md h-[44px]"
                   >
                     <span className="flex items-center gap-1.5 font-bold">Download <ArrowRight className="w-4 h-4" /></span>
-                  </button>
+                  </Link>
                 )}
               </motion.div>
  

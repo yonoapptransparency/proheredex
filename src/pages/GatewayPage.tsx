@@ -22,23 +22,7 @@ export default function GatewayPage() {
   const [progress, setProgress] = useState(0);
   const [verifyInterval, setVerifyInterval] = useState<ReturnType<typeof setInterval> | null>(null);
 
-  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!app?.is_coming_soon || !app?.publish_date) {
-      setTimeRemaining(null);
-      return;
-    }
-    const calculateRemaining = () => {
-      const remaining = new Date(app.publish_date!).getTime() - new Date().getTime();
-      setTimeRemaining(remaining > 0 ? remaining : 0);
-    };
-    calculateRemaining();
-    const interval = setInterval(calculateRemaining, 1000);
-    return () => clearInterval(interval);
-  }, [app?.is_coming_soon, app?.publish_date]);
-
-  const isActuallyComingSoon = app?.is_coming_soon && (timeRemaining === null || timeRemaining > 0);
+  const isActuallyComingSoon = app?.is_coming_soon;
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -242,7 +226,7 @@ export default function GatewayPage() {
     <div className="animate-fade-in select-none pb-20 max-w-[1550px] mx-auto">
       <div className="mb-6 pt-6">
         <Link 
-          to={`/${app.slug}`} 
+          to={`/app/${app.slug}`} 
           className="inline-flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors group"
         >
           <div className="p-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 group-hover:-translate-x-1 transition-transform">
@@ -318,28 +302,6 @@ export default function GatewayPage() {
                   <button disabled className="w-full py-4 px-10 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm text-base font-semibold shrink-0 cursor-not-allowed bg-amber-500/10 text-amber-500 border border-amber-500/20">
                     Coming Soon
                   </button>
-                  {timeRemaining !== null && timeRemaining > 0 && (
-                    <div className="mt-2 flex gap-1 justify-center">
-                      {(() => {
-                        const s = Math.floor(timeRemaining / 1000);
-                        const d = Math.floor(s / 86400);
-                        const h = Math.floor((s % 86400) / 3600);
-                        const m = Math.floor((s % 3600) / 60);
-                        const sec = s % 60;
-                        return [
-                          { label: 'D', value: d.toString().padStart(2, '0') },
-                          { label: 'H', value: h.toString().padStart(2, '0') },
-                          { label: 'M', value: m.toString().padStart(2, '0') },
-                          { label: 'S', value: sec.toString().padStart(2, '0') }
-                        ].map((unit, i) => (
-                          <div key={i} className="flex flex-col items-center bg-zinc-100 dark:bg-zinc-800 rounded px-1.5 py-1 border border-black/5 dark:border-white/5">
-                            <span className="text-xs font-mono font-bold text-zinc-800 dark:text-zinc-200">{unit.value}</span>
-                            <span className="text-[8px] uppercase tracking-widest text-zinc-500">{unit.label}</span>
-                          </div>
-                        ));
-                      })()}
-                    </div>
-                  )}
                 </div>
               ) : (
                 <ClearanceButton appId={app.id} status={app.safety_status as 'Verified' | 'Caution' | 'Unsafe'} />
@@ -485,7 +447,7 @@ export default function GatewayPage() {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {mockApps.filter(a => a.is_new && a.id !== app.id).slice(0, 4).map(discoverApp => (
-            <Link key={discoverApp.id} to={`/${discoverApp.slug}`} className="bg-zinc-50 dark:bg-zinc-800/30 p-6 flex flex-col items-center text-center transition-all border border-black/5 dark:border-white/5 rounded-[24px] hover:border-black/10 dark:hover:border-white/10 group">
+            <Link key={discoverApp.id} to={`/app/${discoverApp.slug}`} className="bg-zinc-50 dark:bg-zinc-800/30 p-6 flex flex-col items-center text-center transition-all border border-black/5 dark:border-white/5 rounded-[24px] hover:border-black/10 dark:hover:border-white/10 group">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[18px] overflow-hidden mb-4 bg-white dark:bg-zinc-900 shadow-sm border border-black/5 dark:border-white/5 group-hover:scale-105 transition-transform">
                  {discoverApp.icon_url && <img src={discoverApp.icon_url} alt="" className="w-full h-full object-cover"/>}
               </div>

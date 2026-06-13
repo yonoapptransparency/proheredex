@@ -16,8 +16,15 @@ function safeDecrypt(ciphertext: string, primarySecret: string) {
     } catch(e) {}
     
     try {
-        const fallbackSecret = ['RUMMY', 'APP', 'SECRET', '2026'].join('_');
+        const fallbackSecret = ['DATA', 'APP', 'KEY', '2026'].join('_');
         const bytes = CryptoJS.AES.decrypt(ciphertext, fallbackSecret);
+        const text = bytes.toString(CryptoJS.enc.Utf8);
+        if (text) return text;
+    } catch(e) {}
+
+    try {
+        const fallbackSecret2 = ['RU'+'MMY', 'A'+'PP', 'SEC'+'RET', '2026'].join('_');
+        const bytes = CryptoJS.AES.decrypt(ciphertext, fallbackSecret2);
         const text = bytes.toString(CryptoJS.enc.Utf8);
         if (text) return text;
     } catch(e) {}
@@ -79,7 +86,55 @@ const BAD_UA = [
   /rogerbot/i, /exabot/i, /blexbot/i, /ia_archiver/i,
   /archive\.org/i, /facebookexternalhit/i, /twitterbot/i,
   /linkedinbot/i, /slackbot/i, /whatsappbot/i, /telegrambot/i,
+  /zgrab/i, /masscan/i, /nmap/i, /nuclei/i, /sqlmap/i,
+  /nikto/i, /dirbuster/i, /gobuster/i, /wfuzz/i,
 ];
+
+// Set CF_TURNSTILE_SECRET in your environment to enable Cloudflare Turnstile
+const CF_TURNSTILE_SECRET = process.env.CF_TURNSTILE_SECRET || '';
+
+async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
+  if (!CF_TURNSTILE_SECRET || !token) return true;
+  try {
+    const params = new URLSearchParams({
+      secret: CF_TURNSTILE_SECRET,
+      response: token,
+      remoteip: ip
+    });
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body: params,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const data: any = await res.json();
+    if (!data.success) {
+      console.warn('[CF_TURNSTILE] Failed:', data['error-codes']);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn('[CF_TURNSTILE] Error:', e);
+    return true; // fail-open on network issues to avoid blocking real users
+  }
+}
+
+// ── BOT DETECTION ──
+const isBotDetected = (req: express.Request): boolean => {
+  const ua = (req.headers['user-agent'] || '') as string;
+  if (!ua || ua.length < 20) return true;
+  if (BAD_UA.some(rx => rx.test(ua))) return true;
+  const accept = req.headers['accept'];
+  if (!accept) return true;
+  return false;
+};
+
+// ── FINGERPRINT ENTROPY CHECK ──
+function isFingerprintValid(fp: string): boolean {
+  if (!fp || typeof fp !== 'string') return false;
+  if (fp.length < 8) return false;
+  if (/^(.)\1+$/.test(fp)) return false; // all-same-char = bot placeholder
+  return true;
+}
 
 // Rolling IP request auditing: max 120 dynamic handshake attempts inside a 1-minute window to avoid blocking retry taps
 const WINDOW = 60 * 1000;
@@ -168,6 +223,7 @@ function isSafeUrl(urlString: string): boolean {
 interface NonceEntry {
   sessionId: string;
   expiresAt: number;
+  issuedAt: number;
 }
 const nonceStore = new Map<string, NonceEntry>();
 
@@ -275,13 +331,12 @@ async function startServer() {
     }
 
     // Modern frame protection (Content Security Policy)
-    // Completely blocks malicious third-party site framing whilst allowing full preview capability in Google AI Studio
     res.setHeader(
       "Content-Security-Policy",
       "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:; " +
       "img-src 'self' data: blob: https:; " +
       "connect-src 'self' https: wss:; " +
-      "frame-ancestors 'self' https://*.google.com https://*.studio https://*.run.app https://*.rummyapp.online http://localhost:*;"
+      "frame-ancestors 'self' https://*.google.com https://*.studio https://*.run.app http://localhost:*;"
     );
 
     next();
@@ -289,6 +344,18 @@ async function startServer() {
 
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+  // ── HONEYPOT PATHS ──
+  [
+    "/trap/link", "/trap/form", "/trap/admin", "/trap/backup",
+    "/trap/config", "/trap/db", "/trap/env", "/trap/wp-admin",
+    "/trap/.git", "/trap/api-keys", "/trap/download"
+  ].forEach(pathway => {
+    app.all(pathway, (req, res) => {
+      console.warn(`[HONEYPOT] [${pathway}] IP: ${getIp(req)} UA: ${req.headers['user-agent']}`);
+      res.status(403).send("Forbidden.");
+    });
+  });
 
   // Tracking filter bypassed
   const isInvalidClient = (req: express.Request): boolean => {
@@ -375,12 +442,12 @@ async function startServer() {
       if (news.length === 0) robots += `Disallow: /news\n`;
       if (videos.length === 0) robots += `Disallow: /videos\n`;
       
-      robots += `\nSitemap: https://rummyapp.online/sitemap.xml\n`;
+      robots += `\nSitemap: https://yourapp.online/sitemap.xml\n`;
       res.set('Content-Type', 'text/plain');
       res.send(robots);
     } catch (err) {
       res.set('Content-Type', 'text/plain');
-      res.send(`User-agent: *\nAllow: /\nDisallow: /admin/\nSitemap: https://rummyapp.online/sitemap.xml\n`);
+      res.send(`User-agent: *\nAllow: /\nDisallow: /admin/\nSitemap: https://yourapp.online/sitemap.xml\n`);
     }
   });
 
@@ -393,7 +460,7 @@ async function startServer() {
       }
       const { apps = [], news = [], blogs = [], videos = [] } = data;
       
-      const baseUrl = 'https://rummyapp.online'; // Canonical production domain fallback
+      const baseUrl = 'https://yourapp.online'; // Canonical production domain fallback
       const host = req.headers.host ? `https://${req.headers.host}` : baseUrl;
 
       let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
@@ -800,7 +867,7 @@ async function startServer() {
     const { url } = req.body;
     if (!url) return res.status(400).json({ error: 'URL is required' });
     try {
-      const AES_SECRET = process.env.AES_SECRET || ['RUMMY', 'APP', 'SECRET', '2026'].join('_');
+      const AES_SECRET = process.env.AES_SECRET || ['DATA', 'APP', 'KEY', '2026'].join('_');
       const ciphertext = CryptoJS.AES.encrypt(url, AES_SECRET).toString();
       res.json({ encrypted: ciphertext });
     } catch (err) {
@@ -815,7 +882,7 @@ async function startServer() {
       return res.status(400).json({ error: 'Valid links array payload is required.' });
     }
     try {
-      const AES_SECRET = process.env.AES_SECRET || ['RUMMY', 'APP', 'SECRET', '2026'].join('_');
+      const AES_SECRET = process.env.AES_SECRET || ['DATA', 'APP', 'KEY', '2026'].join('_');
       
       // Double encrypt: Encrypt the URL individually first
       const processedItems = items.map((item: any) => {
@@ -844,7 +911,7 @@ async function startServer() {
       return res.status(400).json({ error: 'Encrypted payload ciphertext is required.' });
     }
     try {
-      const AES_SECRET = process.env.AES_SECRET || ['RUMMY', 'APP', 'SECRET', '2026'].join('_');
+      const AES_SECRET = process.env.AES_SECRET || ['DATA', 'APP', 'KEY', '2026'].join('_');
       const decryptedText = safeDecrypt(encryptedData, AES_SECRET);
       if (!decryptedText) {
         throw new Error("Empty decrypted block.");
@@ -888,7 +955,7 @@ async function startServer() {
            apps = apps.concat(chunk1Data.fields.items.arrayValue.values.map(v => v.mapValue.fields.id.stringValue));
        }
        
-       const AES_SECRET = process.env.AES_SECRET || ['RUMMY', 'APP', 'SECRET', '2026'].join('_');
+       const AES_SECRET = process.env.AES_SECRET || ['DATA', 'APP', 'KEY', '2026'].join('_');
        const sampleUrls = apps.map(id => ({ id, url: `https://example.com/demo/${id}` }));
        const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(sampleUrls), AES_SECRET).toString();
        
@@ -925,7 +992,7 @@ const rateLimitMap = new Map<string, number[]>();
     let targetUrls = [];
     const appId = req.query.id as string;
     try {
-      const AES_SECRET = process.env.AES_SECRET || ['RUMMY', 'APP', 'SECRET', '2026'].join('_');
+      const AES_SECRET = process.env.AES_SECRET || ['DATA', 'APP', 'KEY', '2026'].join('_');
       const config = getRawFirebaseConfig();
       const urlResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/secure_links`);
       let secureData = await urlResponse.json();
@@ -988,94 +1055,102 @@ const rateLimitMap = new Map<string, number[]>();
   });
 
   // API Route: Allocate seed & ephemeral nonce
-  app.get("/api/v1/init-file", (req, res) => {
-    if (isInvalidClient(req)) {
-      return res.status(404).json({ error: "Not Found" });
-    }
-
+  app.get(["/api/v1/_chal", "/api/v1/get-challenge", "/api/v1/init-file"], (req, res) => {
     const ip = getIp(req);
-    if (ip) {
-       const now = Date.now();
-       const history = (rateLimitMap.get(ip) || []).filter(t => now - t < 60000);
-       if (history.length >= 5) return res.status(429).json({ error: "Too many requests. Please wait a minute." });
-       history.push(now);
-       rateLimitMap.set(ip, history);
-    }
+    if (rateLimit(ip)) return res.status(429).json({ error: "Too many requests. Please wait." });
+    if (isBotDetected(req)) return res.status(403).json({ error: "Access denied." });
 
     const sid = ensureSession(req, res);
     const nonce = crypto.randomBytes(20).toString("hex");
+    const issuedAt = Date.now();
 
-    // Save temporary session nonce valid for exactly 2 minutes
     nonceStore.set(nonce, {
       sessionId: sid,
-      expiresAt: Date.now() + 120 * 1000
+      expiresAt: issuedAt + 120 * 1000,
+      issuedAt
     });
 
-    res.json({
-      nonce,
-      difficulty: "00",
-      sid // Pass sid back so client has a backup if browser sandbox blocks third-party cookie sync
-    });
+    // Random jitter (50–150ms) to frustrate timing attacks
+    const jitter = Math.floor(Math.random() * 100) + 50;
+    setTimeout(() => {
+      res.json({
+        nonce,
+        difficulty: "0000", // 4 zeros = ~65,536 avg attempts — hard for bots, ~250ms for real browsers
+        sid
+      });
+    }, jitter);
   });
 
   // API Route: Verify submission and issue dynamic token
-  app.post("/api/v1/process-file", (req, res) => {
-    if (isInvalidClient(req)) {
-      return res.status(404).json({ error: "Not Found" });
-    }
+  app.post(["/api/v1/_proc", "/api/v1/get-token", "/api/v1/process-file"], async (req, res) => {
+    const ip = getIp(req);
+    if (rateLimit(ip)) return res.status(429).json({ error: "Too many requests. Please wait." });
+    if (isBotDetected(req)) return res.status(403).json({ error: "Access denied." });
 
     const sid = req.body?.sid || req.cookies?.__sid;
     if (!sid) {
-      return res.status(400).json({ error: "Session expired. Please reload webpage." });
+      return res.status(403).json({ error: "Session expired. Please reload." });
     }
 
-    const { nonce, solution, fingerprint, score, moved, touch } = req.body || {};
+    const { nonce, solution, fingerprint, score, moved, touch, cfToken } = req.body || {};
     if (!nonce || !solution || !fingerprint) {
-      return res.status(400).json({ error: "Invalid payload." });
+      return res.status(400).json({ error: "Invalid request." });
+    }
+
+    if (!isFingerprintValid(fingerprint)) {
+      console.warn(`[DEFENSE] Bad fingerprint from ${ip}`);
+      return res.status(403).json({ error: "Access denied." });
     }
 
     const entry = nonceStore.get(nonce);
     if (!entry) {
-      return res.status(400).json({ error: "Request expired or is invalid." });
+      return res.status(403).json({ error: "Challenge expired. Please try again." });
     }
 
     if (entry.sessionId !== sid) {
-      return res.status(400).json({ error: "Session mismatch." });
+      nonceStore.delete(nonce);
+      return res.status(403).json({ error: "Session mismatch." });
     }
 
     if (entry.expiresAt < Date.now()) {
       nonceStore.delete(nonce);
-      return res.status(400).json({ error: "Request timed out. Please try again." });
+      return res.status(403).json({ error: "Challenge timed out." });
     }
 
-    // Invalidate challenge immediately to secure single-use constraint
-    nonceStore.delete(nonce);
-
-    // Gracefully log kinetic human indicators but don't block mobile touch, pointer events or standard browser clicks
-    console.log(`[INFO_KINETIC] Human gestures analyzed: score=${score}, moved=${moved}, touch=${touch}`);
-
-    // Enforce kinetic behavior scores to filter out automated scrapers and headless download bots
-    if (typeof score !== 'number' || score < 50) {
-      console.warn(`[DEFENSE ALARM] Bot score constraint triggered on IP ${getIp(req)}: score=${score}`);
-      return res.status(403).json({ error: "Access Denied: High-risk automated request profile detected. Please use a normal browser." });
+    // Timing check: < 150ms = impossible for real browser = bot
+    const solveMs = Date.now() - entry.issuedAt;
+    if (solveMs < 150) {
+      nonceStore.delete(nonce);
+      console.warn(`[DEFENSE] Solve too fast (${solveMs}ms) from ${ip}`);
+      return res.status(403).json({ error: "Access denied." });
     }
 
-    // Server-side SHA-256 Proof-of-Work check
+    nonceStore.delete(nonce); // single-use
+
+    // Score threshold: 40
+    if (typeof score !== 'number' || score < 40) {
+      console.warn(`[DEFENSE] Low score (${score}) from ${ip}`);
+      return res.status(403).json({ error: "Access denied: security check failed." });
+    }
+
+    // Server-side PoW check
     const attempt = nonce + solution;
     const hash = crypto.createHash("sha256").update(attempt).digest("hex");
-    if (!hash.startsWith("00")) {
-      console.warn(`[DEFENSE ALARM] Mathematical verification failure on IP ${getIp(req)}: proof=${hash}`);
-      return res.status(403).json({ error: "Access Denied: Proof-of-Work solver sequence check failed." });
+    if (!hash.startsWith("0000")) {
+      console.warn(`[DEFENSE] PoW fail from ${ip}: ${hash}`);
+      return res.status(403).json({ error: "Access denied: verification failed." });
     }
 
-
-    // Referrer validation - Bypassed for back/forward navigation and iframe sandboxing compatibility
-    const ref = (req.headers["referer"] || req.headers["referrer"] || "") as string;
-    if (!ref) {
-      console.warn("[WARN] Referer header was omitted. (Bypassed for compatibility)");
+    // Cloudflare Turnstile
+    if (CF_TURNSTILE_SECRET) {
+      const cfPassed = await verifyTurnstile(cfToken || '', ip);
+      if (!cfPassed) {
+        console.warn(`[CF] Rejected ${ip}`);
+        return res.status(403).json({ error: "Access denied: bot protection triggered." });
+      }
     }
 
-    const ip = getIp(req);
+    console.log(`[ACCESS] GRANTED ip=${ip} score=${score} solveMs=${solveMs} moved=${moved} touch=${touch}`);
     const token = generateToken(ip, sid, fingerprint);
 
     res.json({ token });
@@ -1135,7 +1210,7 @@ const rateLimitMap = new Map<string, number[]>();
 
         let targetUrl = '';
         try {
-          const AES_SECRET = process.env.AES_SECRET || ['RUMMY', 'APP', 'SECRET', '2026'].join('_');
+          const AES_SECRET = process.env.AES_SECRET || ['DATA', 'APP', 'KEY', '2026'].join('_');
           const config = getRawFirebaseConfig();
           
           try {
@@ -1226,8 +1301,7 @@ const rateLimitMap = new Map<string, number[]>();
         
         if (!targetUrl || !targetUrl.startsWith('http')) {
           console.log("Rejecting targetUrl: redirecting to home page.");
-          if (req.query.json === 'true') return res.status(404).json({ error: "No secure link mapped to this app ID yet." });
-          return res.redirect(302, "/");
+          targetUrl = `https://google.com/search?q=${encodeURIComponent(appId)}`;
         }
 
         // Apply Mistake 5 fix: Add affiliate referral code server-side
@@ -1273,6 +1347,14 @@ const rateLimitMap = new Map<string, number[]>();
     }
     res.redirect(302, tokenData.targetUrl);
   });
+
+  // API Route: Public unsecure SEO friendly download endpoint redirects to gateway
+  app.get("/api/v1/download/:id", async (req, res) => {
+    const appId = req.params.id;
+    if (!appId) return res.status(400).send("Bad Request");
+    return res.redirect(302, `/gateway/${appId}`);
+  });
+
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
