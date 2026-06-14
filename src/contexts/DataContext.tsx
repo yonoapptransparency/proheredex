@@ -28,7 +28,7 @@ interface FirestoreErrorInfo {
 
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  const user = auth.currentUser;
+  const user = auth?.currentUser;
   const userEmail = user?.email || 'Anonymous/Not logged in';
   const userId = user?.uid || 'No UID';
   
@@ -46,7 +46,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   console.error('Firestore Error Details: ', errInfo);
   
   if (errorMessage.includes('permissions') || errorMessage.includes('permission-denied')) {
-    const dbId = (auth.app.options as any).projectId;
+    const dbId = (auth?.app?.options as any)?.projectId;
     const fullMsg = `Permission Denied!
 Path: ${path}
 Op: ${operationType}
@@ -283,6 +283,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // Load GitHub config on admin session auth via secure server-side lookup
   useEffect(() => {
+    if (!auth) return;
     const unsubAuth = auth.onAuthStateChanged(async (currentUser) => {
       if (currentUser) {
         let isAuthorized = false;

@@ -1345,7 +1345,7 @@ export default function AdminDashboard() {
   const syncSecureVault = async () => {
     try {
       const items = Array.from(cachedSecureMapRef.current.entries()).map(([k, v]) => ({ id: k, url: v }));
-      const idToken = await auth.currentUser?.getIdToken();
+      const idToken = await auth?.currentUser?.getIdToken();
       const res = await fetch('/api/v1/admin/encrypt-links', {
         method: 'POST',
         headers: {
@@ -1424,6 +1424,10 @@ export default function AdminDashboard() {
        localStorage.removeItem('_admin_session_bypass_token');
     }
 
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -1498,7 +1502,7 @@ export default function AdminDashboard() {
             if (snapData) {
               if (snapData.encryptedData) {
                 try {
-                  const idToken = await auth.currentUser?.getIdToken();
+                  const idToken = await auth?.currentUser?.getIdToken();
                   const res = await fetch('/api/v1/admin/decrypt-links', {
                     method: 'POST',
                     headers: {
@@ -1757,7 +1761,7 @@ export default function AdminDashboard() {
       const inputUrl = formData.get('more_information_url') as string;
       if (inputUrl && !inputUrl.startsWith('U2FsdGVkX1')) {
          try {
-            const idToken = await auth.currentUser?.getIdToken();
+            const idToken = await auth?.currentUser?.getIdToken();
             const res = await fetch('/api/v1/admin/encrypt', {
                method: 'POST',
                headers: {

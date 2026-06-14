@@ -20,13 +20,13 @@ function fallbackFirebaseConfig(): Plugin {
         const filePath = path.resolve(__dirname, 'firebase-applet-config.json');
         if (!fs.existsSync(filePath)) {
           return `export default {
-            apiKey: import.meta.env?.VITE_FIREBASE_API_KEY || "",
-            authDomain: import.meta.env?.VITE_FIREBASE_AUTH_DOMAIN || "",
-            projectId: import.meta.env?.VITE_FIREBASE_PROJECT_ID || "",
-            storageBucket: import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET || "",
-            messagingSenderId: import.meta.env?.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
-            appId: import.meta.env?.VITE_FIREBASE_APP_ID || "",
-            firestoreDatabaseId: import.meta.env?.VITE_FIREBASE_DATABASE_ID || "(default)"
+            apiKey: import.meta.env?.VITE_FIREBASE_API_KEY || "AIzaSyBey9sUbeWlrcXS2kl4ewOzkTy4arg03Ok",
+            authDomain: import.meta.env?.VITE_FIREBASE_AUTH_DOMAIN || "gen-lang-client-0825832493.firebaseapp.com",
+            projectId: import.meta.env?.VITE_FIREBASE_PROJECT_ID || "gen-lang-client-0825832493",
+            storageBucket: import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET || "gen-lang-client-0825832493.firebasestorage.app",
+            messagingSenderId: import.meta.env?.VITE_FIREBASE_MESSAGING_SENDER_ID || "103973989874",
+            appId: import.meta.env?.VITE_FIREBASE_APP_ID || "1:103973989874:web:733a6afd8e837224900f6b",
+            firestoreDatabaseId: import.meta.env?.VITE_FIREBASE_DATABASE_ID || "ai-studio-886315a4-8b9f-4ff6-8986-a90ad172210a"
           };`
         }
       }
