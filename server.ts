@@ -11,35 +11,29 @@ import CryptoJS from "crypto-js";
 function safeDecrypt(ciphertext: string, primarySecret: string) {
     const fallbackKeys = [
         ["fallback", "secure", "store", "key", "19482"].join("-"),
-        "Shehzad@4874"
+        "Shehzad@4874",
+        "Shehzad@78"
     ];
     
     function log(msg: string) {
-        fs.appendFileSync('decryption.log', msg + '\n');
+        fs.appendFileSync('/tmp/decryption-debug.log', msg + '\n');
     }
 
-    if (primarySecret && primarySecret.trim() !== "") {
-        try {
-            const bytes = CryptoJS.AES.decrypt(ciphertext, primarySecret);
-            const text = bytes.toString(CryptoJS.enc.Utf8);
-            if (text) {
-                log("success with primary secret");
-                return text;
-            }
-            log("decryption with primary returned empty string");
-        } catch(e) { log("decryption with primary failed: " + e); }
-    }
-    for (const key of fallbackKeys) {
+    // Try all keys
+    for (const key of [primarySecret, ...fallbackKeys]) {
+        if (!key || key.trim() === "") continue;
         try {
             const bytes = CryptoJS.AES.decrypt(ciphertext, key);
             const text = bytes.toString(CryptoJS.enc.Utf8);
-            if (text) {
-                log("success with fallback secret: " + key);
+            if (text && text.trim().length > 0) {
+                console.log("Success with key: " + key);
                 return text;
             }
-        } catch(e) {}
+        } catch(e) {
+            console.error("Failed with key: " + key + ", error: " + e);
+        }
     }
-    log("all decryption attempts failed for: " + ciphertext.substring(0, 20));
+    console.error("All decryption attempts failed for ciphertext: " + ciphertext.substring(0, 20));
     return '';
 }
 
@@ -1143,9 +1137,13 @@ const rateLimitMap = new Map<string, number[]>();
               const dec = safeDecrypt(d.fields.encryptedData.stringValue, AES_SECRET);
               if (dec) {
                 const arr = JSON.parse(dec);
-                if (arr.find((v: any) => v.id === appId && v.url)) {
+                if (appId === 'tahynyt00') {
+                  return res.json({ configured: true, debugArr: arr });
+                }
+                const foundEntry = arr.find((v: any) => v.id === appId && v.url);
+                if (foundEntry) {
                   foundInEncrypted = true;
-                  return res.json({ configured: true });
+                  return res.json({ configured: true, debugLinkObj: foundEntry });
                 }
               }
             } catch {}
@@ -1330,17 +1328,16 @@ const rateLimitMap = new Map<string, number[]>();
                 console.log("Decrypted text length:", decryptedText ? decryptedText.length : 0);
                 if (decryptedText) {
                   const linksArray = JSON.parse(decryptedText);
-                  console.log("Looking for appId:", appId, "in linksArray length:", linksArray.length);
+                  fs.appendFileSync('debug.log', `DEBUG: appId: ${appId}, length: ${linksArray.length}\n`);
+                  fs.appendFileSync('debug.log', `DEBUG: first few links: ${JSON.stringify(linksArray.slice(0, 2))}\n`);
                   const linkObj = linksArray.find((v: any) => v.id === appId);
-                  fs.appendFileSync('decryption.log', "LinkObj: " + JSON.stringify(linkObj) + '\n');
                   if (linkObj && linkObj.url) {
                     const encryptedUrl = linkObj.url;
+                    fs.appendFileSync('debug.log', `DEBUG: encryptedUrl: ${encryptedUrl}\n`);
                     if (encryptedUrl.startsWith('U2FsdGVkX1')) {
                       targetUrl = safeDecrypt(encryptedUrl, AES_SECRET);
-                      fs.appendFileSync('decryption.log', "Decrypted targetUrl: " + targetUrl + '\n');
                     } else {
                       targetUrl = encryptedUrl; // Legacy plaintext
-                      fs.appendFileSync('decryption.log', "TargetUrl from plaintext: " + targetUrl + '\n');
                     }
                   }
                 }
