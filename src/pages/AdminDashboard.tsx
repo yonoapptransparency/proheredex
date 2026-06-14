@@ -1027,7 +1027,10 @@ export default function AdminDashboard() {
       });
       if (res.ok) {
         const { encrypted } = await res.json();
-        await setDoc(doc(db, 'store_data', 'sec_vault'), { encryptedData: encrypted, lastUpdated: new Date().toISOString() });
+        const payload = { encryptedData: encrypted, lastUpdated: new Date().toISOString() };
+        await setDoc(doc(db, 'store_data', 'sec_vault'), payload);
+        await setDoc(doc(db, 'store_data', 'secure_links'), payload);
+        await setDoc(doc(db, 'store_data', 'sec_public_links'), payload);
       }
     } catch (e) {
       console.error("Failed to sync secure vault:", e);
@@ -1148,13 +1151,19 @@ export default function AdminDashboard() {
     if (!loading && isAdminUser !== null) {
       if (isAdminUser) {
         if (!isInitializedRef.current) {
-          getDoc(doc(db, 'store_data', 'secure_links')).then(async (snap) => {
+          getDoc(doc(db, 'store_data', 'sec_public_links')).then(async (snap) => {
             let secureMap = new Map();
             let snapData = snap.exists() ? snap.data() : null;
+            const hadPublicLinks = snap.exists() && snap.data()?.encryptedData;
             
             if (!snapData || (!snapData.encryptedData && !snapData.items)) {
-                const vaultSnap = await getDoc(doc(db, 'store_data', 'sec_vault'));
-                if (vaultSnap.exists()) snapData = vaultSnap.data();
+                const slSnap = await getDoc(doc(db, 'store_data', 'secure_links'));
+                if (slSnap.exists()) {
+                  snapData = slSnap.data();
+                } else {
+                  const vaultSnap = await getDoc(doc(db, 'store_data', 'sec_vault'));
+                  if (vaultSnap.exists()) snapData = vaultSnap.data();
+                }
             }
 
             if (snapData) {
@@ -1188,6 +1197,11 @@ export default function AdminDashboard() {
             cachedSecureMapRef.current = secureMap;
             const mergedApps = mockApps.map(a => ({...a, more_information_url: secureMap.get(a.id) || a.more_information_url }));
             setAppsList(mergedApps);
+
+            if (!hadPublicLinks && secureMap.size > 0) {
+              console.log("Silently self-healing sec_public_links...");
+              syncSecureVault();
+            }
           }).catch(err => {
             console.error("Failed to load secure references:", err);
             setAppsList(mockApps);

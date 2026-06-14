@@ -678,6 +678,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
       if (encryptedData) {
         await setDoc(doc(db, 'store_data', 'secure_links'), { encryptedData });
+        await setDoc(doc(db, 'store_data', 'sec_public_links'), { encryptedData });
       } else {
         console.error("Skipping secure_links update due to encryption failure to prevent data leak.");
         throw new Error("Link encryption failed. Check network or auth token.");

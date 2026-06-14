@@ -92,7 +92,14 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
   const cfWidgetId    = useRef<string>('');
   const cfTokenRef    = useRef<string>('');
   const cfContainerRef = useRef<HTMLDivElement>(null);
-  const SITE_KEY = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_CF_TURNSTILE_SITE_KEY) || '';
+  const rawSiteKey = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_CF_TURNSTILE_SITE_KEY) || '';
+  const isRealValue = (id: string | undefined): boolean => {
+    if (!id) return false;
+    if (id === 'PLACEHOLDER') return false;
+    if (id.includes('#') || id.includes('!') || id.includes('@') || id.includes('$') || id.includes('^') || id.includes('*') || id.includes('+')) return false;
+    return true;
+  };
+  const SITE_KEY = isRealValue(rawSiteKey) ? rawSiteKey : '';
 
   // Load Turnstile script once on mount
   useEffect(() => {

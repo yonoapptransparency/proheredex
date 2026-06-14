@@ -85,7 +85,13 @@ const BAD_UA = [
 ];
 
 // Set CF_TURNSTILE_SECRET in your environment to enable Cloudflare Turnstile
-const CF_TURNSTILE_SECRET = process.env.CF_TURNSTILE_SECRET || '';
+const rawTurnstileSecret = process.env.CF_TURNSTILE_SECRET || '';
+const isRealValueForSecret = (val: string): boolean => {
+  if (!val || val === 'PLACEHOLDER') return false;
+  if (val.includes('#') || val.includes('!') || val.includes('@') || val.includes('$') || val.includes('^') || val.includes('*') || val.includes('+')) return false;
+  return true;
+};
+const CF_TURNSTILE_SECRET = isRealValueForSecret(rawTurnstileSecret) ? rawTurnstileSecret : '';
 
 async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
   if (!CF_TURNSTILE_SECRET || !token) return true;
@@ -298,6 +304,21 @@ function verifyToken(token: string, ip: string, sessionId: string, fingerprint: 
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT || 3000;
+
+  // File Logging Middleware for Diagnostics in Sandbox Environment
+  app.use((req, res, next) => {
+    const startTime = Date.now();
+    res.on('finish', () => {
+      const logFile = path.join(process.cwd(), 'server_requests.log');
+      const duration = Date.now() - startTime;
+      const contentType = res.getHeader('content-type') || 'unknown';
+      const logLine = `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - Status: ${res.statusCode} - Duration: ${duration}ms - Type: ${contentType} - IP: ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - UA: ${req.headers['user-agent']} - Accept: ${req.headers['accept']}\n`;
+      try {
+        fs.appendFileSync(logFile, logLine, 'utf8');
+      } catch (e) {}
+    });
+    next();
+  });
 
   // Compression & cookieParser initialization
   app.use(compression());
@@ -988,12 +1009,21 @@ const rateLimitMap = new Map<string, number[]>();
     try {
       const AES_SECRET = process.env.AES_SECRET || '';
       const config = getRawFirebaseConfig();
-      const urlResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/secure_links`);
+      const urlResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/sec_public_links?key=${config.apiKey}`);
       let secureData = await urlResponse.json();
-      targetUrls.push({step: "secure_links", error: secureData.error});
+      targetUrls.push({step: "sec_public_links", error: secureData.error});
       
       if (secureData.error || (!secureData.fields?.encryptedData && !secureData.fields?.items)) {
-          const vaultRes = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/sec_vault`);
+          const slResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/secure_links?key=${config.apiKey}`);
+          const slData = await slResponse.json();
+          targetUrls.push({step: "secure_links", error: slData.error});
+          if (!slData.error) {
+              secureData = slData;
+          }
+      }
+
+      if (secureData.error || (!secureData.fields?.encryptedData && !secureData.fields?.items)) {
+          const vaultRes = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/sec_vault?key=${config.apiKey}`);
           const vaultData = await vaultRes.json();
           targetUrls.push({step: "sec_vault", error: vaultData.error});
           if (!vaultData.error) {
@@ -1211,12 +1241,22 @@ const rateLimitMap = new Map<string, number[]>();
           }
           
           try {
-            const urlResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/secure_links`);
+            // First try sec_public_links, which is public-readable on all projects & databases
+            const urlResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/sec_public_links?key=${config.apiKey}`);
             let secureData = await urlResponse.json();
             
-            // Fallback to sec_vault if secure_links is empty
+            // Fallback to secure_links
             if (secureData.error || (!secureData.fields?.encryptedData && !secureData.fields?.items)) {
-                const vaultRes = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/sec_vault`);
+                const slResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/secure_links?key=${config.apiKey}`);
+                const slData = await slResponse.json();
+                if (!slData.error) {
+                    secureData = slData;
+                }
+            }
+            
+            // Fallback to sec_vault
+            if (secureData.error || (!secureData.fields?.encryptedData && !secureData.fields?.items)) {
+                const vaultRes = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/sec_vault?key=${config.apiKey}`);
                 const vaultData = await vaultRes.json();
                 if (!vaultData.error) {
                     secureData = vaultData;
@@ -1434,6 +1474,23 @@ const rateLimitMap = new Map<string, number[]>();
       }
     });
   }
+
+  // Global Express Error Handler
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error(`[EXPRESS GLOBAL ERROR] ${req.method} ${req.originalUrl}:`, err);
+    try {
+      const logFile = path.join(process.cwd(), 'server_requests.log');
+      fs.appendFileSync(logFile, `[${new Date().toISOString()}] ERROR in ${req.method} ${req.originalUrl}: ${err.message || err}\n`, 'utf8');
+    } catch (e) {}
+
+    if (res.headersSent) {
+      return next(err);
+    }
+    if (req.originalUrl.startsWith('/api/')) {
+      return res.status(500).json({ error: err.message || "Internal server error" });
+    }
+    res.status(500).send("<h1>500 Internal Server Error</h1><p>An unexpected error occurred.</p>");
+  });
 
   app.listen(PORT as number, "0.0.0.0", () => {
     console.log(`Server running on port ${PORT}`);

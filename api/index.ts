@@ -91,7 +91,13 @@ const BAD_UA = [
 ];
 
 // Set CF_TURNSTILE_SECRET in your environment to enable Cloudflare Turnstile
-const CF_TURNSTILE_SECRET = process.env.CF_TURNSTILE_SECRET || '';
+const rawTurnstileSecret = process.env.CF_TURNSTILE_SECRET || '';
+const isRealValueForSecret = (val: string): boolean => {
+  if (!val || val === 'PLACEHOLDER') return false;
+  if (val.includes('#') || val.includes('!') || val.includes('@') || val.includes('$') || val.includes('^') || val.includes('*') || val.includes('+')) return false;
+  return true;
+};
+const CF_TURNSTILE_SECRET = isRealValueForSecret(rawTurnstileSecret) ? rawTurnstileSecret : '';
 
 async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
   if (!CF_TURNSTILE_SECRET || !token) return true;
@@ -447,12 +453,22 @@ app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], async (req, res) => 
           }
           
           try {
-            const urlResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/secure_links`);
+            // First try sec_public_links, which is public-readable on all projects & databases
+            const urlResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/sec_public_links?key=${config.apiKey}`);
             let secureData = await urlResponse.json();
             
-            // Fallback to sec_vault if secure_links is empty
+            // Fallback to secure_links
             if (secureData.error || (!secureData.fields?.encryptedData && !secureData.fields?.items)) {
-                const vaultRes = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/sec_vault`);
+                const slResponse = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/secure_links?key=${config.apiKey}`);
+                const slData = await slResponse.json();
+                if (!slData.error) {
+                    secureData = slData;
+                }
+            }
+            
+            // Fallback to sec_vault
+            if (secureData.error || (!secureData.fields?.encryptedData && !secureData.fields?.items)) {
+                const vaultRes = await fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/sec_vault?key=${config.apiKey}`);
                 const vaultData = await vaultRes.json();
                 if (!vaultData.error) {
                     secureData = vaultData;
