@@ -1258,6 +1258,54 @@ const rateLimitMap = new Map<string, number[]>();
     }
   });
 
+  // API Route: Report missing link to admin
+  app.post("/api/v1/report-missing", async (req, res) => {
+    const { appId } = req.body;
+    if (!appId) {
+      return res.status(400).json({ error: "Missing App ID parameter." });
+    }
+    try {
+      const config = getRawFirebaseConfig();
+      if (!config) {
+        return res.status(500).json({ error: "Firebase is not configured." });
+      }
+      const db = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents`;
+      const apiSuffix = config.apiKey ? `?key=${config.apiKey}` : '';
+
+      // Save as a specialized review with "missing_link_report" source to meet Firestore security rules
+      const reportId = `report_${appId.replace(/[^a-zA-Z0-9_\-]/g, '')}_${Date.now()}`.substring(0, 120);
+      const storeResponse = await fetch(`${db}/reviews/${reportId}${apiSuffix}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          fields: {
+            app_id: { stringValue: appId },
+            username: { stringValue: "Anonymous Reporter" },
+            rating: { doubleValue: 1.0 },
+            comment: { stringValue: `MISSING_LINK_REPORT: Download link not available for app ${appId}.` },
+            created_at: { stringValue: new Date().toISOString() },
+            helpful_count: { integerValue: 0 },
+            is_approved: { booleanValue: false },
+            source: { stringValue: "missing_link_report" }
+          }
+        })
+      });
+
+      const storeData = await storeResponse.json();
+      if (storeData.error) {
+        console.error('[report-missing] Firestore error:', storeData.error);
+        return res.status(storeData.error.code || 500).json({ error: storeData.error.message || "Failed to register report." });
+      }
+
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.error('[report-missing] Server exception:', err);
+      return res.status(500).json({ error: err.message || "Internal server error during logging." });
+    }
+  });
+
   // API Route: Process temporary dynamic download token
   app.get("/api/v1/file-payload", async (req, res) => {
     // Note: Checking is already completed on the upstream post endpoints (/api/v1/process-file)

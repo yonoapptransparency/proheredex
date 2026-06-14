@@ -79,6 +79,7 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
   const [elapsedMs, setElapsedMs] = useState(0);
   const [pageLoadTime] = useState(() => Date.now());
   const [linkConfigured, setLinkConfigured] = useState<boolean | null>(null);
+  const [reportingStatus, setReportingStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
 
   // Behavioral tracking
   const mouseMoved  = useRef(false);
@@ -223,11 +224,35 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
     setErrorMsg('');
     setTokenCountdown(600);
     setElapsedMs(0);
+    setReportingStatus('idle');
     cfTokenRef.current = '';
     if (cfWidgetId.current && window.turnstile) {
       try { window.turnstile.reset(cfWidgetId.current); } catch {}
     }
   }
+
+  const handleReportMissing = async () => {
+    if (reportingStatus === 'submitting' || reportingStatus === 'success') return;
+    setReportingStatus('submitting');
+    try {
+      const response = await fetch('/api/v1/report-missing', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ appId })
+      });
+      const data = await response.json();
+      if (response.ok && !data.error) {
+        setReportingStatus('success');
+      } else {
+        setReportingStatus('error');
+      }
+    } catch {
+      setReportingStatus('error');
+    }
+  };
 
   const playSoftClick = () => {
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
@@ -530,6 +555,45 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
             The download link for this app has not been set up yet.<br/>
             Please check back later or contact support.
           </p>
+
+          {reportingStatus === 'idle' && (
+            <button
+              onClick={handleReportMissing}
+              className="mt-2.5 px-4 py-2 text-xs font-semibold text-zinc-600 dark:text-zinc-300 hover:text-blue-600 dark:hover:text-blue-400 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 border border-zinc-200 dark:border-zinc-700 rounded-xl transition-all duration-200 flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+            >
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+              <span>Notify Customer Support</span>
+            </button>
+          )}
+
+          {reportingStatus === 'submitting' && (
+            <button
+              disabled
+              className="mt-2.5 px-4 py-2 text-xs font-semibold text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/60 rounded-xl flex items-center gap-1.5 cursor-not-allowed select-none"
+            >
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
+              <span>Contacting Support...</span>
+            </button>
+          )}
+
+          {reportingStatus === 'success' && (
+            <div className="mt-2.5 px-4 py-2 text-xs font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-xl flex items-center gap-1.5 select-none">
+              <CheckCircle2 className="w-3.5 h-3.5 text-green-500 animate-pulse" />
+              <span>Support team notified successfully!</span>
+            </div>
+          )}
+
+          {reportingStatus === 'error' && (
+            <div className="flex flex-col items-center gap-1.5 mt-2">
+              <p className="text-[10px] text-red-500 font-semibold">Failed to send report. Try again?</p>
+              <button
+                onClick={handleReportMissing}
+                className="px-4 py-1.5 text-xs font-semibold text-zinc-600 hover:text-blue-600 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-xl transition-all shadow-sm active:scale-95"
+              >
+                <span>Retry Notification</span>
+              </button>
+            </div>
+          )}
         </div>
       ) : linkConfigured === null ? (
         <div className="w-full sm:w-96 flex items-center justify-center py-4">

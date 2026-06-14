@@ -72,5 +72,10 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && isValidId(userId) && request.auth.uid == userId;
     }
+
+    match /missing_link_reports/{reportId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
   }
 }

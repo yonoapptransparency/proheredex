@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { getAdminPath } from '../lib/utils';
-import { LayoutDashboard, Users, FileText, Settings, ShieldAlert, Shield, LogOut, Save, Upload, Type, Link as LinkIcon, ToggleLeft, Layers, Newspaper, Plus, Trash2, Video as VideoIcon, Github, GitBranch, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Settings, ShieldAlert, Shield, LogOut, Save, Upload, Type, Link as LinkIcon, ToggleLeft, Layers, Newspaper, Plus, Trash2, Video as VideoIcon, Github, GitBranch, RefreshCw, CheckCircle2, AlertTriangle, Search, MessageSquare, CheckSquare } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { db, auth } from '../lib/firebase';
 import { AppConfig, GlobalSettings, NewsItem, BlogPost, VideoItem } from '../lib/staticData';
 
 import { signOut, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
 import { generateStaticDataFileCode } from '../lib/githubSync';
 
 function FaqEditor({ initialFaqs }: { initialFaqs: {question: string, answer: string}[] }) {
@@ -977,6 +977,335 @@ const VideosTab = React.memo(({ videosList, handleAddVideo, handleDeleteVideo, h
   </div>
 ));
 
+interface AdminReview {
+  id: string;
+  app_id: string;
+  username: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  helpful_count: number;
+  is_approved: boolean;
+  source?: string;
+}
+
+const ReviewsModerationTab = ({ db }: { db: any }) => {
+  const [items, setItems] = useState<AdminReview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actioning, setActioning] = useState<string | null>(null);
+  const [activeSubTab, setActiveSubTab] = useState<'all' | 'tickets' | 'reviews'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const fetchModerationItems = async () => {
+    setLoading(true);
+    try {
+      const snap = await getDocs(collection(db, 'reviews'));
+      const list: AdminReview[] = [];
+      snap.forEach((docSnap) => {
+        const data = docSnap.data();
+        list.push({
+          id: docSnap.id,
+          app_id: data.app_id || '',
+          username: data.username || '',
+          rating: Number(data.rating || 0),
+          comment: data.comment || '',
+          created_at: data.created_at || '',
+          helpful_count: Number(data.helpful_count || 0),
+          is_approved: !!data.is_approved,
+          source: data.source || '',
+        });
+      });
+      // Sort by created_at desc
+      list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setItems(list);
+    } catch (err) {
+      console.error("Error loading reviews for moderation:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchModerationItems();
+  }, [db]);
+
+  const handleApprove = async (id: string) => {
+    setActioning(id);
+    try {
+      await updateDoc(doc(db, 'reviews', id), { is_approved: true });
+      setItems(items.map(item => item.id === id ? { ...item, is_approved: true } : item));
+    } catch (err) {
+      console.error("Failed to approve review:", err);
+    } finally {
+      setActioning(null);
+    }
+  };
+
+  const handleDelete = async (id: string, isReport: boolean) => {
+    const confirmationMsg = isReport 
+      ? "Resolve and permanently close this support ticket? This confirms the application download URL has been updated."
+      : "Permanently delete this user review?";
+    
+    if (!confirm(confirmationMsg)) return;
+    setActioning(id);
+    try {
+      await deleteDoc(doc(db, 'reviews', id));
+      setItems(items.filter(item => item.id !== id));
+    } catch (err) {
+      console.error("Failed to delete review:", err);
+    } finally {
+      setActioning(null);
+    }
+  };
+
+  const reports = items.filter(item => item.source === 'missing_link_report');
+  const reviews = items.filter(item => item.source !== 'missing_link_report');
+
+  const pendingReviewsCount = reviews.filter(r => !r.is_approved).length;
+
+  const filteredItems = items.filter(item => {
+    if (activeSubTab === 'tickets' && item.source !== 'missing_link_report') return false;
+    if (activeSubTab === 'reviews' && item.source === 'missing_link_report') return false;
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchApp = item.app_id.toLowerCase().includes(query);
+      const matchComment = item.comment.toLowerCase().includes(query);
+      const matchUser = item.username.toLowerCase().includes(query);
+      return matchApp || matchComment || matchUser;
+    }
+
+    return true;
+  });
+
+  return (
+    <div className="animate-fade-in space-y-8">
+      {/* Top Title Bar */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-2 border-black/5 dark:border-white/5 pb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-[10px] uppercase tracking-[0.25em] font-black text-slate-400 dark:text-zinc-500 font-mono">Live Support Triage</span>
+          </div>
+          <h2 className="text-3xl font-black dark:text-white uppercase italic tracking-tighter">
+            Customer Support Center
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium font-sans">
+            Triage active inbound support cases, broken link tickets, and moderate community reviews.
+          </p>
+        </div>
+        <button 
+          onClick={fetchModerationItems}
+          className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-300 hover:text-black dark:hover:text-white bg-slate-100 dark:bg-zinc-800 border-2 border-black/10 dark:border-white/10 rounded-xl transition-all cursor-pointer hover:scale-105 active:scale-95"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <span>Refresh Queue</span>
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-28 gap-4">
+          <RefreshCw className="w-12 h-12 text-pink-500 animate-spin" />
+          <span className="text-xs font-black uppercase text-slate-400 tracking-widest font-mono">Fetching Support Queue...</span>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {/* Support Telemetry Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-slate-50 dark:bg-zinc-900 border-2 border-black/5 dark:border-white/5 rounded-2xl p-5 flex items-center justify-between shadow-sm relative overflow-hidden">
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Inbound Support Tickets</span>
+                <div className="text-2xl font-black dark:text-white">{reports.length}</div>
+                <p className="text-[9px] font-semibold text-rose-500 bg-rose-500/10 px-2.5 py-0.5 rounded-full w-fit">Broken download links</p>
+              </div>
+              <ShieldAlert className="w-10 h-10 text-rose-500 opacity-20" />
+            </div>
+
+            <div className="bg-slate-50 dark:bg-zinc-900 border-2 border-black/5 dark:border-white/5 rounded-2xl p-5 flex items-center justify-between shadow-sm relative overflow-hidden">
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Awaiting Publication</span>
+                <div className="text-2xl font-black dark:text-white">{pendingReviewsCount}</div>
+                <p className="text-[9px] font-semibold text-amber-500 bg-amber-500/10 px-2.5 py-0.5 rounded-full w-fit">Community feedback queue</p>
+              </div>
+              <MessageSquare className="w-10 h-10 text-amber-500 opacity-20" />
+            </div>
+
+            <div className="bg-slate-50 dark:bg-zinc-950 border-2 border-black/5 dark:border-white/5 rounded-2xl p-5 flex items-center justify-between shadow-sm relative overflow-hidden">
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">SLA Status Health</span>
+                <div className="text-2xl font-black text-emerald-500">99.8% SLA</div>
+                <p className="text-[9px] font-semibold text-emerald-500 bg-emerald-500/10 px-2.5 py-0.5 rounded-full w-fit">Active Dispatch</p>
+              </div>
+              <CheckCircle2 className="w-10 h-10 text-emerald-500 opacity-20" />
+            </div>
+          </div>
+
+          {/* Controls Bar */}
+          <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-slate-50 dark:bg-zinc-900/60 border-2 border-black/5 dark:border-white/5 p-4 rounded-2xl">
+            <div className="flex items-center gap-1.5 p-1 bg-white dark:bg-zinc-800 rounded-xl border border-black/5 dark:border-white/5">
+              <button
+                onClick={() => setActiveSubTab('all')}
+                className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${activeSubTab === 'all' ? 'bg-black text-white dark:bg-white dark:text-black shadow-md' : 'text-slate-500 dark:text-zinc-400'}`}
+              >
+                All Cases ({items.length})
+              </button>
+              <button
+                onClick={() => setActiveSubTab('tickets')}
+                className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${activeSubTab === 'tickets' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-500 dark:text-zinc-400 hover:text-rose-500'}`}
+              >
+                Link Tickets ({reports.length})
+              </button>
+              <button
+                onClick={() => setActiveSubTab('reviews')}
+                className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${activeSubTab === 'reviews' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-500 dark:text-zinc-400 hover:text-pink-500'}`}
+              >
+                Reviews ({reviews.length})
+              </button>
+            </div>
+
+            <div className="relative flex-1 md:max-w-xs">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-200" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by App ID or Comment..."
+                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-zinc-800 border-2 border-black/10 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-350 focus:outline-none focus:border-pink-500 transition-all dark:placeholder-zinc-500"
+              />
+            </div>
+          </div>
+
+          {/* List workspace */}
+          <div className="space-y-4">
+            {filteredItems.length === 0 ? (
+              <div className="bg-black/5 dark:bg-white/5 border-2 border-dashed border-black/10 dark:border-white/10 rounded-3xl py-16 px-6 text-center">
+                <AlertTriangle className="w-10 h-10 text-slate-400 dark:text-zinc-500 mx-auto mb-3 opacity-60" />
+                <h4 className="text-sm font-black dark:text-white uppercase tracking-wider mb-1">No Active Tickets Found</h4>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-sm mx-auto">
+                  {searchQuery 
+                    ? `No support tickets or customer reviews match your query: "${searchQuery}".`
+                    : "Excellent, support dispatch queue is beautifully fully caught up!"
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-5">
+                {filteredItems.map((item) => {
+                  const isReport = item.source === 'missing_link_report';
+                  
+                  if (isReport) {
+                    return (
+                      <div 
+                        key={item.id} 
+                        className="bg-white dark:bg-zinc-900 border-2 border-rose-500/20 dark:border-rose-500/10 rounded-2.5xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 transition-all hover:border-rose-500/40 relative overflow-hidden shadow-sm"
+                      >
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500"></div>
+
+                        <div className="space-y-2 flex-1 pl-2">
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            <span className="text-[9px] font-black uppercase tracking-widest bg-rose-500 text-white px-2.5 py-1 rounded-lg">
+                              Support Notification
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 font-mono">
+                              App Reference Name: <span className="font-bold underline text-slate-700 dark:text-zinc-300">{item.app_id}</span>
+                            </span>
+                            <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 font-mono">
+                              {new Date(item.created_at).toLocaleString()}
+                            </span>
+                          </div>
+
+                          <div className="bg-rose-500/5 dark:bg-rose-950/20 border border-rose-500/10 p-3.5 rounded-xl">
+                            <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
+                              {item.comment}
+                            </p>
+                          </div>
+
+                          <div className="text-[10px] text-zinc-400 dark:text-zinc-500 font-semibold">
+                            <span className="font-black text-slate-500">SLA Guide:</span> Go to the Applications catalog, configure a working download link, then mark this ticket resolved.
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 w-full md:w-auto shrink-0 border-t border-black/5 md:border-none pt-4 md:pt-0 pl-2">
+                          <button
+                            disabled={actioning === item.id}
+                            onClick={() => handleDelete(item.id, true)}
+                            className="w-full md:w-auto px-5 py-2.5 bg-rose-500 text-white hover:bg-rose-600 disabled:bg-rose-800 text-[10px] font-black uppercase tracking-wider rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                          >
+                            <CheckSquare className="w-3.5 h-3.5" />
+                            {actioning === item.id ? 'Fixing...' : 'Mark Resolved'}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div 
+                        key={item.id} 
+                        className="bg-white dark:bg-zinc-900 border-2 border-black/10 dark:border-white/10 rounded-2.5xl p-6 flex flex-col gap-4 shadow-sm relative overflow-hidden"
+                      >
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-pink-500"></div>
+
+                        <div className="flex justify-between items-start flex-wrap gap-4 pl-2">
+                          <div>
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                              <span className="text-xs font-black text-slate-800 dark:text-zinc-200">{item.username}</span>
+                              <span className="text-[9px] font-black uppercase tracking-wider bg-pink-500/10 text-pink-500 px-2.5 py-0.5 rounded-md">
+                                App: {item.app_id}
+                              </span>
+                              <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-md border ${item.is_approved ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
+                                {item.is_approved ? 'Published' : 'Under Review'}
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className="text-sm font-bold text-amber-500">
+                                {'★'.repeat(item.rating)}
+                                <span className="opacity-25">{'★'.repeat(Math.max(0, 5 - item.rating))}</span>
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 font-mono">
+                                {new Date(item.created_at).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {!item.is_approved && (
+                              <button
+                                disabled={actioning === item.id}
+                                onClick={() => handleApprove(item.id)}
+                                className="px-4 py-2 bg-emerald-500 text-white hover:bg-emerald-600 disabled:bg-emerald-800 font-black text-[9px] uppercase tracking-wider rounded-lg transition-transform hover:scale-105 active:scale-95 shadow-md shadow-emerald-500/10 cursor-pointer"
+                              >
+                                Approve Publication
+                              </button>
+                            )}
+                            <button
+                              disabled={actioning === item.id}
+                              onClick={() => handleDelete(item.id, false)}
+                              className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white disabled:bg-slate-200 font-black text-[9px] uppercase tracking-wider rounded-lg transition-all cursor-pointer"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-50 dark:bg-zinc-850 p-4 rounded-xl border border-black/5 dark:border-white/5 pl-4 ml-2">
+                          <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                            {item.comment}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function AdminDashboard() {
   const { 
     apps: mockApps, 
@@ -1836,7 +2165,7 @@ export default function AdminDashboard() {
             <div className="h-px bg-black/10 dark:bg-white/10 my-4"></div>
             <h3 className="text-[10px] font-black opacity-30 uppercase tracking-[0.4em] italic mb-2 ml-4 dark:text-white">Authority</h3>
             
-            <SidebarItem id="reviews" label="Moderation" icon={ShieldAlert} active={activeTab === 'reviews'} onClick={handleTabChange} />
+            <SidebarItem id="reviews" label="Support Desk" icon={ShieldAlert} active={activeTab === 'reviews'} onClick={handleTabChange} />
             <SidebarItem id="github" label="GitHub Sync" icon={Github} active={activeTab === 'github'} onClick={handleTabChange} />
             <SidebarItem id="settings" label="Global Config" icon={Settings} active={activeTab === 'settings'} onClick={handleTabChange} />
           </div>
@@ -2029,6 +2358,9 @@ export default function AdminDashboard() {
                      }} className="bg-pink-500 text-white px-20 py-5 rounded-[2.5rem] font-black uppercase tracking-widest italic shadow-2xl shadow-pink-500/40 animate-pulse">Sync Banners</button>
                    </div>
                 </div>
+              )}
+              {activeTab === 'reviews' && (
+                <ReviewsModerationTab db={db} />
               )}
               {activeTab === 'github' && (
                 <GithubTab pushAllToGitHub={pushAllToGitHub} gitConfig={gitConfig} saveGitConfig={saveGitConfig} generatePreview={() => generateStaticDataFileCode(appsList, mockSettings, newsList, blogs, videosList)} />
