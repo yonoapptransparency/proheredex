@@ -1425,7 +1425,7 @@ export default function AdminDashboard() {
     }
 
     if (!auth) {
-      setLoading(false);
+      setCheckingAuth(false);
       return;
     }
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {

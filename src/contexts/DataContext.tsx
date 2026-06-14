@@ -651,6 +651,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       for (let i = 0; i < numChunks; i++) {
         const chunk = JSON.parse(JSON.stringify(newApps.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE)));
         chunk.forEach((app: any) => { 
+          // Inject public-safe metadata indicator for secure link availability
+          app.link_configured = !!(app.more_information_url || app.download_url || app.encrypted_download_url);
           delete app.more_information_url; 
           delete app.encrypted_download_url;
           delete app.download_url;
