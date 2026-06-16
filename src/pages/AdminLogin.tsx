@@ -29,12 +29,6 @@ export default function AdminLogin() {
       setDomainMismatch(true);
     }
 
-    // Note: Developer bypass has been disabled to ensure Firebase Auth.
-    const bypassToken = localStorage.getItem('_admin_session_bypass_token');
-    if (bypassToken) {
-       localStorage.removeItem('_admin_session_bypass_token');
-    }
-
     if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {

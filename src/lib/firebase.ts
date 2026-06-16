@@ -4,7 +4,6 @@ import { initializeFirestore } from 'firebase/firestore';
 
 // Allow Vite to statically bundle the configuration file
 import appletConfig from '../../firebase-applet-config.json';
-console.log("DEBUG: appletConfig loaded", appletConfig);
 
 declare global {
   interface Window {

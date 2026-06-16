@@ -63,9 +63,11 @@ service cloud.firestore {
     }
 
     // Allow public reading of non-sensitive store data and encrypted secure links
-    // Restrict sensitive vault maps and git config strictly to authorized administrators
+    // Restrict sensitive vault maps, links, and git config strictly to authorized administrators
     match /store_data/{docId} {
-      allow read: if isValidId(docId) && ((docId != 'sec_git_config') || isAdmin());
+      allow read: if isValidId(docId) && (
+        (docId != 'sec_git_config' && docId != 'secure_links' && docId != 'sec_vault') || isAdmin()
+      );
       allow write: if isAdmin();
     }
     

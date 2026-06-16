@@ -378,7 +378,35 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
           <div className="border border-black/10 dark:border-white/10 rounded-xl p-4 bg-black/5 dark:bg-white/5 space-y-4">
              <h3 className="font-bold text-lg dark:text-white flex items-center gap-2"><LinkIcon className="w-4 h-4 text-pink-500"/> File Access Config</h3>
              <label className="block text-sm font-medium opacity-60 dark:text-white">More Information URL (Secured string shown - input new http URL to change)</label>
-             <input type="text" name="more_information_url" value={formFields.more_information_url} onChange={e => handleFieldChange('more_information_url', e.target.value)} placeholder="https://..." className="w-full bg-white dark:bg-slate-900 border border-pink-500/30 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
+             <div className="flex gap-2">
+               <input type="text" name="more_information_url" value={formFields.more_information_url} onChange={e => handleFieldChange('more_information_url', e.target.value)} placeholder="https://..." className="flex-1 bg-white dark:bg-slate-900 border border-pink-500/30 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
+               {formFields.more_information_url.startsWith('U2FsdGVkX1') && (
+                 <button
+                   type="button"
+                   onClick={async () => {
+                     try {
+                        const token = await auth.currentUser?.getIdToken();
+                        const res = await fetch('/api/v1/admin/decrypt-url', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                          body: JSON.stringify({ encryptedUrl: formFields.more_information_url })
+                        });
+                        const data = await res.json();
+                        if (data.decrypted) {
+                          alert('Decrypted URL: ' + data.decrypted);
+                        } else {
+                          alert('Failed to decrypt URL.');
+                        }
+                     } catch(e) {
+                        alert('Error decrypting URL.');
+                     }
+                   }}
+                   className="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg font-medium transition whitespace-nowrap"
+                 >
+                   Reveal
+                 </button>
+               )}
+             </div>
           </div>
 
           {/* RESTORED UI ADMIN BOXES */}
@@ -1794,14 +1822,6 @@ export default function AdminDashboard() {
   const fetchFailedRef = React.useRef(false);
 
   React.useEffect(() => {
-    // Note: Developer bypass has been disabled to ensure Firebase Auth and Firestore Security Rules operate correctly in production and staging environments.
-    const bypassToken = localStorage.getItem('_admin_session_bypass_token');
-    
-    // Fallback: If a stale token exists from past iterations, remove it.
-    if (bypassToken) {
-       localStorage.removeItem('_admin_session_bypass_token');
-    }
-
     if (!auth) {
       setCheckingAuth(false);
       return;
@@ -2485,7 +2505,6 @@ export default function AdminDashboard() {
 
   const handleLogout = async () => {
     triggerHaptic();
-    localStorage.removeItem('_admin_session_bypass_token');
     await signOut(auth);
   };
 

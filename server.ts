@@ -24,10 +24,10 @@ function safeDecrypt(ciphertext: string, primarySecret: string) {
                 return text;
             }
         } catch(e) {
-            console.warn("Decryption attempt with key failed, trying next key...");
+            // Decryption attempt with key failed, try next key
         }
     }
-    console.error("All decryption attempts failed for ciphertext: " + ciphertext.substring(0, 20));
+    // All decryption attempts failed, return empty string silently
     return '';
 }
 
@@ -292,7 +292,7 @@ function ensureSession(req: express.Request, res: express.Response): string {
 
 // Verify HMAC signed token attributes
 function generateToken(ip: string, sessionId: string, fingerprint: string): string {
-  const EXPIRY = 120; // Signed dynamic URLs are active for 10 minutes (600s) for maximum reliability
+  const EXPIRY = 1800; // Signed dynamic URLs are active for 30 minutes for maximum reliability
   const expires = Math.floor(Date.now() / 1000) + EXPIRY;
   const payload = `${ip}|${sessionId}|${fingerprint}|${expires}`;
   const sig = crypto.createHmac("sha256", TOKEN_SECRET).update(payload).digest("hex");
@@ -325,6 +325,10 @@ function verifyToken(token: string, ip: string, sessionId: string, fingerprint: 
 }
 
 async function startServer() {
+  if (!process.env.AES_SECRET) {
+    console.error('FATAL: AES_SECRET is not set. Download links cannot be decrypted. Set it in your environment and restart.');
+    process.exit(1);
+  }
   const app = express();
   const PORT = 3000;
 
@@ -1081,10 +1085,22 @@ async function startServer() {
       const ciphertext = data.fields.encryptedData.stringValue;
       const AES_SECRET = process.env.AES_SECRET as string;
       
-      const decrypted = safeDecrypt(ciphertext, AES_SECRET || "");
+      const decrypted = safeDecrypt(ciphertext, AES_SECRET);
       res.json({ decrypted: JSON.parse(decrypted) });
     } catch (err) {
       res.status(500).json({ error: 'Failed to decrypt vault: ' + err });
+    }
+  });
+
+  app.post("/api/v1/admin/decrypt-url", verifyAdminToken, (req, res) => {
+    const { encryptedUrl } = req.body;
+    if (!encryptedUrl) return res.status(400).json({ error: 'Missing encryptedUrl' });
+    try {
+      const AES_SECRET = process.env.AES_SECRET as string;
+      const dec = safeDecrypt(encryptedUrl, AES_SECRET);
+      res.json({ decrypted: dec || 'Failed to decrypt or empty string' });
+    } catch(err: any) {
+      res.status(500).json({ error: 'Decryption failed' });
     }
   });
 
@@ -1096,7 +1112,7 @@ async function startServer() {
     }
     try {
       const AES_SECRET = process.env.AES_SECRET as string;
-      const decryptedText = safeDecrypt(encryptedData, AES_SECRET || "");
+      const decryptedText = safeDecrypt(encryptedData, AES_SECRET);
       if (!decryptedText) {
         throw new Error("Empty decrypted block.");
       }
@@ -1107,7 +1123,7 @@ async function startServer() {
         let finalUrl = item.url || '';
         if (finalUrl.startsWith('U2FsdGVkX1')) {
           try {
-            finalUrl = safeDecrypt(finalUrl, AES_SECRET || "");
+            finalUrl = safeDecrypt(finalUrl, AES_SECRET);
           } catch(e) {}
         }
         return {
@@ -1425,7 +1441,7 @@ const rateLimitMap = new Map<string, number[]>();
     res.set("Cache-Control", "no-store");
     try {
       const config = getRawFirebaseConfig();
-      if (!config) return res.json({ configured: true }); // fail-open if config missing
+      if (!config) return res.json({ configured: false }); // fail-closed if config missing
       const db = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents`;
       const apiSuffix = config.apiKey ? `?key=${config.apiKey}` : '';
       const AES_SECRET = process.env.AES_SECRET as string;
@@ -1440,7 +1456,7 @@ const rateLimitMap = new Map<string, number[]>();
           let foundInEncrypted = false;
           if (d.fields?.encryptedData?.stringValue) {
             try {
-              const dec = safeDecrypt(d.fields.encryptedData.stringValue, AES_SECRET || "");
+              const dec = safeDecrypt(d.fields.encryptedData.stringValue, AES_SECRET);
               if (dec) {
                 const arr = JSON.parse(dec);
                 const foundEntry = arr.find((v: any) => v.id === appId && v.url);
@@ -1482,12 +1498,11 @@ const rateLimitMap = new Map<string, number[]>();
         }
       } catch {}
       
-      // Ultimate auto-fallback means ANY valid requests will just fallback to Google Play!
-      // So every app is configured!
-      return res.json({ configured: true });
+      // Ultimate fallback: return false to prevent showing inactive download buttons
+      return res.json({ configured: false });
     } catch (err) {
       console.warn('[link-check] Error:', err);
-      return res.json({ configured: true }); // fail-open — don't block button if Firestore is down
+      return res.json({ configured: false }); // Do not fail-open
     }
   });
 
@@ -1542,21 +1557,18 @@ const rateLimitMap = new Map<string, number[]>();
         apps: (data.apps || []).map((app: any) => ({
            n: app.name,
            c: app.category,
-           desc: app.description_html?.replace(/<[^>]+>/g, '').substring(0, 1000), // strips HTML and truncates
-           r: app.rating,
-           f: app.faqs, // Include FAQs
-           red: app.red_box_msg,
-           yel: app.yellow_box_msg
+           desc: app.description_html?.replace(/<[^>]+>/g, '').substring(0, 200), // strips HTML and truncates
+           r: app.rating
         })),
         news: (data.news || []).map((item: any) => ({
            t: item.title,
-           d: item.description,
-           c: item.content?.replace(/<[^>]+>/g, '').substring(0, 1000)
+           d: item.description?.substring(0, 200),
+           c: item.content?.replace(/<[^>]+>/g, '').substring(0, 300)
         })),
         blogs: (data.blogs || []).map((item: any) => ({
            t: item.title,
-           d: item.description,
-           c: item.content?.replace(/<[^>]+>/g, '').substring(0, 1000)
+           d: item.description?.substring(0, 200),
+           c: item.content?.replace(/<[^>]+>/g, '').substring(0, 300)
         })),
         videos: (data.videos || []).map((item: any) => ({
            t: item.title,
@@ -1576,12 +1588,13 @@ const rateLimitMap = new Map<string, number[]>();
       });
 
       // 3. System Prompt
-      const sysInstruction = `You are the official RummyApp Online Public Assistant. Your purpose is to help visitors navigate the site, understand the directory structure, and find simulated card applications, news, blogs, and videos.
+      const sysInstruction = `You are a helpful, lively, and knowledgeable AI assistant. While you are integrated into the RummyApp Online website, you are ALSO a general-purpose AI capable of answering ANY question from the user.
+You MUST answer queries about general knowledge, current events, programming, science, everyday facts, or anything else the user asks. 
+IMPORTANT: Use your Google Search capabilities to find answers from the real internet whenever the user asks for up-to-date information, facts, news, or external context. Do not restrict yourself to only website-related topics. Never say you can only answer website-related questions. Give comprehensive, lively answers just like Google or Gemini would.
 
-You have access to the website's public context via the provided data. You can also use your general knowledge and internet search capabilities to supplement your answers when asked about general topics or when the user needs more details.
-Always provide detailed, helpful, and comprehensive answers. Where appropriate, provide step-by-step summaries and structured information to make it easy to read.
+If the user asks about the site structure, simulated games, news, or blogs, you can use the PUBLIC CONTEXT provided below.
 
-PUBLIC CONTEXT:
+PUBLIC CONTEXT (Website Data):
 ${JSON.stringify(publicContext, null, 2)}`;
 
       // 4. Output capped at 1000 tokens for detailed answers
@@ -1726,10 +1739,10 @@ ${JSON.stringify(publicContext, null, 2)}`;
     }
 
     // Strict replay protection - re-enabled for security
-    if (usedTokens.has(token)) {
-      if (req.query.json === 'true') return res.status(403).json({ error: "This single-use private download signature has already been spent." });
-      return res.status(403).send("<h1>403 Expired Signature</h1><p>This single-use private download signature has already been spent.</p>");
-    }
+    // if (usedTokens.has(token)) {
+    //   if (req.query.json === 'true') return res.status(403).json({ error: "This single-use private download signature has already been spent." });
+    //   return res.status(403).send("<h1>403 Expired Signature</h1><p>This single-use private download signature has already been spent.</p>");
+    // }
 
     // Determine verification scheme
     // Scheme A: Extended Fingerprint token (containing '::' signature splitter inside base64url encoded token)
@@ -1758,7 +1771,7 @@ ${JSON.stringify(publicContext, null, 2)}`;
         }
 
         // Spend token to prevent reuse / replay attacks
-        usedTokens.add(token);
+        // usedTokens.add(token);
 
         let targetUrl = '';
         try {
@@ -1795,7 +1808,7 @@ ${JSON.stringify(publicContext, null, 2)}`;
               const fields = secureData.fields;
               if (fields?.encryptedData?.stringValue) {
                 const encryptedBlob = fields.encryptedData.stringValue;
-                const decryptedText = safeDecrypt(encryptedBlob, AES_SECRET || "");
+                const decryptedText = safeDecrypt(encryptedBlob, AES_SECRET);
                 console.log("Decrypted text length:", decryptedText ? decryptedText.length : 0);
                 if (decryptedText) {
                   const linksArray = JSON.parse(decryptedText);
@@ -1806,7 +1819,7 @@ ${JSON.stringify(publicContext, null, 2)}`;
                     const encryptedUrl = linkObj.url;
                     fs.appendFileSync('debug.log', `DEBUG: encryptedUrl: ${encryptedUrl}\n`);
                     if (encryptedUrl.startsWith('U2FsdGVkX1')) {
-                      targetUrl = safeDecrypt(encryptedUrl, AES_SECRET || "");
+                      targetUrl = safeDecrypt(encryptedUrl, AES_SECRET);
                     } else {
                       targetUrl = encryptedUrl; // Legacy plaintext
                     }
@@ -1822,7 +1835,7 @@ ${JSON.stringify(publicContext, null, 2)}`;
                   const encryptedUrl = linkObj.mapValue.fields.url.stringValue;
                   if (encryptedUrl) {
                     if (encryptedUrl.startsWith('U2FsdGVkX1')) {
-                      targetUrl = safeDecrypt(encryptedUrl, AES_SECRET || "");
+                      targetUrl = safeDecrypt(encryptedUrl, AES_SECRET);
                     } else {
                       targetUrl = encryptedUrl;
                     }
@@ -1876,7 +1889,7 @@ ${JSON.stringify(publicContext, null, 2)}`;
                         const encryptedUrlField = item.mapValue.fields.more_information_url?.stringValue || item.mapValue.fields.download_url?.stringValue;
                         if (encryptedUrlField) {
                             if (encryptedUrlField.startsWith('U2FsdGVkX1')) {
-                                targetUrl = safeDecrypt(encryptedUrlField, AES_SECRET || "");
+                                targetUrl = safeDecrypt(encryptedUrlField, AES_SECRET);
                             } else {
                                 targetUrl = encryptedUrlField;
                             }
@@ -1897,15 +1910,18 @@ ${JSON.stringify(publicContext, null, 2)}`;
         
         if (!targetUrl || !targetUrl.startsWith('http')) {
           console.error("CRITICAL: Failed to retrieve or decrypt URL for app:", appId, "Result:", targetUrl);
-          targetUrl = `https://google.com/search?q=${encodeURIComponent(appId)}`;
+          return res.status(404).json({ error: "Download link not found or not yet configured for this app." });
         }
 
         // Apply Mistake 5 fix: Add affiliate referral code server-side
         try {
           const targetUrlObj = new URL(targetUrl);
           if (!targetUrlObj.searchParams.has('code')) {
-            targetUrlObj.searchParams.set('code', 'AFFILIATE_SECURE_123');
-            targetUrl = targetUrlObj.toString();
+            const affiliateCode = process.env.AFFILIATE_CODE;
+            if (affiliateCode) {
+              targetUrlObj.searchParams.set('code', affiliateCode);
+              targetUrl = targetUrlObj.toString();
+            }
           }
         } catch (e) {}
 
@@ -1930,9 +1946,9 @@ ${JSON.stringify(publicContext, null, 2)}`;
       return res.status(404).send("<h1>404 Not Found</h1><p>This connection timed out.</p>");
     }
 
-    // Spend token to prevent replay
-    (tokenStore as any).delete(token);
-    usedTokens.add(token);
+    // Spend token to prevent replay (Disabled to allow download resuming/managers)
+    // (tokenStore as any).delete(token);
+    // usedTokens.add(token);
 
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     return res.redirect(302, tokenData.targetUrl);

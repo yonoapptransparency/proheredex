@@ -123,13 +123,16 @@ export default function PublicChatbot() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 w-[64px] h-[64px] bg-gradient-to-tr from-indigo-600 via-purple-600 to-fuchsia-500 text-white rounded-[20px] shadow-[0_10px_40px_rgb(79,70,229,0.35)] flex items-center justify-center z-50 group hover:shadow-[0_10px_40px_rgb(79,70,229,0.5)] transition-all hover:-translate-y-1"
+            className="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 w-[68px] h-[68px] bg-white/80 dark:bg-neutral-800/80 backdrop-blur-3xl border border-white dark:border-white/20 text-neutral-800 dark:text-white rounded-[24px] shadow-[0_10px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex items-center justify-center z-50 group hover:shadow-[0_10px_40px_rgba(0,0,0,0.25)] transition-all hover:-translate-y-1 before:absolute before:inset-0 before:rounded-[24px] before:bg-gradient-to-br before:from-white/60 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity"
             aria-label="Open AI Assistant"
           >
-            <Sparkles className="w-7 h-7 group-hover:scale-110 transition-transform duration-300" />
-            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+            <div className="relative">
+              <BotMessageSquare className="w-8 h-8 group-hover:scale-110 transition-transform duration-300" />
+              <Sparkles className="w-4 h-4 absolute -top-2 -right-2 text-indigo-500 animate-pulse" />
+            </div>
+            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-white dark:border-neutral-900"></span>
+              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-[2.5px] border-white dark:border-neutral-800"></span>
             </span>
           </motion.button>
         )}
@@ -138,20 +141,22 @@ export default function PublicChatbot() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            layout
             initial={{ opacity: 0, y: 40, scale: 0.95, transformOrigin: 'bottom right' }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95, y: 20, transition: { duration: 0.2 } }}
-            className="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 w-[90vw] max-w-[400px] h-[650px] max-h-[85vh] bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl rounded-[32px] shadow-[0_30px_80px_rgba(0,0,0,0.2)] dark:shadow-[0_30px_80px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden border border-white/50 dark:border-neutral-800 z-50 ring-1 ring-black/5 dark:ring-white/10"
+            className="fixed bottom-20 right-6 lg:bottom-24 lg:right-10 w-[90vw] max-w-[400px] h-[650px] max-h-[80vh] bg-white/40 dark:bg-neutral-900/50 backdrop-blur-3xl rounded-[32px] shadow-[0_30px_80px_rgba(0,0,0,0.2)] dark:shadow-[0_30px_80px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden border border-white/60 dark:border-white/10 z-50 ring-1 ring-black/5"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-indigo-50/80 via-purple-50/80 to-fuchsia-50/80 dark:from-indigo-500/10 dark:via-purple-500/10 dark:to-fuchsia-500/10 border-b border-white/50 dark:border-neutral-800/50 p-6 pb-5 flex items-center justify-between shrink-0 relative overflow-hidden backdrop-blur-md">
+            <div className="bg-white/40 dark:bg-black/20 border-b border-white/40 dark:border-white/10 p-6 pb-5 flex items-center justify-between shrink-0 relative overflow-hidden backdrop-blur-2xl">
               {/* Decorative background shapes */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-fuchsia-500/10 dark:bg-fuchsia-500/20 blur-2xl rounded-full transform translate-x-1/2 -translate-y-1/2 pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-indigo-500/10 dark:bg-indigo-500/20 blur-2xl rounded-full transform -translate-x-1/2 translate-y-1/2 pointer-events-none" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-fuchsia-500/20 dark:bg-fuchsia-500/30 blur-3xl rounded-full transform translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-indigo-500/20 dark:bg-indigo-500/30 blur-3xl rounded-full transform -translate-x-1/2 translate-y-1/2 pointer-events-none" />
+              
               
               <div className="flex items-center gap-4 relative z-10">
-                <div className="w-12 h-12 bg-white dark:bg-neutral-800 shadow-sm border border-neutral-100 dark:border-neutral-800 text-indigo-600 dark:text-indigo-400 rounded-[18px] flex items-center justify-center relative inner-shadow-sm">
-                  <Sparkles className="w-6 h-6 text-indigo-500" />
+                <div className="w-12 h-12 bg-white/60 dark:bg-neutral-800/60 backdrop-blur-md shadow-sm border border-white/50 dark:border-white/10 text-indigo-600 dark:text-indigo-400 rounded-[18px] flex items-center justify-center relative">
+                  <BotMessageSquare className="w-6 h-6 text-indigo-500" />
                   <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white dark:border-neutral-800"></span>
@@ -190,16 +195,17 @@ export default function PublicChatbot() {
             <div className="flex-1 overflow-y-auto p-5 pb-2 space-y-6 bg-transparent relative scroll-smooth">
               {messages.map((msg, idx) => (
                 <motion.div 
+                  layout="position"
                   initial={{ opacity: 0, scale: 0.95, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  transition={{ delay: 0.05, duration: 0.25, type: 'spring', damping: 25, stiffness: 300 }}
+                  transition={{ duration: 0.3, type: 'spring', damping: 25, stiffness: 300 }}
                   key={idx} 
                   className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-auto shadow-sm ${msg.role === 'user' ? 'bg-gradient-to-tr from-indigo-500 to-purple-500 text-white' : 'bg-white dark:bg-neutral-800 text-indigo-600 dark:text-indigo-400 border border-neutral-100 dark:border-neutral-700'}`}>
-                    {msg.role === 'user' ? <User className="w-4 h-4" /> : <BotMessageSquare className="w-4 h-4" />}
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-auto shadow-sm backdrop-blur-md ${msg.role === 'user' ? 'bg-gradient-to-tr from-indigo-500/80 to-purple-500/80 text-white' : 'bg-white/60 dark:bg-neutral-800/60 text-indigo-600 dark:text-indigo-400 border border-white/50 dark:border-neutral-700/50'}`}>
+                    {msg.role === 'user' ? <User className="w-4 h-4 text-white" /> : <BotMessageSquare className="w-4 h-4" />}
                   </div>
-                  <div className={`px-4 py-3.5 text-[14.5px] leading-[1.6] max-w-[80%] shadow-sm ${msg.role === 'user' ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-[20px] rounded-br-sm font-medium shadow-indigo-500/20' : 'bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200/60 dark:border-neutral-700/50 rounded-[20px] rounded-bl-sm'}`}>
+                  <div className={`px-4 py-3.5 text-[14.5px] leading-[1.6] max-w-[80%] shadow-sm backdrop-blur-md ${msg.role === 'user' ? 'bg-indigo-600/80 dark:bg-indigo-500/80 text-white rounded-[20px] rounded-br-sm font-medium shadow-indigo-500/20 border border-indigo-400/30' : 'bg-white/60 dark:bg-neutral-800/60 text-neutral-800 dark:text-neutral-200 border border-white/50 dark:border-white/10 rounded-[20px] rounded-bl-sm'}`}>
                     <ReactMarkdown 
                       components={{
                         p: ({node, ...props}) => <p className="m-0 mb-3 last:mb-0 leading-[1.65]" {...props}/>,
@@ -225,10 +231,10 @@ export default function PublicChatbot() {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex gap-3 flex-row"
                 >
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-auto bg-white dark:bg-neutral-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-neutral-200 dark:border-neutral-700">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-auto bg-white/60 dark:bg-neutral-800/60 backdrop-blur-md text-indigo-600 dark:text-indigo-400 shadow-sm border border-white/50 dark:border-white/10">
                     <BotMessageSquare className="w-4 h-4" />
                   </div>
-                  <div className="px-5 py-4 bg-white dark:bg-neutral-800 shadow-sm border border-neutral-100 dark:border-neutral-700/50 rounded-2xl rounded-bl-sm flex items-center gap-1.5 h-[46px]">
+                  <div className="px-5 py-4 bg-white/60 dark:bg-neutral-800/60 backdrop-blur-md shadow-sm border border-white/50 dark:border-white/10 rounded-2xl rounded-bl-sm flex items-center gap-1.5 h-[46px]">
                     <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0 }} className="w-1.5 h-1.5 bg-neutral-400 rounded-full" />
                     <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.2 }} className="w-1.5 h-1.5 bg-neutral-400 rounded-full" />
                     <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.4 }} className="w-1.5 h-1.5 bg-neutral-400 rounded-full" />
@@ -240,7 +246,7 @@ export default function PublicChatbot() {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border-t border-neutral-100 dark:border-neutral-800 shrink-0">
+            <div className="p-4 bg-white/40 dark:bg-black/20 backdrop-blur-2xl border-t border-white/40 dark:border-white/10 shrink-0">
               <form onSubmit={handleSubmit} className="flex gap-2">
                 <input
                   type="text"
@@ -248,14 +254,14 @@ export default function PublicChatbot() {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask me anything..."
                   disabled={isLoading}
-                  className="flex-1 bg-neutral-100/80 dark:bg-neutral-800/80 border border-transparent focus:bg-white dark:focus:bg-neutral-900 focus:border-indigo-500/30 dark:focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-indigo-500/20 rounded-2xl px-5 py-3.5 text-[15px] focus:outline-none disabled:opacity-50 text-neutral-900 dark:text-white transition-all shadow-inner placeholder:text-neutral-400"
+                  className="flex-1 bg-white/60 dark:bg-black/40 border border-white/50 dark:border-white/10 focus:bg-white/80 dark:focus:bg-black/60 focus:border-indigo-400/50 focus:ring-4 focus:ring-indigo-500/10 rounded-2xl px-5 py-3.5 text-[15px] focus:outline-none disabled:opacity-50 text-neutral-900 dark:text-white transition-all shadow-inner placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
                 />
                 <motion.button
                   type="submit"
                   disabled={isLoading || !input.trim()}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="w-[52px] h-[52px] bg-gradient-to-tr from-indigo-600 to-purple-600 text-white rounded-2xl flex items-center justify-center shrink-0 disabled:opacity-50 disabled:from-neutral-200 disabled:to-neutral-200 dark:disabled:from-neutral-800 dark:disabled:to-neutral-800 disabled:text-neutral-400 dark:disabled:text-neutral-500 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900"
+                  className="w-[52px] h-[52px] bg-indigo-600/90 hover:bg-indigo-600 backdrop-blur-md border border-indigo-400/50 text-white rounded-2xl flex items-center justify-center shrink-0 disabled:opacity-50 disabled:bg-neutral-400/50 dark:disabled:bg-neutral-800/50 disabled:border-transparent dark:disabled:text-neutral-500 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <Send className="w-5 h-5 ml-0.5" />
                 </motion.button>
