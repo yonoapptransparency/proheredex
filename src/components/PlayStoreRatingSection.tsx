@@ -70,11 +70,6 @@ export default function PlayStoreRatingSection({ appId, appTitle, onReviewSubmit
     e.preventDefault();
     setErrorText('');
 
-    if (isFirebaseConfigured && !user) {
-      setErrorText('Please sign in with Google first.');
-      return;
-    }
-
     if (!rating) {
       setErrorText('Please select a rating of 1 to 5 stars.');
       return;
@@ -250,60 +245,19 @@ export default function PlayStoreRatingSection({ appId, appTitle, onReviewSubmit
                   </motion.div>
                 )}
 
-                {!user ? (
-                  <div className="p-4 bg-zinc-100 dark:bg-zinc-800/40 rounded-xl flex flex-col items-center justify-center text-center space-y-2 border border-black/5 dark:border-white/5">
-                    <ShieldCheck className="w-5 h-5 text-[#01875f] dark:text-[#00a170] animate-pulse" />
-                    <p className="text-[11px] font-bold text-zinc-900 dark:text-zinc-100">
-                      Sign in with Google to post your review
-                    </p>
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 max-w-xs leading-normal">
-                      Authentication ensures our community reviews remain 100% verified and secure from malicious bots.
-                    </p>
-                    {errorText && (
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-500">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        <span>{errorText}</span>
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setErrorText('');
-                        const provider = new GoogleAuthProvider();
-                        try {
-                          await signInWithPopup(auth, provider);
-                        } catch (e: any) {
-                          setErrorText("Login failed: " + e.message);
-                        }
-                      }}
-                      className="flex items-center gap-2 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-zinc-800 dark:text-zinc-100 font-bold px-3 py-1.5 rounded-lg shadow-sm cursor-pointer text-[11px] active:scale-95 transition-all"
-                    >
-                      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
-                         <path fill="#EA4335" d="M12.24 10.285V14.4h6.887C18.2 16.63 15.645 18 12.24 18c-3.18 0-5.85-2.15-6.812-5.043l-3.237 2.49A11.964 11.964 0 0012.24 24c6.64 0 11.76-4.66 11.76-11.715 0-.49-.044-.96-.128-1.41l-11.632-.59z"/>
-                         <path fill="#4285F4" d="M24 12c0-.79-.07-1.54-.19-2.27H12v4.51h6.72c-.29 1.5-.14 2.76 1.13 3.65L23 14.35C21.84 13.1 24 12 24 12z"/>
-                         <path fill="#FBBC05" d="M5.428 12.957a7.15 7.15 0 010-1.913l-3.237-2.492a11.964 11.964 0 000 6.896l3.237-2.49z"/>
-                         <path fill="#34A853" d="M12.24 6c1.8 0 3.42.62 4.69 1.83l3.43-3.43C18.17 2.31 15.42 1.2 12.24 1.2a11.964 11.964 0 00-10.05 5.34l3.23 2.5C6.39 6.15 9.06 6 12.24 6z"/>
-                      </svg>
-                      <span>Sign in with Google</span>
-                    </button>
-                  </div>
-                ) : (
                   <>
                     <div id="play-input-block-group" className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                       <div className="md:col-span-1">
-                        <div className="flex items-center gap-2 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-xl p-2 h-[38px] min-w-0">
-                          {user.photoURL ? (
-                            <img src={user.photoURL} alt={user.displayName || 'Google User'} referrerPolicy="no-referrer" className="w-5 h-5 rounded-full border border-black/10 dark:border-white/10 shrink-0" />
-                          ) : (
-                            <div className="w-5 h-5 rounded-full bg-[#01875f] text-white flex items-center justify-center font-bold text-[9px] shrink-0">
-                              {(user.displayName || 'G')[0].toUpperCase()}
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1 leading-none">
-                            <p className="text-[10px] font-bold text-zinc-850 dark:text-zinc-100 truncate">{user.displayName || 'Google User'}</p>
-                            <span className="text-[7px] font-bold text-emerald-500 tracking-wider uppercase block mt-0.5">Verified</span>
-                          </div>
-                        </div>
+                        <input
+                          id="play-reviewer-name-field"
+                          type="text"
+                          required
+                          maxLength={30}
+                          placeholder="Your Name"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          className="w-full text-xs font-semibold p-2.5 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-xl outline-none focus:ring-2 focus:ring-[#01875f]/20 focus:border-[#01875f] text-zinc-900 dark:text-zinc-100 transition-all h-[38px]"
+                        />
                       </div>
                       <div className="md:col-span-2">
                         <input
@@ -341,7 +295,6 @@ export default function PlayStoreRatingSection({ appId, appTitle, onReviewSubmit
                       </button>
                     </div>
                   </>
-                )}
               </motion.form>
             )}
           </motion.div>

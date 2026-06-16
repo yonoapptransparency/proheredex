@@ -17,6 +17,8 @@ export default function AdminLogin() {
   const [decryptionProgress, setDecryptionProgress] = useState(10);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [attempts, setAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState(0);
 
   useEffect(() => {
     const host = window.location.hostname;
@@ -62,6 +64,13 @@ export default function AdminLogin() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (Date.now() < lockedUntil) {
+      const secs = Math.ceil((lockedUntil - Date.now()) / 1000);
+      setError(`Too many failed attempts. Try again in ${secs} seconds.`);
+      return;
+    }
+
     if (!email || !password) {
       setError("Please enter both email and password.");
       return;
@@ -72,6 +81,13 @@ export default function AdminLogin() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+      if (newAttempts >= 3) {
+        const lockMs = newAttempts >= 7 ? 600000 : newAttempts >= 5 ? 120000 : 30000;
+        setLockedUntil(Date.now() + lockMs);
+      }
+      
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
         setError("Invalid email or password.");
       } else {

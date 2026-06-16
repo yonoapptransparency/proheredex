@@ -1026,11 +1026,6 @@ function AppContent() {
                 <Route path="/dashboard" element={<Navigate to="/" replace />} />
                 <Route path="/panel" element={<Navigate to="/" replace />} />
                 
-                {/* Admin Routes - Directly exposed at /admin for the user to easily find */}
-                <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-                <Route path="/admin/login" element={<Suspense fallback={<div className="flex h-screen items-center justify-center p-8"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>}><AdminLogin /></Suspense>} />
-                <Route path="/admin/*" element={<Suspense fallback={<div className="flex h-screen items-center justify-center p-8"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>}><AdminDashboard /></Suspense>} />
-                
                 {/* Keep obfuscated paths as fallback mapping */}
                 <Route path={`/${adminPath}`} element={<Navigate to={`/${adminPath}/dashboard`} replace />} />
                 <Route path={`/${adminPath}/login`} element={<Suspense fallback={<div className="flex h-screen items-center justify-center p-8"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>}><AdminLogin /></Suspense>} />

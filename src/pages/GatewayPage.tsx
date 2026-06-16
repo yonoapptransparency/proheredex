@@ -233,14 +233,20 @@ export default function GatewayPage() {
     }
   };
 
+    const [username, setUsername] = useState('');
+    const [rating, setRating] = useState('5');
+    const [review, setReview] = useState('');
+
   const handleReviewSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!user) {
-      alert("Please sign in with Google first before submitting a review.");
+    if (!username.trim() || !review.trim()) {
+      alert("Please provide both name and review.");
       return;
     }
     alert("Review submitted and awaiting moderation.");
-    (e.target as HTMLFormElement).reset();
+    setUsername('');
+    setRating('5');
+    setReview('');
   };
 
   return (
@@ -411,58 +417,10 @@ export default function GatewayPage() {
         <h2 className="text-2xl font-bold mb-8 flex items-center gap-2 tracking-tight text-zinc-900 dark:text-zinc-100">
           <MessageSquare className="w-6 h-6 text-blue-500" /> User Reviews
         </h2>
-        
-        {authLoading ? (
-          <div className="bg-zinc-50 dark:bg-zinc-800/50 border border-black/5 dark:border-white/5 p-12 rounded-[32px] text-center flex items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          </div>
-        ) : !user ? (
-          <div className="bg-zinc-50 dark:bg-zinc-800/50 border border-black/5 dark:border-white/5 p-10 sm:p-12 rounded-[32px] text-center max-w-2xl mx-auto mb-12 shadow-sm">
-            <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <ShieldCheck className="w-6 h-6 text-blue-500" />
-            </div>
-            <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-xl mb-3">Google Sign-In Required</h3>
-            <p className="text-zinc-500 dark:text-zinc-400 text-sm max-w-md mx-auto mb-8 leading-relaxed">
-              To keep our app review space safe and spam-free, you must verify your identity with Google before submitting peer feedback.
-            </p>
-            <button
-              type="button"
-              onClick={async () => {
-                const provider = new GoogleAuthProvider();
-                try {
-                  await signInWithPopup(auth, provider);
-                } catch (e: any) {
-                  alert("Login failed: " + e.message);
-                }
-              }}
-              className="inline-flex items-center gap-3 bg-white dark:bg-zinc-950 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-zinc-800 dark:text-zinc-100 font-bold px-6 py-3.5 rounded-2xl border-2 border-black/5 dark:border-white/10 transition-all shadow-sm cursor-pointer active:scale-95 text-sm"
-            >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                 <path fill="#EA4335" d="M12.24 10.285V14.4h6.887C18.2 16.63 15.645 18 12.24 18c-3.18 0-5.85-2.15-6.812-5.043l-3.237 2.49A11.964 11.964 0 0012.24 24c6.64 0 11.76-4.66 11.76-11.715 0-.49-.044-.96-.128-1.41l-11.632-.59z"/>
-                 <path fill="#4285F4" d="M24 12c0-.79-.07-1.54-.19-2.27H12v4.51h6.72c-.29 1.5-.14 2.76 1.13 3.65L23 14.35C21.84 13.1 24 12 24 12z"/>
-                 <path fill="#FBBC05" d="M5.428 12.957a7.15 7.15 0 010-1.913l-3.237-2.492a11.964 11.964 0 000 6.896l3.237-2.49z"/>
-                 <path fill="#34A853" d="M12.24 6c1.8 0 3.42.62 4.69 1.83l3.43-3.43C18.17 2.31 15.42 1.2 12.24 1.2a11.964 11.964 0 00-10.05 5.34l3.23 2.5C6.39 6.15 9.06 6 12.24 6z"/>
-              </svg>
-              <span>Verify with Google</span>
-            </button>
-          </div>
-        ) : (
+
           <form onSubmit={handleReviewSubmit} className="bg-zinc-50 dark:bg-zinc-800/50 border border-black/5 dark:border-white/5 p-6 sm:p-10 rounded-[32px] mb-12">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 text-lg">Leave a Review</h3>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-white/60 dark:bg-zinc-900/60 px-3 py-1.5 rounded-xl border border-black/5 dark:border-white/5">
-                  {user.photoURL && <img src={user.photoURL} alt={user.displayName} referrerPolicy="no-referrer" className="w-5 h-5 rounded-full" />}
-                  <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{user.displayName || "Google User"}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => signOut(auth)}
-                  className="text-xs text-rose-500 hover:underline cursor-pointer font-bold"
-                >
-                  Disconnect
-                </button>
-              </div>
             </div>
             
             <input type="text" name="website" className="hidden" tabIndex={-1} autoComplete="off" />
@@ -470,11 +428,11 @@ export default function GatewayPage() {
             <div className="grid gap-6 sm:grid-cols-2">
               <div>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Name</label>
-                <input required type="text" readOnly className="w-full bg-zinc-100/50 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl p-3.5 outline-none font-medium text-zinc-400 dark:text-zinc-500 cursor-not-allowed" value={user.displayName || "Google User"} />
+                <input required type="text" onChange={(e) => setUsername(e.target.value)} value={username} className="w-full bg-zinc-100/50 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-xl p-3.5 outline-none font-medium text-zinc-900 dark:text-zinc-100" placeholder="Your name" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Rating</label>
-                <select required className="w-full bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all outline-none font-medium text-zinc-900 dark:text-zinc-100 appearance-none">
+                <select required value={rating} onChange={(e) => setRating(e.target.value)} className="w-full bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all outline-none font-medium text-zinc-900 dark:text-zinc-100 appearance-none">
                   <option value="5">Excellent</option>
                   <option value="4">Good</option>
                   <option value="3">Average</option>
@@ -484,14 +442,13 @@ export default function GatewayPage() {
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Review</label>
-                <textarea required rows={4} className="w-full bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all outline-none font-medium text-zinc-900 dark:text-zinc-100 resize-y" placeholder="Write your feedback..."></textarea>
+                <textarea required value={review} onChange={(e) => setReview(e.target.value)} rows={4} className="w-full bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all outline-none font-medium text-zinc-900 dark:text-zinc-100 resize-y" placeholder="Write your feedback..."></textarea>
               </div>
             </div>
             <button type="submit" className="mt-8 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-[0.98]">
               Submit Review
             </button>
           </form>
-        )}
       </div>
 
       {/* Strict Section Order 4: Helpline Block */}

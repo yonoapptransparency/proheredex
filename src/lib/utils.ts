@@ -5,10 +5,7 @@ export function cn(...inputs: any[]): string {
 }
 
 export function getAdminPath(): string {
-  let envPath = null;
-  if (typeof process !== 'undefined') {
-    envPath = process.env?.VITE_ADMIN_PATH;
-  }
-  if (envPath) return envPath;
-  return ["x9", "k2", "m7", "admin"].join("-");
+  // Admin route now defaults to /admin - security is heavily enforced via FireAuth and lockouts
+  // rather than through trivial security-by-obscurity.
+  return (import.meta as any).env?.VITE_ADMIN_PATH || "admin";
 }

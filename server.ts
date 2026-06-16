@@ -10,35 +10,22 @@ import { generateStaticDataFileCode } from "./src/lib/githubSync";
 import CryptoJS from "crypto-js";
 import { GoogleGenAI, Type } from "@google/genai";
 
-function safeDecrypt(ciphertext: string, primarySecret: string) {
-    const fallbackKey = ["fallback", "secure", "store", "key", "19482"].join("-");
-    const fallbackKeys = [fallbackKey, "Shehzad@4874", "Shehzad@78"];
-    
-    // Try all keys
-    for (const key of [primarySecret, ...fallbackKeys]) {
-        if (!key || key.trim() === "") continue;
-        try {
-            const bytes = CryptoJS.AES.decrypt(ciphertext, key);
-            const text = bytes.toString(CryptoJS.enc.Utf8);
-            if (text && text.trim().length > 0) {
-                return text;
-            }
-        } catch(e) {
-            // Decryption attempt with key failed, try next key
-        }
+function safeDecrypt(ciphertext: string, secret: string): string {
+    if (!secret || secret.trim() === '') return '';
+    try {
+        const bytes = CryptoJS.AES.decrypt(ciphertext, secret);
+        const text = bytes.toString(CryptoJS.enc.Utf8);
+        return (text && text.trim().length > 0) ? text : '';
+    } catch (e) {
+        return '';
     }
-    // All decryption attempts failed, return empty string silently
-    return '';
 }
 
-function safeEncrypt(text: string, primarySecret: string) {
-    if (!text) return '';
-    const def = ['Shehzad', '@', '4874'].join('');
-    const sec = (primarySecret && primarySecret.trim() !== '') ? primarySecret : def;
-    try {
-        return CryptoJS.AES.encrypt(text, sec).toString();
-    } catch(e) {}
-    return '';
+function safeEncrypt(text: string, secret: string): string {
+    if (!text || !secret || secret.trim() === '') {
+        throw new Error('Cannot encrypt: AES_SECRET is required');
+    }
+    return CryptoJS.AES.encrypt(text, secret).toString();
 }
 
 function getRawFirebaseConfig(): any {
@@ -73,20 +60,9 @@ function getRawFirebaseConfig(): any {
 }
 
 
-function getFallbackTokenSecret(): string {
-  return ["stable", "fallback", "token", "for", "high", "availability", "91823"].join("-");
-}
-function getFallbackSessionSecret(): string {
-  return ["stable", "fallback", "session", "for", "high", "availability", "12093"].join("-");
-}
 
 // Cryptographic secrets for hashing, signature verification, and session identifiers
-const TOKEN_SECRET = process.env.TOKEN_SECRET || getFallbackTokenSecret();
-const SESSION_SECRET = process.env.SESSION_SECRET || getFallbackSessionSecret();
 
-if (!process.env.AES_SECRET) {
-  console.error("FATAL: AES_SECRET environment variable is not set. Encryption/Decryption will fail.");
-}
 
 // Comprehensive crawler, headless scraper, scanner, and search-spider blacklists
 const BAD_UA = [
@@ -284,7 +260,7 @@ function ensureSession(req: express.Request, res: express.Response): string {
   if (!req.cookies || !req.cookies.__sid) {
     const sid = crypto.randomBytes(24).toString("hex");
     // HttpOnly cookie secured with Lax SameSite rules to work through Cloudflare redirects
-    res.cookie("__sid", sid, { httpOnly: true, sameSite: "lax", maxAge: 300000 });
+    res.cookie("__sid", sid, { httpOnly: true, sameSite: "lax", maxAge: 300000, secure: process.env.NODE_ENV === 'production' });
     return sid;
   }
   return req.cookies.__sid;
@@ -324,9 +300,16 @@ function verifyToken(token: string, ip: string, sessionId: string, fingerprint: 
   }
 }
 
+const TOKEN_SECRET = process.env.TOKEN_SECRET || '';
+const SESSION_SECRET = process.env.SESSION_SECRET || '';
+
 async function startServer() {
   if (!process.env.AES_SECRET) {
     console.error('FATAL: AES_SECRET is not set. Download links cannot be decrypted. Set it in your environment and restart.');
+    process.exit(1);
+  }
+  if (!process.env.TOKEN_SECRET) {
+    console.error('FATAL: TOKEN_SECRET is not set. Tokens are not secure. Set it and restart.');
     process.exit(1);
   }
   const app = express();
