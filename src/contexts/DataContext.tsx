@@ -1,66 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, setDoc, getDoc, getDocFromServer } from 'firebase/firestore';
-import { db, auth, isFirebaseConfigured } from '../lib/firebase';
+import { db, auth, isFirebaseConfigured, OperationType, FirestoreErrorInfo, handleFirestoreError } from '../lib/firebase';
 import { AppConfig, GlobalSettings, NewsItem, BlogPost, VideoItem } from '../lib/staticData';
 import { GitConfig, generateStaticDataFileCode, commitFileToGitHub } from '../lib/githubSync';
 import { secureStorage } from '../lib/secureStorage';
-
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId?: string | null;
-    email?: string | null;
-    emailVerified?: boolean | null;
-    isAnonymous?: boolean | null;
-  }
-}
-
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  const user = auth?.currentUser;
-  const userEmail = user?.email || 'Anonymous/Not logged in';
-  const userId = user?.uid || 'No UID';
-  
-  const errInfo: FirestoreErrorInfo = {
-    error: errorMessage,
-    authInfo: {
-      userId: userId,
-      email: userEmail,
-      emailVerified: user?.emailVerified,
-      isAnonymous: user?.isAnonymous,
-    },
-    operationType,
-    path
-  };
-  console.error('Firestore Error Details: ', errInfo);
-  
-  if (errorMessage.includes('permissions') || errorMessage.includes('permission-denied')) {
-    const dbId = (auth?.app?.options as any)?.projectId;
-    const fullMsg = `Permission Denied!
-Path: ${path}
-Op: ${operationType}
-User: ${userEmail} (${userId})
-Verified: ${user?.emailVerified}
-Project: ${dbId}
-Raw Error: ${errorMessage}`;
-    
-    console.warn(`PERMISSION DENIED DEBUG: ${fullMsg}`);
-    throw new Error(fullMsg);
-  }
-  
-  throw new Error(errorMessage);
-}
 
 // Providing fallback data immediately helps avoid layout shifts
 import { mockApps, mockSettings, mockNews, mockBlogs, mockVideos } from '../lib/staticData';
@@ -93,6 +36,7 @@ interface DataContextType {
   saveVideos: (videos: VideoItem[]) => Promise<void>;
   isConnected: boolean | null;
   isLive: boolean;
+  quotaExceeded: boolean;
   
   // GitHub Integration States & Methods
   gitConfig: GitConfig | null;
@@ -274,8 +218,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [isLive, setIsLive] = useState(false);
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
   const [syncVersion, setSyncVersion] = useState(0);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(new Date().toLocaleTimeString());
+
+  const checkIsQuotaError = React.useCallback((err: any) => {
+    const msg = String(err?.message || err || '').toLowerCase();
+    const code = String(err?.code || '').toLowerCase();
+    return msg.includes('quota') || msg.includes('exhausted') || code.includes('quota') || code.includes('exhausted') || msg.includes('429');
+  }, []);
 
   // GitHub Integration States
   const [gitConfig, setGitConfig] = useState<GitConfig | null>(null);
@@ -329,6 +280,59 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return () => unsubAuth();
   }, []);
 
+  // Load local secure-links and baseline backup-data from the Express server backup to ensure instant offline & quota-proof loading
+  useEffect(() => {
+    const fetchBackupData = async () => {
+      try {
+        const res = await fetch('/api/v1/public/backup-data');
+        if (res.ok) {
+          const backup = await res.json();
+          if (backup) {
+            setApps(prev => {
+              if (prev.length === 0 && backup.apps && backup.apps.length > 0) {
+                secureStorage.setItem('rummystore_apps', JSON.stringify(backup.apps));
+                return backup.apps;
+              }
+              return prev;
+            });
+            setSettings(prev => {
+              if ((!prev || !prev.site_title) && backup.settings && backup.settings.site_title) {
+                secureStorage.setItem('rummystore_settings', JSON.stringify(backup.settings));
+                return backup.settings;
+              }
+              return prev;
+            });
+            setNews(prev => {
+              if (prev.length === 0 && backup.news && backup.news.length > 0) {
+                secureStorage.setItem('rummystore_news', JSON.stringify(backup.news));
+                return backup.news;
+              }
+              return prev;
+            });
+            setBlogs(prev => {
+              if (prev.length === 0 && backup.blogs && backup.blogs.length > 0) {
+                secureStorage.setItem('rummystore_blogs', JSON.stringify(backup.blogs));
+                return backup.blogs;
+              }
+              return prev;
+            });
+            setVideos(prev => {
+              if (prev.length === 0 && backup.videos && backup.videos.length > 0) {
+                secureStorage.setItem('rummystore_videos', JSON.stringify(backup.videos));
+                return backup.videos;
+              }
+              return prev;
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to load background public backup data:", err);
+      }
+    };
+    
+    fetchBackupData();
+  }, []);
+
   // Helper to ensure writes hit the server
   const withServerConfirmation = React.useCallback(async (operation: () => Promise<any>, timeoutMs: number = 20000) => {
     const timeoutPromise = new Promise((_, reject) => 
@@ -378,8 +382,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     }, 400);
 
+    const isPublicVisitorOnStaticDeploy = typeof window !== 'undefined' 
+        && window.location.pathname.indexOf('/admin') !== 0
+        && (window as any).__INITIAL_DATA__;
+
     const checkConnection = async () => {
-      if (!isFirebaseConfigured) {
+      if (!isFirebaseConfigured || isPublicVisitorOnStaticDeploy) {
           setIsConnected(false);
           setLoadedFromServer(true);
           setLoading(false);
@@ -408,11 +416,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         await getDoc(testDoc);
         setIsConnected(true);
       } catch (err: any) {
+        if (checkIsQuotaError(err)) {
+          setQuotaExceeded(true);
+        }
         // Only set disconnected if we are sure
         const errMsg = err.message || '';
         const errCode = err.code || '';
-        if (errMsg.includes('offline') || errCode === 'unavailable' || errCode === 'permission-denied') {
+        if (checkIsQuotaError(err) || errMsg.includes('offline') || errCode === 'unavailable' || errCode === 'permission-denied') {
           setIsConnected(false);
+          setIsLive(false);
           setLoadedFromServer(true); // default to True if offline/stuck
           setAppsSyncedWithServer(true);
           setSettingsSyncedWithServer(true);
@@ -432,7 +444,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     checkConnection();
     const connInterval = setInterval(checkConnection, 60000);
 
-    if (!isFirebaseConfigured) {
+    if (!isFirebaseConfigured || isPublicVisitorOnStaticDeploy) {
         return () => {
             if (timeout) clearTimeout(timeout);
             clearTimeout(syncTimeout);
@@ -520,6 +532,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
       }, (err) => {
         console.warn("Firestore apps listener error, falling back:", err);
+        if (checkIsQuotaError(err)) {
+          setQuotaExceeded(true);
+        }
         // Do not clear apps on error (quota exceeded, offline), keep cached value
         setAppsSyncedWithServer(true);
         setServerAppsFetched(true);
@@ -547,6 +562,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         checkLoaded('settings');
       }, (err) => {
         console.warn("Firestore settings listener error, falling back:", err);
+        if (checkIsQuotaError(err)) {
+          setQuotaExceeded(true);
+        }
         setSettingsSyncedWithServer(true);
         setLoadedFromServer(true);
         checkLoaded('settings');
@@ -571,6 +589,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
       }, (err) => {
         console.warn("Firestore news listener error, falling back:", err);
+        if (checkIsQuotaError(err)) {
+          setQuotaExceeded(true);
+        }
         // Do not clear data on error
         setNewsSyncedWithServer(true);
         setServerNewsFetched(true);
@@ -596,6 +617,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
       }, (err) => {
         console.warn("Firestore blogs listener error, falling back:", err);
+        if (checkIsQuotaError(err)) {
+          setQuotaExceeded(true);
+        }
         // Do not clear data on error
         setBlogsSyncedWithServer(true);
         setServerBlogsFetched(true);
@@ -621,6 +645,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
       }, (err) => {
         console.warn("Firestore videos listener error, falling back:", err);
+        if (checkIsQuotaError(err)) {
+          setQuotaExceeded(true);
+        }
         // Do not clear data on error
         setVideosSyncedWithServer(true);
         setServerVideosFetched(true);
@@ -636,6 +663,45 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const updateLocalContainerBackup = React.useCallback(async (
+    appsList: AppConfig[],
+    settingsObj: GlobalSettings,
+    newsList: NewsItem[],
+    blogsList: BlogPost[],
+    videosList: VideoItem[]
+  ) => {
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const authObj = getAuth();
+      const idToken = await authObj.currentUser?.getIdToken();
+      if (!idToken) {
+        console.warn("Could not retrieve idToken for local backup.");
+        return;
+      }
+      const res = await fetch('/api/v1/admin/backup-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          apps: appsList,
+          settings: settingsObj,
+          news: newsList,
+          blogs: blogsList,
+          videos: videosList
+        })
+      });
+      if (!res.ok) {
+        console.warn("backup-data endpoint failed:", await res.text());
+      } else {
+        console.log("Local filesystem backup successful");
+      }
+    } catch (e) {
+      console.warn("Failed to write local filesystem backup:", e);
+    }
+  }, []);
+
   // Memoized actions to prevent re-renders in children
   const saveApps = React.useCallback(async (newApps: AppConfig[]) => {
     // 1. Snappy optimistic update to local state and local memory first
@@ -648,20 +714,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const numChunks = Math.ceil(newApps.length / CHUNK_SIZE) || 1;
       const now = new Date().toISOString();
       
-      for (let i = 0; i < numChunks; i++) {
-        const chunk = JSON.parse(JSON.stringify(newApps.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE)));
-        chunk.forEach((app: any) => { 
-          // Inject public-safe metadata indicator for secure link availability
-          app.link_configured = !!(app.more_information_url || app.download_url || app.encrypted_download_url);
-          delete app.more_information_url; 
-          delete app.encrypted_download_url;
-          delete app.download_url;
-        });
-        await setDoc(doc(db, 'store_data', `apps_chunk_${i}`), { items: chunk });
+      try {
+        for (let i = 0; i < numChunks; i++) {
+          const chunk = JSON.parse(JSON.stringify(newApps.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE)));
+          chunk.forEach((app: any) => { 
+            // Inject public-safe metadata indicator for secure link availability
+            app.link_configured = !!(app.more_information_url || app.download_url || app.encrypted_download_url);
+            delete app.more_information_url; 
+            delete app.encrypted_download_url;
+            delete app.download_url;
+          });
+          await setDoc(doc(db, 'store_data', `apps_chunk_${i}`), { items: chunk });
+        }
+        
+        const metaRef = doc(db, 'store_data', 'apps_meta');
+        await setDoc(metaRef, { numChunks, last_updated: now });
+        console.log("Cloud: Pushed Apps catalog update to Firestore.");
+      } catch (dbErr) {
+        console.warn("Failed to push Apps catalog to Firestore (Quota exceeded or network issue). Proceeding with local/GitHub backups.", dbErr);
       }
-      
-      const metaRef = doc(db, 'store_data', 'apps_meta');
-      await setDoc(metaRef, { numChunks, last_updated: now });
       
       // Save secure links mapping separately (fully encrypted to prevent read-leak of download URLs)
       const secureLinks = newApps.map(a => ({ id: a.id, url: a.more_information_url || '' }));
@@ -692,8 +763,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (encryptedData) {
-        await setDoc(doc(db, 'store_data', 'secure_links'), { encryptedData });
-        await setDoc(doc(db, 'store_data', 'sec_public_links'), { encryptedData });
+        try {
+          await setDoc(doc(db, 'store_data', 'secure_links'), { encryptedData });
+          await setDoc(doc(db, 'store_data', 'sec_public_links'), { encryptedData });
+          console.log("Cloud: Pushed encrypted secure links map to Firestore.");
+        } catch (dbErr) {
+          console.warn("Failed to push secure links map to Firestore (Quota exceeded or network issue). Proceeding with local/GitHub backups.", dbErr);
+        }
       } else {
         console.error("Skipping secure_links update due to encryption failure to prevent data leak.");
         throw new Error("Link encryption failed. Check network or auth token.");
@@ -718,8 +794,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       console.error("Save Apps Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/apps');
+    } finally {
+      await updateLocalContainerBackup(newApps, settings, news, blogs, videos).catch(e => console.error(e));
     }
-  }, [gitConfig, settings, news, blogs, videos]);
+  }, [gitConfig, settings, news, blogs, videos, updateLocalContainerBackup]);
 
   const saveSettings = React.useCallback(async (newSettings: GlobalSettings) => {
     const now = new Date().toISOString();
@@ -732,7 +810,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       const docRef = doc(db, 'store_data', 'settings');
       console.log("Cloud: Pushing Settings update...");
-      await setDoc(docRef, settingsWithTime);
+      // Sanitize settings payload to exclude any 'undefined' properties, preventing Firestore write failures
+      const sanitized = JSON.parse(JSON.stringify(settingsWithTime));
+      await setDoc(docRef, sanitized);
       console.log("Cloud: Settings update acknowledged by server.");
 
       if (gitConfig?.autoSync) {
@@ -751,8 +831,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       console.error("Save Settings Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/settings');
+    } finally {
+      await updateLocalContainerBackup(apps, settingsWithTime, news, blogs, videos).catch(e => console.error(e));
     }
-  }, [gitConfig, apps, news, blogs, videos]);
+  }, [gitConfig, apps, news, blogs, videos, updateLocalContainerBackup]);
 
   const saveNews = React.useCallback(async (newNews: NewsItem[]) => {
     // 1. Snappy optimistic update to local state and local memory first
@@ -762,7 +844,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       const docRef = doc(db, 'store_data', 'news');
       console.log("Cloud: Pushing News update...");
-      await setDoc(docRef, { items: newNews });
+      // Sanitize payload to exclude any 'undefined' properties, preventing Firestore write failures
+      const sanitized = JSON.parse(JSON.stringify({ items: newNews }));
+      await setDoc(docRef, sanitized);
       console.log("Cloud: News update acknowledged by server.");
 
       if (gitConfig?.autoSync) {
@@ -781,8 +865,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       console.error("Save News Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/news');
+    } finally {
+      await updateLocalContainerBackup(apps, settings, newNews, blogs, videos).catch(e => console.error(e));
     }
-  }, [gitConfig, apps, settings, blogs, videos]);
+  }, [gitConfig, apps, settings, blogs, videos, updateLocalContainerBackup]);
 
   const saveBlogs = React.useCallback(async (newBlogs: BlogPost[]) => {
     // 1. Snappy optimistic update to local state and local memory first
@@ -792,7 +878,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       const docRef = doc(db, 'store_data', 'blogs');
       console.log("Cloud: Pushing Blogs update...");
-      await setDoc(docRef, { items: newBlogs });
+      // Sanitize payload to exclude any 'undefined' properties, preventing Firestore write failures
+      const sanitized = JSON.parse(JSON.stringify({ items: newBlogs }));
+      await setDoc(docRef, sanitized);
       console.log("Cloud: Blogs update acknowledged by server.");
 
       if (gitConfig?.autoSync) {
@@ -811,8 +899,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       console.error("Save Blogs Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/blogs');
+    } finally {
+      await updateLocalContainerBackup(apps, settings, news, newBlogs, videos).catch(e => console.error(e));
     }
-  }, [gitConfig, apps, settings, news, videos]);
+  }, [gitConfig, apps, settings, news, videos, updateLocalContainerBackup]);
 
   const saveVideos = React.useCallback(async (newVideos: VideoItem[]) => {
     // 1. Snappy optimistic update to local state and local memory first
@@ -822,7 +912,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       const docRef = doc(db, 'store_data', 'videos');
       console.log("Cloud: Pushing Videos update...");
-      await setDoc(docRef, { items: newVideos });
+      // Sanitize payload to exclude any 'undefined' properties, preventing Firestore write failures
+      const sanitized = JSON.parse(JSON.stringify({ items: newVideos }));
+      await setDoc(docRef, sanitized);
       console.log("Cloud: Videos update acknowledged by server.");
 
       if (gitConfig?.autoSync) {
@@ -841,14 +933,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       console.error("Save Videos Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/videos');
+    } finally {
+      await updateLocalContainerBackup(apps, settings, news, blogs, newVideos).catch(e => console.error(e));
     }
-  }, [gitConfig, apps, settings, news, blogs]);
+  }, [gitConfig, apps, settings, news, blogs, updateLocalContainerBackup]);
 
   const saveGitConfig = React.useCallback(async (newConfig: GitConfig) => {
     try {
       const docRef = doc(db, 'sec_git', 'cfg');
       console.log("Cloud: Pushing Git Configuration update...");
-      await setDoc(docRef, newConfig);
+      // Sanitize payload to exclude any 'undefined' properties, preventing Firestore write failures
+      const sanitized = JSON.parse(JSON.stringify(newConfig));
+      await setDoc(docRef, sanitized);
       setGitConfig(newConfig);
       console.log("Cloud: Git Configuration saved successfully.");
     } catch (err) {
@@ -889,17 +985,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const testCloudConnection = React.useCallback(async () => {
     if (!isFirebaseConfigured) return false;
     console.log("Connectivity Test: Starting...");
-    const testDoc = doc(db, 'store_data', 'connectivity_test');
+    const settingsDoc = doc(db, 'store_data', 'settings');
     
     try {
-      await withServerConfirmation(() => setDoc(testDoc, { 
-        last_test: Math.random().toString(36).substring(7), 
-        timestamp: new Date().toISOString()
-      }), 10000);
-      
+      await getDocFromServer(settingsDoc);
       return true;
-    } catch (err) {
-      console.error("Connectivity Test: Write failed.", err);
+    } catch (err: any) {
+      console.warn("Connectivity Test: Read failed.", err.message || err);
       return false;
     }
   }, []);
@@ -993,8 +1085,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setServerVideosFetched(true);
       setLoadedFromServer(true);
       console.log("Manual Refresh: Parallel Fetch Success.");
-    } catch (err) {
-      console.error("Manual refresh failed:", err);
+    } catch (err: any) {
+      console.warn("Manual refresh failed (using fallback memory mode):", err.message || err);
       setIsConnected(false);
       throw err;
     } finally {
@@ -1031,6 +1123,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     saveVideos,
     isConnected,
     isLive,
+    quotaExceeded,
     gitConfig,
     gitConfigLoading,
     saveGitConfig,
@@ -1041,7 +1134,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     serverAppsFetched, serverNewsFetched, serverBlogsFetched, serverVideosFetched,
     syncVersion, lastSyncTime,
     refreshAll, testCloudConnection, saveApps, saveSettings, saveNews, saveBlogs, saveVideos,
-    isConnected, isLive, gitConfig, gitConfigLoading, saveGitConfig, pushAllToGitHub
+    isConnected, isLive, quotaExceeded, gitConfig, gitConfigLoading, saveGitConfig, pushAllToGitHub
   ]);
 
   return (

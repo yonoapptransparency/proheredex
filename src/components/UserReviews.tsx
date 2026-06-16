@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Star, ShieldCheck, Check, Loader2, ThumbsUp, AlertCircle, Sparkles, MessageSquare, Plus, ChevronDown, ChevronUp, Flag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { db, isFirebaseConfigured } from '../lib/firebase';
+import { db, isFirebaseConfigured, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, addDoc, getDocs, query, where, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 
 interface Review {
   id: string;
@@ -48,11 +49,32 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
   const [success, setSuccess] = useState(false);
   const [errorText, setErrorText] = useState('');
 
+  // Google Auth states
+  const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
   // Form states
   const [username, setUsername] = useState('');
   const [rating, setRating] = useState(5);
   const [hoveredRating, setHoveredRating] = useState<number | null>(null);
   const [comment, setComment] = useState('');
+
+  useEffect(() => {
+    if (!auth) {
+      setAuthLoading(false);
+      return;
+    }
+    const unsubscribe = auth.onAuthStateChanged((u) => {
+      setUser(u);
+      setAuthLoading(false);
+      if (u) {
+        setUsername(u.displayName || u.email?.split('@')[0] || '');
+      } else {
+        setUsername('');
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Expand states for long comments
   const [expandedReviews, setExpandedReviews] = useState<Record<string, boolean>>({});
@@ -134,8 +156,7 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
         try {
           const q = query(
             collection(db, 'reviews'),
-            where('app_id', '==', appId),
-            orderBy('created_at', 'desc')
+            where('app_id', '==', appId)
           );
           const snap = await getDocs(q);
           const firestoreReviews: Review[] = snap.docs.map(doc => {
@@ -163,6 +184,7 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
           combinedReviews = [...firestoreReviews, ...filteredLocal, ...baseReviews];
         } catch (dbErr) {
           console.warn('Firestore reviews fetch failed, falling back to cached state', dbErr);
+          handleFirestoreError(dbErr, OperationType.LIST, 'reviews');
         }
       }
 
@@ -229,7 +251,7 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
         localStorage.setItem(`local_user_reviews_${appId}`, JSON.stringify(updated));
       }
     } catch (e) {
-      console.error('Failed to update local storage review report status', e);
+      console.warn('Failed to update local storage review report status', e);
     }
 
     // 3. If Firebase is active and it's a remote review (not mock), update in Firestore
@@ -242,8 +264,9 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
           reported: true,
           report_count: currentReportCount + 1
         });
-      } catch (firebaseErr) {
-        console.error('Could not update report status in Firestore:', firebaseErr);
+      } catch (firebaseErr: any) {
+        console.warn('Could not update report status in Firestore:', firebaseErr.message || firebaseErr);
+        handleFirestoreError(firebaseErr, OperationType.UPDATE, `reviews/${id}`);
       }
     }
   };
@@ -251,6 +274,11 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorText('');
+    
+    if (!user) {
+      setErrorText('Please sign in with Google first.');
+      return;
+    }
     
     // Validations with absolute strictness
     const cleanUsername = username.trim().replace(/<[^>]*>?/gm, '');
@@ -334,14 +362,9 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
       setRating(5);
       
       setTimeout(() => setSuccess(false), 5000);
-    } catch (saveErr) {
-      console.error('Remote sync reviews failure:', saveErr);
-      // We still succeeded locally so we show a success callback to user
-      setSuccess(true);
-      setUsername('');
-      setComment('');
-      setRating(5);
-      setTimeout(() => setSuccess(false), 4000);
+    } catch (saveErr: any) {
+      console.warn('Remote sync reviews failure (fallback storage active):', saveErr.message || saveErr);
+      handleFirestoreError(saveErr, OperationType.CREATE, 'reviews');
     } finally {
       setSubmitting(false);
     }
@@ -436,114 +459,171 @@ export default function UserReviews({ appId, appTitle, overallRating = 5.0 }: Us
               <span>Share your gameplay review</span>
             </h3>
 
-            <form onSubmit={handleReviewSubmit} className="space-y-4">
-              {/* Star Selection Row */}
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Your Rating:</span>
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <motion.button
-                      key={s}
-                      type="button"
-                      whileHover={{ scale: 1.2 }}
-                      whileTap={{ scale: 0.9 }}
-                      onMouseEnter={() => setHoveredRating(s)}
-                      onMouseLeave={() => setHoveredRating(null)}
-                      onClick={() => setRating(s)}
-                      className="p-1 focus:outline-none cursor-pointer"
-                    >
-                      <Star 
-                        className={`w-6 h-6 transition-colors duration-200 ${
-                          s <= (hoveredRating !== null ? hoveredRating : rating)
-                            ? 'fill-amber-400 text-amber-400' 
-                            : 'text-zinc-300 dark:text-zinc-700'
-                        }`} 
-                      />
-                    </motion.button>
-                  ))}
-                </div>
-                <span className="text-xs font-bold text-amber-500 ml-1">
-                  {rating === 5 ? 'Excellent!' : rating === 4 ? 'Very Good' : rating === 3 ? 'Good' : rating === 2 ? 'Fair' : 'Poor'}
-                </span>
+            {authLoading ? (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
               </div>
-
-              {/* Grid Inputs */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-1">
-                  <label htmlFor="username" className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wider">Username</label>
-                  <input
-                    id="username"
-                    type="text"
-                    required
-                    maxLength={30}
-                    placeholder="e.g. GamerRox"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full bg-zinc-50 focus:bg-white dark:bg-zinc-950 border border-black/5 dark:border-white/10 rounded-xl p-3 text-xs font-medium text-zinc-800 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                  />
+            ) : !user ? (
+              <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+                <div className="p-3 bg-blue-500/10 rounded-full mb-3 animate-pulse">
+                  <ShieldCheck className="w-6 h-6 text-blue-500" />
                 </div>
-                <div className="sm:col-span-2">
-                  <label htmlFor="comment" className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wider">Review comment</label>
-                  <textarea
-                    id="comment"
-                    required
-                    maxLength={500}
-                    placeholder="Write a constructive, honest review of the gameplay experience..."
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    rows={2}
-                    className="w-full bg-zinc-50 focus:bg-white dark:bg-zinc-950 border border-black/5 dark:border-white/10 rounded-xl p-3 text-xs font-medium text-zinc-800 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none min-h-[72px]"
-                  />
-                  <div className="flex justify-end text-[10px] text-zinc-400 dark:text-zinc-500 mt-1">
-                    {comment.length}/500 characters
+                <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-1">Sign in with Google to write a review</h4>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md mb-4 leading-relaxed">
+                  We require Google verification to ensure all submitted strategies and reviews are authentic and published by real players.
+                </p>
+                {errorText && (
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-500 mb-3 justify-center">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{errorText}</span>
                   </div>
-                </div>
-              </div>
-
-              {/* Action and notifications */}
-              <div className="flex items-center justify-between gap-4 pt-1">
-                <div className="flex-1">
-                  {errorText && (
-                    <div className="flex items-center gap-1 text-xs font-semibold text-rose-500">
-                      <AlertCircle className="w-4 h-4 shrink-0" />
-                      <span>{errorText}</span>
-                    </div>
-                  )}
-
-                  <AnimatePresence>
-                    {success && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        className="flex items-center gap-1.5 text-xs font-bold text-emerald-500"
-                      >
-                        <Check className="w-4 h-4 text-emerald-500 shrink-0 animate-bounce" />
-                        <span>Review submitted! Thank you for helping the community.</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
+                )}
                 <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex items-center justify-center gap-2 h-10 px-5 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 font-bold text-xs rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shrink-0"
+                  type="button"
+                  onClick={async () => {
+                    setErrorText('');
+                    const provider = new GoogleAuthProvider();
+                    try {
+                      await signInWithPopup(auth, provider);
+                    } catch (e: any) {
+                      setErrorText("Login failed: " + e.message);
+                    }
+                  }}
+                  className="flex items-center gap-2.5 bg-white dark:bg-zinc-950 border border-zinc-250 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-zinc-800 dark:text-zinc-100 font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer text-xs active:scale-95"
                 >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Submitting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Post Review</span>
-                    </>
-                  )}
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                     <path fill="#EA4335" d="M12.24 10.285V14.4h6.887C18.2 16.63 15.645 18 12.24 18c-3.18 0-5.85-2.15-6.812-5.043l-3.237 2.49A11.964 11.964 0 0012.24 24c6.64 0 11.76-4.66 11.76-11.715 0-.49-.044-.96-.128-1.41l-11.632-.59z"/>
+                     <path fill="#4285F4" d="M24 12c0-.79-.07-1.54-.19-2.27H12v4.51h6.72c-.29 1.5-.14 2.76 1.13 3.65L23 14.35C21.84 13.1 24 12 24 12z"/>
+                     <path fill="#FBBC05" d="M5.428 12.957a7.15 7.15 0 010-1.913l-3.237-2.492a11.964 11.964 0 000 6.896l3.237-2.49z"/>
+                     <path fill="#34A853" d="M12.24 6c1.8 0 3.42.62 4.69 1.83l3.43-3.43C18.17 2.31 15.42 1.2 12.24 1.2a11.964 11.964 0 00-10.05 5.34l3.23 2.5C6.39 6.15 9.06 6 12.24 6z"/>
+                  </svg>
+                  <span>Sign in with Google</span>
                 </button>
               </div>
-            </form>
+            ) : (
+              <form onSubmit={handleReviewSubmit} className="space-y-4">
+                {/* Star Selection Row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Your Rating:</span>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <motion.button
+                          key={s}
+                          type="button"
+                          whileHover={{ scale: 1.2 }}
+                          whileTap={{ scale: 0.9 }}
+                          onMouseEnter={() => setHoveredRating(s)}
+                          onMouseLeave={() => setHoveredRating(null)}
+                          onClick={() => setRating(s)}
+                          className="p-1 focus:outline-none cursor-pointer"
+                        >
+                          <Star 
+                            className={`w-6 h-6 transition-colors duration-200 ${
+                              s <= (hoveredRating !== null ? hoveredRating : rating)
+                                ? 'fill-amber-400 text-amber-400' 
+                                : 'text-zinc-300 dark:text-zinc-700'
+                            }`} 
+                          />
+                        </motion.button>
+                      ))}
+                    </div>
+                    <span className="text-xs font-bold text-amber-500 ml-1">
+                      {rating === 5 ? 'Excellent!' : rating === 4 ? 'Very Good' : rating === 3 ? 'Good' : rating === 2 ? 'Fair' : 'Poor'}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => signOut(auth)}
+                    className="text-[10px] text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 font-semibold underline cursor-pointer"
+                  >
+                    Disconnect Google
+                  </button>
+                </div>
+
+                {/* Grid Inputs */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-1">
+                    <span className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wider">Posting As</span>
+                    <div className="flex items-center gap-2.5 bg-zinc-50 dark:bg-zinc-950 border border-black/5 dark:border-white/10 rounded-xl p-2.5 h-[46px] min-w-0">
+                      {user.photoURL ? (
+                        <img src={user.photoURL} alt={user.displayName || 'Google User'} referrerPolicy="no-referrer" className="w-6 h-6 rounded-full border border-black/10 dark:border-white/10 shrink-0" />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+                          {(user.displayName || 'G')[0].toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1 leading-none">
+                        <p className="text-xs font-bold text-zinc-850 dark:text-zinc-100 truncate">{user.displayName || 'Google User'}</p>
+                        <span className="text-[8px] font-bold text-emerald-500 tracking-wider uppercase block mt-0.5">Verified</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="sm:col-span-2">
+                    <label htmlFor="comment" className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wider">Review comment</label>
+                    <textarea
+                      id="comment"
+                      required
+                      maxLength={500}
+                      placeholder="Write a constructive, honest review of the gameplay experience..."
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      rows={2}
+                      className="w-full bg-zinc-50 focus:bg-white dark:bg-zinc-950 border border-black/5 dark:border-white/10 rounded-xl p-3 text-xs font-medium text-zinc-800 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none min-h-[46px]"
+                    />
+                    <div className="flex justify-end text-[10px] text-zinc-400 dark:text-zinc-500 mt-1">
+                      {comment.length}/500 characters
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action and notifications */}
+                <div className="flex items-center justify-between gap-4 pt-1">
+                  <div className="flex-1">
+                    {errorText && (
+                      <div className="flex items-center gap-1 text-xs font-semibold text-rose-500">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{errorText}</span>
+                      </div>
+                    )}
+
+                    <AnimatePresence>
+                      {success && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center gap-1.5 text-xs font-bold text-emerald-500"
+                        >
+                          <Check className="w-4 h-4 text-emerald-500 shrink-0 animate-bounce" />
+                          <span>Review submitted! Thank you for helping the community.</span>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex items-center justify-center gap-2 h-10 px-5 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 font-bold text-xs rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shrink-0"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Submitting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Post Review</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
 
           {/* Feedback list with beautiful sort control bar */}

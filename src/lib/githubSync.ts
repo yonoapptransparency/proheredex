@@ -90,6 +90,7 @@ export interface GlobalSettings {
   hero_title_animation?: string;
   hero_title_subtitle?: string;
   hero_title_visible?: boolean;
+  ga_tracking_id?: string;
 }
 
 export interface NewsItem {
@@ -110,6 +111,11 @@ export interface NewsItem {
   content: string;
   published_at?: string;
   link: string;
+  read_time?: string;
+  author?: string;
+  description_html?: string;
+  date?: string;
+  tags?: string[];
 }
 
 export interface AppConfig {
@@ -145,6 +151,8 @@ export interface AppConfig {
   custom_admin_box_heading?: string;
   features_html?: string;
   faqs?: {question: string; answer: string}[];
+  link_configured?: boolean;
+  more_information_url?: string;
 }
 
 export interface Review {
@@ -169,6 +177,13 @@ export interface BlogPost {
   seo_keywords?: string;
   canonical_url?: string;
   target_region?: string;
+  description?: string;
+  description_html?: string;
+  thumbnail_url?: string;
+  publish_date?: string;
+  read_time?: string;
+  tags?: string[];
+  created_at?: string;
 }
 
 export interface NewsUpdate {

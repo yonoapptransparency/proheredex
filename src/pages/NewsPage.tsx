@@ -60,7 +60,7 @@ export default function NewsPage() {
             className="group flex flex-col"
           >
             <Link to={`/news/${item.slug}`} className="block h-64 sm:h-80 rounded-[24px] overflow-hidden mb-6 shadow-sm border border-black/5">
-              <img src={item.logo_url} alt={item.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <img src={item.logo_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80'} alt={item.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             </Link>
             <div className="flex flex-col">
               <div className="flex items-center gap-3 mb-3">

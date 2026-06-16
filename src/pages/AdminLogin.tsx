@@ -125,7 +125,7 @@ export default function AdminLogin() {
             <p className="text-xs text-blue-400 font-bold mb-2">PREVIEW MODE NOTICE</p>
             <ol className="text-xs text-blue-200/80 space-y-1 list-decimal ml-4">
               <li>Google Auth popups are blocked in embedded iframes. Please <strong>↗ Open in new tab</strong> using the button at the top right of this panel.</li>
-              <li>Or, go to your Firebase Console &rarr; Authentication, enable <strong>Email/Password</strong>, add a user with email <em>defentechscholar@gmail.com</em> and log in here directly without popups!</li>
+              <li>Or, go to your Firebase Console &rarr; Authentication, enable <strong>Email/Password</strong>, add a user with your registered admin email and log in here directly without popups!</li>
             </ol>
           </div>
         )}

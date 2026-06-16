@@ -37,8 +37,8 @@ export default function VideoDetailPage() {
         console.log(`Deep Link Sync: Video "${slug}" not found in local cache. Syncing latest indices...`);
         try {
           await refreshAll(true);
-        } catch (e) {
-          console.error("Deep Link Video Auto-Sync failed:", e);
+        } catch (e: any) {
+          console.warn("Deep Link Video Auto-Sync failed:", e.message || e);
         } finally {
           if (active) {
             setTriedRefresh(true);

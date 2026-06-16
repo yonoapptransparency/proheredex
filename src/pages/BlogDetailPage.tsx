@@ -30,8 +30,8 @@ export default function BlogDetailPage() {
         console.log(`Deep Link Sync: Blog "${slug}" not found in local cache. Syncing latest indices...`);
         try {
           await refreshAll(true);
-        } catch (e) {
-          console.error("Deep Link Blog Auto-Sync failed:", e);
+        } catch (e: any) {
+          console.warn("Deep Link Blog Auto-Sync failed:", e.message || e);
         } finally {
           if (active) {
             setTriedRefresh(true);

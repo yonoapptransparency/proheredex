@@ -8,13 +8,14 @@ async function run() {
   const db = getFirestore(app);
 
   try {
-    const emailRef = doc(db, 'admins', 'defentechscholar@gmail.com');
+    const adminEmail = process.argv[2] || process.env.ADMIN_EMAIL || 'defentechscholar@gmail.com';
+    const emailRef = doc(db, 'admins', adminEmail.toLowerCase().trim());
     await setDoc(emailRef, {
-      email: 'defentechscholar@gmail.com',
+      email: adminEmail.toLowerCase().trim(),
       role: 'admin',
       created_at: new Date().toISOString()
     });
-    console.log("Admin record successfully created/updated in Firestore.");
+    console.log(`Admin record for ${adminEmail} successfully created/updated in Firestore.`);
     process.exit(0);
   } catch (err) {
     console.error("Error creating admin record:", err);

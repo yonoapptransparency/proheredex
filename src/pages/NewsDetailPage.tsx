@@ -37,8 +37,8 @@ export default function NewsDetailPage() {
         console.log(`Deep Link Sync: News "${slug}" not found in local cache. Syncing latest indices...`);
         try {
           await refreshAll(true);
-        } catch (e) {
-          console.error("Deep Link News Auto-Sync failed:", e);
+        } catch (e: any) {
+          console.warn("Deep Link News Auto-Sync failed:", e.message || e);
         } finally {
           if (active) {
             setTriedRefresh(true);
@@ -193,7 +193,7 @@ export default function NewsDetailPage() {
 
         {newsItem.logo_url && (
             <div className="w-full aspect-video mb-12 rounded-3xl overflow-hidden shadow-sm border border-black/5 dark:border-white/5 bg-zinc-50 dark:bg-zinc-900">
-                <img src={newsItem.logo_url} alt={newsItem.title} loading="eager" decoding="async" className="w-full h-full object-cover" />
+                <img src={newsItem.logo_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80'} alt={newsItem.title} loading="eager" decoding="async" className="w-full h-full object-cover" />
             </div>
         )}
         

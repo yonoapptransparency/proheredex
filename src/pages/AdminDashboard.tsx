@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { getAdminPath } from '../lib/utils';
-import { LayoutDashboard, Users, FileText, Settings, ShieldAlert, Shield, LogOut, Save, Upload, Type, Link as LinkIcon, ToggleLeft, Layers, Newspaper, Plus, Trash2, Video as VideoIcon, Github, GitBranch, RefreshCw, CheckCircle2, AlertTriangle, Search, MessageSquare, CheckSquare } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Settings, ShieldAlert, Shield, LogOut, Save, Upload, Type, Link as LinkIcon, ToggleLeft, Layers, Newspaper, Plus, Trash2, Video as VideoIcon, Github, GitBranch, RefreshCw, CheckCircle2, AlertTriangle, Search, MessageSquare, CheckSquare, Sparkles } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { db, auth } from '../lib/firebase';
 import { AppConfig, GlobalSettings, NewsItem, BlogPost, VideoItem } from '../lib/staticData';
@@ -105,27 +105,141 @@ const DashboardTab = React.memo(({ apps, news }: { apps: any[], news: any[] }) =
 
 // Memoized Tab Components
 const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDeleteApp, handleSaveApp, categories, saving, faqsJson }: any) => {
+  const editApp = editingAppId ? appsList.find((a: any) => a.id === editingAppId) : null;
+
+  // Form Fields State
+  const [formFields, setFormFields] = useState<any>({
+    name: '',
+    slug: '',
+    icon_url: '',
+    seo_title: '',
+    seo_description: '',
+    seo_keywords: '',
+    og_image_url: '',
+    canonical_url: '',
+    target_region: '',
+    safety_status: 'Verified',
+    serial_number: '',
+    version: '1.0',
+    file_size: 'Unknown',
+    developer: 'Admin',
+    rating: 5.0,
+    is_new: true,
+    is_coming_soon: false,
+    publish_date: '',
+    release_notes: '',
+    more_information_url: '',
+    red_box_msg: '',
+    yellow_box_msg: '',
+    idea_box_msg: '',
+    features_html: '',
+    custom_admin_box_heading: '',
+    custom_admin_box_html: '',
+    description_html: '',
+    category_list: [] as string[],
+    custom_category: '',
+    faqs: [] as {question: string, answer: string}[],
+  });
+
+  // AI Workshop State
+  const [rawInput, setRawInput] = useState('');
+  const [aiStatus, setAiStatus] = useState<'idle' | 'sanitizing' | 'connecting' | 'processing' | 'success' | 'error'>('idle');
+  const [aiError, setAiError] = useState('');
+  const [isUnlocked, setIsUnlocked] = useState(false);
+
+  // Sync state when editApp changes
+  useEffect(() => {
+    if (editingAppId !== null) {
+      setFormFields({
+        name: editApp?.name || '',
+        slug: editApp?.slug || '',
+        icon_url: editApp?.icon_url || '',
+        seo_title: editApp?.seo_title || '',
+        seo_description: editApp?.seo_description || '',
+        seo_keywords: editApp?.seo_keywords || '',
+        og_image_url: editApp?.og_image_url || '',
+        canonical_url: editApp?.canonical_url || '',
+        target_region: editApp?.target_region || '',
+        safety_status: editApp?.safety_status || 'Verified',
+        serial_number: editApp?.serial_number !== undefined ? editApp.serial_number : '',
+        version: editApp?.version || '1.0',
+        file_size: editApp?.file_size || 'Unknown',
+        developer: editApp?.developer || 'Admin',
+        rating: editApp?.rating !== undefined ? editApp.rating : 5.0,
+        is_new: editApp ? !!editApp.is_new : true,
+        is_coming_soon: editApp ? !!editApp.is_coming_soon : false,
+        publish_date: editApp?.publish_date ? new Date(new Date(editApp.publish_date).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '',
+        release_notes: editApp?.release_notes || '',
+        more_information_url: editApp?.more_information_url || '',
+        red_box_msg: editApp?.red_box_msg || '',
+        yellow_box_msg: editApp?.yellow_box_msg || '',
+        idea_box_msg: editApp?.idea_box_msg || '',
+        features_html: editApp?.features_html || '',
+        custom_admin_box_heading: editApp?.custom_admin_box_heading || '',
+        custom_admin_box_html: editApp?.custom_admin_box_html || '',
+        description_html: editApp?.description_html || '',
+        category_list: editApp?.category ? editApp.category.split(',').map((c: string) => c.trim()) : [],
+        custom_category: editApp?.category ? editApp.category.split(',').map((c: string) => c.trim()).filter((c: string) => !categories?.map((cg: string) => cg.toLowerCase()).includes(c.toLowerCase())).join(', ') : '',
+        faqs: editApp?.faqs || []
+      });
+    }
+  }, [editApp, editingAppId, categories]);
+
+  // Authenticate admin locally & unlock the workspace (Step 1 matching)
+  useEffect(() => {
+    let active = true;
+    const unsubscribe = onAuthStateChanged(auth, async (usr) => {
+      if (!active) return;
+      if (usr) {
+        try {
+          const idToken = await usr.getIdToken();
+          const res = await fetch('/api/v1/admin/verify', {
+            headers: { 'Authorization': `Bearer ${idToken}` }
+          });
+          const data = await res.json();
+          if (data.authorized && active) {
+            setIsUnlocked(true);
+          } else if (active) {
+            setIsUnlocked(false);
+          }
+        } catch {
+          if (active) setIsUnlocked(false);
+        }
+      } else {
+        if (active) setIsUnlocked(false);
+      }
+    });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
+
+  const handleFieldChange = (field: string, value: any) => {
+    setFormFields((prev: any) => ({ ...prev, [field]: value }));
+  };
+
   if (editingAppId !== null) {
-    const editApp = editingAppId ? appsList.find((a: any) => a.id === editingAppId) : null;
     return (
       <div className="animate-fade-in">
         <div className="flex justify-between items-center mb-6 border-b border-black/10 dark:border-white/10 pb-4">
           <h2 className="text-xl font-bold dark:text-white">{editingAppId ? 'Edit Application' : 'Add New Application'}</h2>
           <button onClick={() => setEditingAppId(null)} className="text-sm font-medium opacity-60 hover:opacity-100 px-4 py-2 dark:text-white">Cancel</button>
         </div>
+
         <form onSubmit={handleSaveApp} className="space-y-6">
           <div className="grid gap-6 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">App Name</label>
-              <input type="text" name="name" defaultValue={editApp?.name} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" required />
+              <input type="text" name="name" value={formFields.name} onChange={e => handleFieldChange('name', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" required />
             </div>
             <div>
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">Custom App Slug (URL Part)</label>
-              <input type="text" name="slug" defaultValue={editApp?.slug} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" placeholder="Leave blank to auto-generate from name" />
+              <input type="text" name="slug" value={formFields.slug} onChange={e => handleFieldChange('slug', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" placeholder="Leave blank to auto-generate from name" />
             </div>
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">App Icon / Logo URL</label>
-              <input type="text" name="icon_url" defaultValue={editApp?.icon_url} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" placeholder="Link to the app logo image" />
+              <input type="text" name="icon_url" value={formFields.icon_url} onChange={e => handleFieldChange('icon_url', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" placeholder="Link to the app logo image" />
             </div>
             <div className="md:col-span-2">
               <label className="block text-xs font-black uppercase tracking-widest text-[10px] opacity-60 mb-2 dark:text-white">Categories</label>
@@ -136,7 +250,18 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
                       type="checkbox" 
                       name="category_list" 
                       value={cat} 
-                      defaultChecked={editApp?.category ? editApp.category.toLowerCase().split(',').map((c: string) => c.trim()).includes(cat.toLowerCase()) : false}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        const list = [...formFields.category_list];
+                        if (checked) {
+                          if (!list.includes(cat)) list.push(cat);
+                        } else {
+                          const idx = list.indexOf(cat);
+                          if (idx > -1) list.splice(idx, 1);
+                        }
+                        handleFieldChange('category_list', list);
+                      }}
+                      checked={formFields.category_list.includes(cat)}
                       className="rounded border-black/20 bg-black/5 text-pink-500 focus:ring-pink-500 w-4 h-4"
                     />
                     <span className="text-sm opacity-80 dark:text-white">{cat}</span>
@@ -149,7 +274,8 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
                   type="text" 
                   name="custom_category" 
                   placeholder="e.g. Action, Featured, Live" 
-                  defaultValue={editApp?.category ? editApp.category.split(',').map((c: string) => c.trim()).filter((c: string) => !categories?.map((cg: string) => cg.toLowerCase()).includes(c.toLowerCase())).join(', ') : ''}
+                  value={formFields.custom_category}
+                  onChange={e => handleFieldChange('custom_category', e.target.value)}
                   className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 text-sm dark:text-white font-bold"
                 />
               </div>
@@ -158,34 +284,34 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
             {/* RESTORED SEO FIELDS */}
             <div>
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">SEO Title</label>
-              <input type="text" name="seo_title" defaultValue={editApp?.seo_title} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" placeholder="Custom SEO Title" />
+              <input type="text" name="seo_title" value={formFields.seo_title} onChange={e => handleFieldChange('seo_title', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" placeholder="Custom SEO Title" />
             </div>
             <div>
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">SEO Description</label>
-              <textarea name="seo_description" defaultValue={editApp?.seo_description} rows={2} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" placeholder="Custom SEO Description (auto-generated from HTML if left blank)"></textarea>
+              <textarea name="seo_description" value={formFields.seo_description} onChange={e => handleFieldChange('seo_description', e.target.value)} rows={2} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" placeholder="Custom SEO Description (auto-generated from HTML if left blank)"></textarea>
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">SEO Keywords (Comma Separated)</label>
-              <input type="text" name="seo_keywords" defaultValue={editApp?.seo_keywords} placeholder="e.g., vpn, privacy, util app" className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
+              <input type="text" name="seo_keywords" value={formFields.seo_keywords} onChange={e => handleFieldChange('seo_keywords', e.target.value)} placeholder="e.g., vpn, privacy, util app" className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">SEO OG Image URL (Social Sharing)</label>
-              <input type="text" name="og_image_url" defaultValue={editApp?.og_image_url} placeholder="Image URL for social media shares" className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
+              <input type="text" name="og_image_url" value={formFields.og_image_url} onChange={e => handleFieldChange('og_image_url', e.target.value)} placeholder="Image URL for social media shares" className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
             </div>
             <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">Canonical URL</label>
-                <input type="url" name="canonical_url" defaultValue={editApp?.canonical_url} placeholder="Original URL to prevent SEO penalty" className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
+                <input type="url" name="canonical_url" value={formFields.canonical_url} onChange={e => handleFieldChange('canonical_url', e.target.value)} placeholder="Original URL to prevent SEO penalty" className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
               </div>
               <div>
                 <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">Target Region (GEO Optimization)</label>
-                <input type="text" name="target_region" defaultValue={editApp?.target_region} placeholder="e.g., Global, India, USA" className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
+                <input type="text" name="target_region" value={formFields.target_region} onChange={e => handleFieldChange('target_region', e.target.value)} placeholder="e.g., Global, India, USA" className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">Traffic Light Status</label>
-              <select name="safety_status" defaultValue={editApp?.safety_status || 'Verified'} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white dark:bg-slate-900">
+              <select name="safety_status" value={formFields.safety_status} onChange={e => handleFieldChange('safety_status', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white dark:bg-slate-900 font-bold">
                 <option value="Verified">🟢 Verified (Green)</option>
                 <option value="Caution">🟡 Caution (Yellow)</option>
                 <option value="Unsafe">🔴 Unsafe (Red)</option>
@@ -193,23 +319,23 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
             </div>
             <div>
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">Serial Number (Sort Order)</label>
-              <input type="number" name="serial_number" defaultValue={editApp?.serial_number || ''} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
+              <input type="number" name="serial_number" value={formFields.serial_number} onChange={e => handleFieldChange('serial_number', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
             </div>
             <div>
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">App Version</label>
-              <input type="text" name="version" defaultValue={editApp?.version || '1.0'} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" required />
+              <input type="text" name="version" value={formFields.version} onChange={e => handleFieldChange('version', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" required />
             </div>
             <div>
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">File Size</label>
-              <input type="text" name="file_size" defaultValue={editApp?.file_size || 'Unknown'} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" required />
+              <input type="text" name="file_size" value={formFields.file_size} onChange={e => handleFieldChange('file_size', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" required />
             </div>
             <div>
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">Developer</label>
-              <input type="text" name="developer" defaultValue={editApp?.developer || 'Admin'} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" required />
+              <input type="text" name="developer" value={formFields.developer} onChange={e => handleFieldChange('developer', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" required />
             </div>
             <div>
               <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">App Rating (0.0 to 10.0)</label>
-              <input type="number" step="0.1" min="0.0" max="10.0" name="rating" defaultValue={editApp?.rating !== undefined ? editApp.rating : 5.0} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" required />
+              <input type="number" step="0.1" min="0.0" max="10.0" name="rating" value={formFields.rating} onChange={e => handleFieldChange('rating', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" required />
             </div>
           </div>
 
@@ -220,7 +346,7 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
                 <div className="text-sm opacity-60 dark:text-white/60">Display "New" or "Major Update" badge.</div>
               </div>
               <div className="flex items-center gap-2">
-                <input type="checkbox" name="is_new" defaultChecked={editApp ? editApp.is_new : true} className="w-5 h-5 accent-pink-500" />
+                <input type="checkbox" name="is_new" checked={formFields.is_new} onChange={e => handleFieldChange('is_new', e.target.checked)} className="w-5 h-5 accent-pink-500" />
                 <span className="text-sm font-bold dark:text-white">Show Tag</span>
               </div>
             </div>
@@ -232,27 +358,27 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
                   <div className="text-sm opacity-60 dark:text-white/60">Suspend gateway clearance on the frontend for this app.</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <input type="checkbox" name="is_coming_soon" defaultChecked={editApp ? editApp.is_coming_soon : false} className="w-5 h-5 accent-amber-500" />
+                  <input type="checkbox" name="is_coming_soon" checked={formFields.is_coming_soon} onChange={e => handleFieldChange('is_coming_soon', e.target.checked)} className="w-5 h-5 accent-amber-500" />
                   <span className="text-sm font-bold dark:text-white">Enable</span>
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-amber-500 mb-1">Publish Launch Timer (Local Time)</label>
-                <input type="datetime-local" name="publish_date" defaultValue={editApp?.publish_date ? new Date(new Date(editApp.publish_date).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''} className="w-full bg-white dark:bg-slate-900 border border-amber-500/30 rounded-lg p-3 dark:text-white" />
-                <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-1 mt-1 font-medium">When this timer finishes, the "Coming Soon" tag is dropped and secure gateway access is unlocked.</p>
+                <input type="datetime-local" name="publish_date" value={formFields.publish_date} onChange={e => handleFieldChange('publish_date', e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-amber-500/30 rounded-lg p-3 dark:text-white" />
+                <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-1 font-medium">When this timer finishes, the "Coming Soon" tag is dropped and secure gateway access is unlocked.</p>
               </div>
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-pink-500 mb-1 uppercase italic font-black">Release Notes (What's New)</label>
-            <textarea name="release_notes" defaultValue={editApp?.release_notes || ''} rows={3} placeholder="* Fixed bugs&#10;* Added new features" className="w-full bg-black/5 dark:bg-white/5 border border-pink-500/30 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 dark:text-white"></textarea>
+            <textarea name="release_notes" value={formFields.release_notes} onChange={e => handleFieldChange('release_notes', e.target.value)} rows={3} placeholder="* Fixed bugs&#10;* Added new features" className="w-full bg-black/5 dark:bg-white/5 border border-pink-500/30 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 dark:text-white"></textarea>
           </div>
 
           <div className="border border-black/10 dark:border-white/10 rounded-xl p-4 bg-black/5 dark:bg-white/5 space-y-4">
              <h3 className="font-bold text-lg dark:text-white flex items-center gap-2"><LinkIcon className="w-4 h-4 text-pink-500"/> File Access Config</h3>
              <label className="block text-sm font-medium opacity-60 dark:text-white">More Information URL (Secured string shown - input new http URL to change)</label>
-             <input type="text" name="more_information_url" defaultValue={editApp?.more_information_url} placeholder="https://..." className="w-full bg-white dark:bg-slate-900 border border-pink-500/30 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
+             <input type="text" name="more_information_url" value={formFields.more_information_url} onChange={e => handleFieldChange('more_information_url', e.target.value)} placeholder="https://..." className="w-full bg-white dark:bg-slate-900 border border-pink-500/30 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
           </div>
 
           {/* RESTORED UI ADMIN BOXES */}
@@ -260,40 +386,40 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
             <h3 className="font-bold text-lg dark:text-white border-b border-black/10 dark:border-white/10 pb-2 flex items-center gap-2"><Layers className="w-4 h-4 text-pink-500"/> Custom Interaction UI</h3>
             <div>
               <label className="block text-sm font-medium text-rose-500 mb-1">Red Box Warning Message</label>
-              <input type="text" name="red_box_msg" defaultValue={editApp?.red_box_msg || ''} className="w-full bg-rose-500/10 border border-rose-500/30 rounded-lg p-3 focus:ring-2 focus:ring-rose-500 min-h-[48px] dark:text-white" />
+              <input type="text" name="red_box_msg" value={formFields.red_box_msg} onChange={e => handleFieldChange('red_box_msg', e.target.value)} className="w-full bg-rose-500/10 border border-rose-500/30 rounded-lg p-3 focus:ring-2 focus:ring-rose-500 min-h-[48px] dark:text-white" />
             </div>
             <div>
               <label className="block text-sm font-medium text-amber-500 mb-1">Yellow Box Notice Message</label>
-              <input type="text" name="yellow_box_msg" defaultValue={editApp?.yellow_box_msg || ''} className="w-full bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 focus:ring-2 focus:ring-amber-500 min-h-[48px] dark:text-white" />
+              <input type="text" name="yellow_box_msg" value={formFields.yellow_box_msg} onChange={e => handleFieldChange('yellow_box_msg', e.target.value)} className="w-full bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 focus:ring-2 focus:ring-amber-500 min-h-[48px] dark:text-white" />
             </div>
             <div>
               <label className="block text-sm font-medium text-pink-500 mb-1">Idea / Tip Message</label>
-              <input type="text" name="idea_box_msg" defaultValue={editApp?.idea_box_msg || ''} className="w-full bg-pink-500/10 border border-pink-500/30 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
+              <input type="text" name="idea_box_msg" value={formFields.idea_box_msg} onChange={e => handleFieldChange('idea_box_msg', e.target.value)} className="w-full bg-pink-500/10 border border-pink-500/30 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 min-h-[48px] dark:text-white" />
             </div>
           </div>
 
           <div className="grid gap-4">
             <div>
               <label className="block text-sm font-medium text-purple-500 mb-1">Features Section (HTML)</label>
-              <textarea name="features_html" defaultValue={editApp?.features_html || ''} rows={6} className="w-full bg-purple-500/5 border border-purple-500/20 rounded-sm p-1.5 dark:text-white font-mono text-sm" placeholder="<ul class='list-disc pl-5'><li>Feature 1</li></ul>"></textarea>
+              <textarea name="features_html" value={formFields.features_html} onChange={e => handleFieldChange('features_html', e.target.value)} rows={6} className="w-full bg-purple-500/5 border border-purple-500/20 rounded-sm p-1.5 dark:text-white font-mono text-sm" placeholder="<ul class='list-disc pl-5'><li>Feature 1</li></ul>"></textarea>
             </div>
             <div>
               <label className="block text-sm font-medium text-purple-500 mb-1">Extended Info Box Heading</label>
-              <input type="text" name="custom_admin_box_heading" defaultValue={editApp?.custom_admin_box_heading || ''} className="w-full bg-purple-500/5 border border-purple-500/20 rounded-lg p-3 dark:text-white" />
+              <input type="text" name="custom_admin_box_heading" value={formFields.custom_admin_box_heading} onChange={e => handleFieldChange('custom_admin_box_heading', e.target.value)} className="w-full bg-purple-500/5 border border-purple-500/20 rounded-lg p-3 dark:text-white" />
             </div>
             <div>
               <label className="block text-sm font-medium text-purple-500 mb-1">Extended Info Content (HTML)</label>
-              <textarea name="custom_admin_box_html" defaultValue={editApp?.custom_admin_box_html || ''} rows={10} className="w-full bg-purple-500/5 border border-purple-500/20 rounded-sm p-1.5 dark:text-white font-mono text-sm"></textarea>
+              <textarea name="custom_admin_box_html" value={formFields.custom_admin_box_html} onChange={e => handleFieldChange('custom_admin_box_html', e.target.value)} rows={10} className="w-full bg-purple-500/5 border border-purple-500/20 rounded-sm p-1.5 dark:text-white font-mono text-sm"></textarea>
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium opacity-60 mb-1 dark:text-white">Full Application Description (HTML)</label>
-            <textarea name="description_html" defaultValue={editApp?.description_html} rows={16} placeholder="<h1>Title</h1><p>Description here...</p>" className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm p-1.5 focus:ring-2 focus:ring-pink-500 dark:text-white font-mono text-sm"></textarea>
+            <textarea name="description_html" value={formFields.description_html} onChange={e => handleFieldChange('description_html', e.target.value)} rows={16} placeholder="<h1>Title</h1><p>Description here...</p>" className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm p-1.5 focus:ring-2 focus:ring-pink-500 dark:text-white font-mono text-sm"></textarea>
           </div>
 
           <div className="border border-black/10 dark:border-white/10 rounded-xl p-4 bg-black/5 dark:bg-white/5">
-            <FaqEditor key={editApp?.id || 'new'} initialFaqs={editApp?.faqs || []} />
+            <FaqEditor key={(editApp?.id || 'new') + '_' + (formFields.faqs?.length || 0)} initialFaqs={formFields.faqs || []} />
           </div>
           <button type="submit" disabled={saving} className="min-h-[48px] w-full sm:w-auto px-8 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-lg transition-all flex justify-center items-center gap-2 shadow-lg shadow-pink-500/20">
             {saving ? 'Saving...' : <><Save className="w-5 h-5"/> Save Application</>}
@@ -729,104 +855,139 @@ const SettingsTab = React.memo(({ mockSettings, handleSaveSettings, saving }: an
   </div>
 ));
 
-const NewsTab = React.memo(({ newsList, handleAddNews, handleDeleteNews, handleNewsChange, saveMockNews, saving, setSaving }: any) => (
+const NewsTab = React.memo(({ newsList, handleAddNews, handleDeleteNews, handleNewsChange, saveMockNews, saving, setSaving, appsList }: any) => {
+  const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
+
+  return (
   <div className="animate-fade-in space-y-6">
     <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-6 rounded-2xl border-2 border-black/10 dark:border-white/10 shadow-xl shadow-pink-500/5">
       <h2 className="text-2xl font-black flex items-center gap-2 dark:text-white uppercase italic tracking-tighter"><Newspaper className="w-6 h-6 text-pink-500 underline" /> Manage News System</h2>
-      <button onClick={handleAddNews} className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest italic transition-all shadow-lg shadow-pink-500/30 active:scale-95"><Plus className="w-5 h-5" /> Add New Item</button>
+      <button onClick={() => {
+        const newId = handleAddNews();
+        setEditingNewsId(newId);
+      }} className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest italic transition-all shadow-lg shadow-pink-500/30 active:scale-95"><Plus className="w-5 h-5" /> Add Empty Item</button>
     </div>
-    <div className="grid gap-8">
+    <div className="grid gap-6">
       {newsList.map((item: any) => (
-        <div key={item.id} className="bg-white dark:bg-slate-900 border-2 border-black/10 dark:border-white/10 rounded-[2rem] p-8 relative shadow-2xl overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 bg-rose-500/10 rounded-bl-3xl border-l border-b border-rose-500/20 group-hover:bg-rose-500 transition-all cursor-pointer z-10" onClick={() => handleDeleteNews(item.id)}>
-            <Trash2 className="w-5 h-5 text-rose-500 group-hover:text-white" />
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div key={item.id} className="bg-white dark:bg-slate-900 border-2 border-black/10 dark:border-white/10 rounded-[2rem] p-6 sm:p-8 relative shadow-xl overflow-hidden">
+          {editingNewsId === item.id ? (
             <div className="space-y-6">
-              <h3 className="font-black text-xs uppercase tracking-[0.3em] text-pink-500 italic pb-2 border-b border-pink-500/10">General Information</h3>
-              <div>
-                <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Title</label>
-                <input type="text" value={item.title} onChange={e => handleNewsChange(item.id, 'title', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-bold" placeholder="News Title" />
-              </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-2 border-black/10 dark:border-white/10 pb-6 mb-6 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Slug (URL)</label>
-                  <input type="text" value={item.slug} onChange={e => handleNewsChange(item.id, 'slug', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-mono text-xs" />
+                  <h3 className="font-black text-xl uppercase tracking-widest italic text-pink-500 flex items-center gap-2"><LayoutDashboard className="w-5 h-5"/> News Editor</h3>
+                  <p className="text-[10px] font-bold opacity-50 uppercase tracking-[0.2em] dark:text-white mt-1">ID: {item.id}</p>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Category</label>
-                  <input type="text" value={item.category || ''} onChange={e => handleNewsChange(item.id, 'category', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-mono text-xs" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Logo/Thumb URL</label>
-                  <input type="text" value={item.logo_url} onChange={e => handleNewsChange(item.id, 'logo_url', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-mono text-xs" />
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <button onClick={() => handleDeleteNews(item.id)} className="flex-1 sm:flex-none flex justify-center items-center gap-2 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white px-5 py-3 rounded-xl font-black uppercase tracking-wider text-xs transition-all"><Trash2 className="w-4 h-4" /> Delete</button>
+                  <button onClick={() => setEditingNewsId(null)} className="flex-1 sm:flex-none flex justify-center items-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white px-5 py-3 rounded-xl font-black uppercase tracking-wider text-xs transition-all">Close</button>
                 </div>
               </div>
-              <div>
-                <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Short Description</label>
-                <textarea value={item.description} onChange={e => handleNewsChange(item.id, 'description', e.target.value)} rows={3} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-medium"></textarea>
-              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div className="space-y-6">
+                  <h3 className="font-black text-xs uppercase tracking-[0.3em] text-pink-500 italic pb-2 border-b border-pink-500/10">General Information</h3>
+                  <div>
+                    <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Title</label>
+                    <input type="text" value={item.title} onChange={e => handleNewsChange(item.id, 'title', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-bold" placeholder="News Title" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Slug (URL)</label>
+                      <input type="text" value={item.slug} onChange={e => handleNewsChange(item.id, 'slug', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-mono text-xs" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Category</label>
+                      <input type="text" value={item.category || ''} onChange={e => handleNewsChange(item.id, 'category', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-mono text-xs" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Logo/Thumb URL</label>
+                      <input type="text" value={item.logo_url} onChange={e => handleNewsChange(item.id, 'logo_url', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-mono text-xs" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Short Description</label>
+                    <textarea value={item.description} onChange={e => handleNewsChange(item.id, 'description', e.target.value)} rows={3} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-medium"></textarea>
+                  </div>
 
-              <h3 className="font-black text-xs uppercase tracking-[0.3em] text-pink-500 italic pb-2 border-b border-pink-500/10 mt-8">Leadership / CEO Config</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">CEO Name</label>
-                  <input type="text" value={item.ceo_name} onChange={e => handleNewsChange(item.id, 'ceo_name', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-bold" />
+                  <h3 className="font-black text-xs uppercase tracking-[0.3em] text-pink-500 italic pb-2 border-b border-pink-500/10 mt-8">Leadership / CEO Config</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">CEO Name</label>
+                      <input type="text" value={item.ceo_name} onChange={e => handleNewsChange(item.id, 'ceo_name', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-bold" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">CEO Role/Title</label>
+                      <input type="text" value={item.ceo_description} onChange={e => handleNewsChange(item.id, 'ceo_description', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-bold" />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">CEO Role/Title</label>
-                  <input type="text" value={item.ceo_description} onChange={e => handleNewsChange(item.id, 'ceo_description', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-bold" />
+
+                <div className="space-y-6">
+                  <h3 className="font-black text-xs uppercase tracking-[0.3em] text-pink-500 italic pb-2 border-b border-pink-500/10">SEO & Social Meta</h3>
+                  <div className="grid gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">SEO Optimized Title</label>
+                      <input type="text" value={item.seo_title} onChange={e => handleNewsChange(item.id, 'seo_title', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">SEO Meta Description</label>
+                      <textarea value={item.seo_description} onChange={e => handleNewsChange(item.id, 'seo_description', e.target.value)} rows={2} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-medium"></textarea>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Social OG Image</label>
+                        <input type="text" value={item.og_image_url} onChange={e => handleNewsChange(item.id, 'og_image_url', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-mono text-[10px]" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Canonical URL</label>
+                        <input type="text" value={item.canonical_url} onChange={e => handleNewsChange(item.id, 'canonical_url', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-mono text-[10px]" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Target Region</label>
+                        <input type="text" value={item.target_region} onChange={e => handleNewsChange(item.id, 'target_region', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-bold text-[10px]" placeholder="Global" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">SEO Keywords</label>
+                        <input type="text" value={item.seo_keywords} onChange={e => handleNewsChange(item.id, 'seo_keywords', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-bold text-[10px]" placeholder="keyword1, keyword2" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Source Link</label>
+                        <input type="text" value={item.link} onChange={e => handleNewsChange(item.id, 'link', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-mono text-[10px]" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <h3 className="font-black text-xs uppercase tracking-[0.3em] text-pink-500 italic pb-2 border-b border-pink-500/10 mt-8">Full Content Editor</h3>
+                  <div>
+                    <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">News Body (Markdown/HTML)</label>
+                    <textarea value={item.content} onChange={e => handleNewsChange(item.id, 'content', e.target.value)} rows={16} className="w-full bg-slate-900 border border-pink-500/20 rounded-sm p-1.5 text-pink-500 font-mono text-sm focus:border-pink-500 outline-none shadow-inner"></textarea>
+                  </div>
                 </div>
               </div>
             </div>
-
-            <div className="space-y-6">
-              <h3 className="font-black text-xs uppercase tracking-[0.3em] text-pink-500 italic pb-2 border-b border-pink-500/10">SEO & Social Meta</h3>
-              <div className="grid gap-4">
-                <div>
-                  <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">SEO Optimized Title</label>
-                  <input type="text" value={item.seo_title} onChange={e => handleNewsChange(item.id, 'seo_title', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white" />
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-5 items-center justify-between">
+              <div className="flex items-center gap-6 flex-1 min-w-0 w-full sm:w-auto overflow-hidden">
+                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center border-2 border-black/5 dark:border-white/5 shrink-0 overflow-hidden">
+                  {item.logo_url ? <img src={item.logo_url} alt="Logo" className="w-full h-full object-cover" /> : <Newspaper className="w-6 h-6 text-slate-400" />}
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">SEO Meta Description</label>
-                  <textarea value={item.seo_description} onChange={e => handleNewsChange(item.id, 'seo_description', e.target.value)} rows={2} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-medium"></textarea>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Social OG Image</label>
-                    <input type="text" value={item.og_image_url} onChange={e => handleNewsChange(item.id, 'og_image_url', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-mono text-[10px]" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Canonical URL</label>
-                    <input type="text" value={item.canonical_url} onChange={e => handleNewsChange(item.id, 'canonical_url', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-mono text-[10px]" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Target Region</label>
-                    <input type="text" value={item.target_region} onChange={e => handleNewsChange(item.id, 'target_region', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-bold text-[10px]" placeholder="Global" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">SEO Keywords</label>
-                    <input type="text" value={item.seo_keywords} onChange={e => handleNewsChange(item.id, 'seo_keywords', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-bold text-[10px]" placeholder="keyword1, keyword2" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">Source Link</label>
-                    <input type="text" value={item.link} onChange={e => handleNewsChange(item.id, 'link', e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-xl py-3 px-5 dark:text-white font-mono text-[10px]" />
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl font-black dark:text-white truncate" title={item.title || "Untitled"}>{item.title || "Untitled"}</h3>
+                  <div className="flex gap-4 items-center mt-2 flex-wrap text-slate-500 dark:text-slate-400">
+                    <p className="text-sm font-semibold truncate flex gap-1 items-center bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md"><LinkIcon className="w-3 h-3"/> {item.slug || "no-slug"}</p>
+                    <p className="text-xs font-bold uppercase tracking-widest border border-slate-200 dark:border-slate-700 px-2 rounded-full">{item.category || "Uncategorized"}</p>
                   </div>
                 </div>
               </div>
-
-              <h3 className="font-black text-xs uppercase tracking-[0.3em] text-pink-500 italic pb-2 border-b border-pink-500/10 mt-8">Full Content Editor</h3>
-              <div>
-                <label className="block text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest italic dark:text-white">News Body (Markdown/HTML)</label>
-                <textarea value={item.content} onChange={e => handleNewsChange(item.id, 'content', e.target.value)} rows={16} className="w-full bg-slate-900 border border-pink-500/20 rounded-sm p-1.5 text-pink-500 font-mono text-sm focus:border-pink-500 outline-none shadow-inner"></textarea>
+              <div className="flex items-center gap-3 shrink-0 mt-4 sm:mt-0 w-full sm:w-auto">
+                <button onClick={() => setEditingNewsId(item.id)} className="flex-1 sm:flex-none justify-center bg-black hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 text-white dark:text-black px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all flex items-center gap-2"><Settings className="w-4 h-4"/> Modify</button>
               </div>
             </div>
-          </div>
+          )}
         </div>
       ))}
     </div>
@@ -836,7 +997,8 @@ const NewsTab = React.memo(({ newsList, handleAddNews, handleDeleteNews, handleN
       </button>
     </div>
   </div>
-));
+  );
+});
 
 const BlogsTab = React.memo(({ blogs, handleAddBlog, handleDeleteBlog, handleBlogChange, handleSaveBlogs, saving }: any) => (
   <div className="animate-fade-in space-y-6">
@@ -895,7 +1057,7 @@ const BlogsTab = React.memo(({ blogs, handleAddBlog, handleDeleteBlog, handleBlo
               </div>
               
               <div>
-                <img src={blog.cover_url} className="w-full h-40 object-cover rounded-2xl border-2 border-black/10 shadow-lg mt-4" alt="Preview" />
+                <img src={blog.cover_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80'} className="w-full h-40 object-cover rounded-2xl border-2 border-black/10 shadow-lg mt-4" alt="Preview" />
               </div>
             </div>
             <div className="space-y-6">
@@ -987,39 +1149,96 @@ interface AdminReview {
   helpful_count: number;
   is_approved: boolean;
   source?: string;
+  type: 'review' | 'ticket' | 'feedback';
+  email?: string;
+  status?: string;
 }
 
 const ReviewsModerationTab = ({ db }: { db: any }) => {
   const [items, setItems] = useState<AdminReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [actioning, setActioning] = useState<string | null>(null);
-  const [activeSubTab, setActiveSubTab] = useState<'all' | 'tickets' | 'reviews'>('all');
+  const [activeSubTab, setActiveSubTab] = useState<'all' | 'tickets' | 'reviews' | 'feedbacks'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchModerationItems = async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(collection(db, 'reviews'));
       const list: AdminReview[] = [];
-      snap.forEach((docSnap) => {
-        const data = docSnap.data();
-        list.push({
-          id: docSnap.id,
-          app_id: data.app_id || '',
-          username: data.username || '',
-          rating: Number(data.rating || 0),
-          comment: data.comment || '',
-          created_at: data.created_at || '',
-          helpful_count: Number(data.helpful_count || 0),
-          is_approved: !!data.is_approved,
-          source: data.source || '',
+      
+      // 1. Fetch user reviews and missing link reports
+      try {
+        const snap = await getDocs(collection(db, 'reviews'));
+        snap.forEach((docSnap) => {
+          const data = docSnap.data();
+          list.push({
+            id: docSnap.id,
+            type: data.source === 'missing_link_report' ? 'ticket' : 'review',
+            app_id: data.app_id || '',
+            username: data.username || '',
+            rating: Number(data.rating || 0),
+            comment: data.comment || '',
+            created_at: data.created_at || '',
+            helpful_count: Number(data.helpful_count || 0),
+            is_approved: !!data.is_approved,
+            source: data.source || 'reviews_db',
+          });
         });
-      });
-      // Sort by created_at desc
+      } catch (err) {
+        console.warn("Failed to load reviews:", err);
+      }
+
+      // 2. Fetch formal customer support tickets
+      try {
+        const snap = await getDocs(collection(db, 'support_tickets'));
+        snap.forEach((docSnap) => {
+          const data = docSnap.data();
+          list.push({
+            id: docSnap.id,
+            type: 'ticket',
+            app_id: 'Support Center Form',
+            username: data.username || 'Anonymous User',
+            email: data.email || '',
+            rating: 0,
+            comment: data.comment || '',
+            created_at: data.created_at || '',
+            helpful_count: 0,
+            is_approved: data.status === 'resolved',
+            status: data.status || 'pending',
+            source: data.source || 'contact_page',
+          });
+        });
+      } catch (err) {
+        console.warn("Failed to load support_tickets:", err);
+      }
+
+      // 3. Fetch instant platform feedback loops
+      try {
+        const snap = await getDocs(collection(db, 'website_feedback'));
+        snap.forEach((docSnap) => {
+          const data = docSnap.data();
+          list.push({
+            id: docSnap.id,
+            type: 'feedback',
+            app_id: 'Website Feedback Hub',
+            username: data.username || 'Anonymous User',
+            rating: Number(data.rating || 0),
+            comment: data.comment || '',
+            created_at: data.created_at || '',
+            helpful_count: 0,
+            is_approved: true,
+            source: data.source || 'website_feedback_db',
+          });
+        });
+      } catch (err) {
+        console.warn("Failed to load website_feedback:", err);
+      }
+
+      // Sort globally by created_at descending
       list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setItems(list);
-    } catch (err) {
-      console.error("Error loading reviews for moderation:", err);
+    } catch (err: any) {
+      console.warn("Error loading support dispatch items:", err.message || err);
     } finally {
       setLoading(false);
     }
@@ -1029,50 +1248,73 @@ const ReviewsModerationTab = ({ db }: { db: any }) => {
     fetchModerationItems();
   }, [db]);
 
-  const handleApprove = async (id: string) => {
+  const handleApprove = async (id: string, type: 'review' | 'ticket' | 'feedback', isMissingLink: boolean) => {
     setActioning(id);
     try {
-      await updateDoc(doc(db, 'reviews', id), { is_approved: true });
-      setItems(items.map(item => item.id === id ? { ...item, is_approved: true } : item));
+      if (type === 'ticket') {
+        if (isMissingLink) {
+          await updateDoc(doc(db, 'reviews', id), { is_approved: true });
+        } else {
+          await updateDoc(doc(db, 'support_tickets', id), { status: 'resolved' });
+        }
+      } else {
+        await updateDoc(doc(db, 'reviews', id), { is_approved: true });
+      }
+      setItems(items.map(item => item.id === id ? { ...item, is_approved: true, status: 'resolved' } : item));
     } catch (err) {
-      console.error("Failed to approve review:", err);
+      console.error("Failed to approve/resolve support item:", err);
     } finally {
       setActioning(null);
     }
   };
 
-  const handleDelete = async (id: string, isReport: boolean) => {
+  const handleDelete = async (id: string, type: 'review' | 'ticket' | 'feedback', isMissingLink: boolean) => {
+    const isReport = type === 'ticket';
     const confirmationMsg = isReport 
       ? "Resolve and permanently close this support ticket? This confirms the application access gateway has been verified and updated."
-      : "Permanently delete this user review?";
+      : "Permanently delete this customer case/review?";
     
     if (!confirm(confirmationMsg)) return;
     setActioning(id);
     try {
-      await deleteDoc(doc(db, 'reviews', id));
+      if (type === 'ticket') {
+        if (isMissingLink) {
+          await deleteDoc(doc(db, 'reviews', id));
+        } else {
+          await deleteDoc(doc(db, 'support_tickets', id));
+        }
+      } else if (type === 'feedback') {
+        await deleteDoc(doc(db, 'website_feedback', id));
+      } else {
+        await deleteDoc(doc(db, 'reviews', id));
+      }
       setItems(items.filter(item => item.id !== id));
     } catch (err) {
-      console.error("Failed to delete review:", err);
+      console.error("Failed to delete support item:", err);
     } finally {
       setActioning(null);
     }
   };
 
-  const reports = items.filter(item => item.source === 'missing_link_report');
-  const reviews = items.filter(item => item.source !== 'missing_link_report');
+  const reports = items.filter(item => item.type === 'ticket');
+  const reviews = items.filter(item => item.type === 'review');
+  const feedbacks = items.filter(item => item.type === 'feedback');
 
   const pendingReviewsCount = reviews.filter(r => !r.is_approved).length;
+  const pendingTicketsCount = reports.filter(t => t.status === 'pending' || !t.is_approved).length;
 
   const filteredItems = items.filter(item => {
-    if (activeSubTab === 'tickets' && item.source !== 'missing_link_report') return false;
-    if (activeSubTab === 'reviews' && item.source === 'missing_link_report') return false;
+    if (activeSubTab === 'tickets' && item.type !== 'ticket') return false;
+    if (activeSubTab === 'reviews' && item.type !== 'review') return false;
+    if (activeSubTab === 'feedbacks' && item.type !== 'feedback') return false;
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      const matchApp = item.app_id.toLowerCase().includes(query);
-      const matchComment = item.comment.toLowerCase().includes(query);
-      const matchUser = item.username.toLowerCase().includes(query);
-      return matchApp || matchComment || matchUser;
+      const matchApp = (item.app_id || '').toLowerCase().includes(query);
+      const matchComment = (item.comment || '').toLowerCase().includes(query);
+      const matchUser = (item.username || '').toLowerCase().includes(query);
+      const matchEmail = (item.email || '').toLowerCase().includes(query);
+      return matchApp || matchComment || matchUser || matchEmail;
     }
 
     return true;
@@ -1085,13 +1327,13 @@ const ReviewsModerationTab = ({ db }: { db: any }) => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-[10px] uppercase tracking-[0.25em] font-black text-slate-400 dark:text-zinc-500 font-mono">Live Support Triage</span>
+            <span className="text-[10px] uppercase tracking-[0.25em] font-black text-slate-400 dark:text-zinc-500 font-mono">Unified Customer Service Desk</span>
           </div>
           <h2 className="text-3xl font-black dark:text-white uppercase italic tracking-tighter">
             Customer Support Center
           </h2>
           <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium font-sans">
-            Triage active inbound support cases, routing tickets, and moderate community reviews.
+            Triage active inbound support cases, resolve Google sign-in tickets, and reply to web platform ratings.
           </p>
         </div>
         <button 
@@ -1106,7 +1348,7 @@ const ReviewsModerationTab = ({ db }: { db: any }) => {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-28 gap-4">
           <RefreshCw className="w-12 h-12 text-pink-500 animate-spin" />
-          <span className="text-xs font-black uppercase text-slate-400 tracking-widest font-mono">Fetching Support Queue...</span>
+          <span className="text-xs font-black uppercase text-slate-400 tracking-widest font-mono">Fetching Unified Dispatch...</span>
         </div>
       ) : (
         <div className="space-y-8">
@@ -1114,35 +1356,41 @@ const ReviewsModerationTab = ({ db }: { db: any }) => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-slate-50 dark:bg-zinc-900 border-2 border-black/5 dark:border-white/5 rounded-2xl p-5 flex items-center justify-between shadow-sm relative overflow-hidden">
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Inbound Support Tickets</span>
+                <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Support Tickets</span>
                 <div className="text-2xl font-black dark:text-white">{reports.length}</div>
-                <p className="text-[9px] font-semibold text-rose-500 bg-rose-500/10 px-2.5 py-0.5 rounded-full w-fit">Pending configuration updates</p>
+                <p className="text-[9px] font-semibold text-rose-500 bg-rose-500/10 px-2.5 py-0.5 rounded-full w-fit">
+                  {pendingTicketsCount} unresolved tickets
+                </p>
               </div>
               <ShieldAlert className="w-10 h-10 text-rose-500 opacity-20" />
             </div>
 
             <div className="bg-slate-50 dark:bg-zinc-900 border-2 border-black/5 dark:border-white/5 rounded-2xl p-5 flex items-center justify-between shadow-sm relative overflow-hidden">
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Awaiting Publication</span>
-                <div className="text-2xl font-black dark:text-white">{pendingReviewsCount}</div>
-                <p className="text-[9px] font-semibold text-amber-500 bg-amber-500/10 px-2.5 py-0.5 rounded-full w-fit">Community feedback queue</p>
+                <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">App Reviews Queue</span>
+                <div className="text-2xl font-black dark:text-white">{reviews.length}</div>
+                <p className="text-[9px] font-semibold text-amber-500 bg-amber-500/10 px-2.5 py-0.5 rounded-full w-fit">
+                  {pendingReviewsCount} to moderate
+                </p>
               </div>
               <MessageSquare className="w-10 h-10 text-amber-500 opacity-20" />
             </div>
 
             <div className="bg-slate-50 dark:bg-zinc-950 border-2 border-black/5 dark:border-white/5 rounded-2xl p-5 flex items-center justify-between shadow-sm relative overflow-hidden">
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">SLA Status Health</span>
-                <div className="text-2xl font-black text-emerald-500">99.8% SLA</div>
-                <p className="text-[9px] font-semibold text-emerald-500 bg-emerald-500/10 px-2.5 py-0.5 rounded-full w-fit">Active Dispatch</p>
+                <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Platform Feedback Items</span>
+                <div className="text-2xl font-black text-indigo-500 dark:text-indigo-400">{feedbacks.length}</div>
+                <p className="text-[9px] font-semibold text-indigo-500 bg-indigo-500/10 px-2.5 py-0.5 rounded-full w-fit">
+                  Instant portal analytics
+                </p>
               </div>
-              <CheckCircle2 className="w-10 h-10 text-emerald-500 opacity-20" />
+              <CheckCircle2 className="w-10 h-10 text-indigo-500 opacity-20" />
             </div>
           </div>
 
           {/* Controls Bar */}
           <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-slate-50 dark:bg-zinc-900/60 border-2 border-black/5 dark:border-white/5 p-4 rounded-2xl">
-            <div className="flex items-center gap-1.5 p-1 bg-white dark:bg-zinc-800 rounded-xl border border-black/5 dark:border-white/5">
+            <div className="flex flex-wrap items-center gap-1.5 p-1 bg-white dark:bg-zinc-800 rounded-xl border border-black/5 dark:border-white/5">
               <button
                 onClick={() => setActiveSubTab('all')}
                 className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${activeSubTab === 'all' ? 'bg-black text-white dark:bg-white dark:text-black shadow-md' : 'text-slate-500 dark:text-zinc-400'}`}
@@ -1153,13 +1401,19 @@ const ReviewsModerationTab = ({ db }: { db: any }) => {
                 onClick={() => setActiveSubTab('tickets')}
                 className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${activeSubTab === 'tickets' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-500 dark:text-zinc-400 hover:text-rose-500'}`}
               >
-                Link Tickets ({reports.length})
+                Support Tickets ({reports.length})
               </button>
               <button
                 onClick={() => setActiveSubTab('reviews')}
                 className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${activeSubTab === 'reviews' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-500 dark:text-zinc-400 hover:text-pink-500'}`}
               >
-                Reviews ({reviews.length})
+                App Reviews ({reviews.length})
+              </button>
+              <button
+                onClick={() => setActiveSubTab('feedbacks')}
+                className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${activeSubTab === 'feedbacks' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500 dark:text-zinc-400 hover:text-indigo-500'}`}
+              >
+                Website Feedback ({feedbacks.length})
               </button>
             </div>
 
@@ -1169,7 +1423,7 @@ const ReviewsModerationTab = ({ db }: { db: any }) => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by App ID or Comment..."
+                placeholder="Search by name, email, or comment..."
                 className="w-full pl-10 pr-4 py-2 bg-white dark:bg-zinc-800 border-2 border-black/10 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-350 focus:outline-none focus:border-pink-500 transition-all dark:placeholder-zinc-500"
               />
             </div>
@@ -1191,53 +1445,168 @@ const ReviewsModerationTab = ({ db }: { db: any }) => {
             ) : (
               <div className="grid gap-5">
                 {filteredItems.map((item) => {
-                  const isReport = item.source === 'missing_link_report';
+                  const isMissingLinkReport = item.source === 'missing_link_report';
                   
-                  if (isReport) {
-                    return (
-                      <div 
-                        key={item.id} 
-                        className="bg-white dark:bg-zinc-900 border-2 border-rose-500/20 dark:border-rose-500/10 rounded-2.5xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 transition-all hover:border-rose-500/40 relative overflow-hidden shadow-sm"
-                      >
-                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500"></div>
+                  if (item.type === 'ticket') {
+                    if (isMissingLinkReport) {
+                      return (
+                        <div 
+                          key={item.id} 
+                          className="bg-white dark:bg-zinc-900 border-2 border-rose-500/20 dark:border-rose-500/10 rounded-2.5xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 transition-all hover:border-rose-500/40 relative overflow-hidden shadow-sm"
+                        >
+                          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500"></div>
 
-                        <div className="space-y-2 flex-1 pl-2">
-                          <div className="flex items-center gap-2.5 flex-wrap">
-                            <span className="text-[9px] font-black uppercase tracking-widest bg-rose-500 text-white px-2.5 py-1 rounded-lg">
-                              Support Notification
-                            </span>
-                            <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 font-mono">
-                              App Reference Name: <span className="font-bold underline text-slate-700 dark:text-zinc-300">{item.app_id}</span>
-                            </span>
-                            <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 font-mono">
-                              {new Date(item.created_at).toLocaleString()}
-                            </span>
+                          <div className="space-y-2 flex-1 pl-2">
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                              <span className="text-[9px] font-black uppercase tracking-widest bg-rose-500 text-white px-2.5 py-1 rounded-lg">
+                                Link Clearance Ticket
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 font-mono">
+                                App ID: <span className="font-bold underline text-slate-750 dark:text-zinc-300">{item.app_id}</span>
+                              </span>
+                              <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 font-mono">
+                                {new Date(item.created_at).toLocaleString()}
+                              </span>
+                            </div>
+
+                            <div className="bg-rose-500/5 dark:bg-rose-950/20 border border-rose-500/10 p-3.5 rounded-xl">
+                              <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
+                                {item.comment}
+                              </p>
+                            </div>
+
+                            <div className="text-[10px] text-zinc-400 dark:text-zinc-500 font-semibold">
+                              <span className="font-black text-rose-500">SLA Info:</span> Configure the active clearance/access gateway URL inside the App Catalog and mark this ticket as resolved.
+                            </div>
                           </div>
 
-                          <div className="bg-rose-500/5 dark:bg-rose-950/20 border border-rose-500/10 p-3.5 rounded-xl">
-                            <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
+                          <div className="flex items-center gap-3 w-full md:w-auto shrink-0 border-t border-black/5 md:border-none pt-4 md:pt-0 pl-2">
+                            <button
+                              disabled={actioning === item.id}
+                              onClick={() => handleDelete(item.id, 'ticket', true)}
+                              className="w-full md:w-auto px-5 py-2.5 bg-rose-500 text-white hover:bg-rose-600 disabled:bg-rose-800 text-[10px] font-black uppercase tracking-wider rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 cursor-pointer border-0"
+                            >
+                              <CheckSquare className="w-3.5 h-3.5" />
+                              {actioning === item.id ? 'Loading...' : 'Mark Resolved'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      // Modern Contact Form Support Ticket
+                      const isResolved = item.status === 'resolved' || item.is_approved;
+                      return (
+                        <div 
+                          key={item.id} 
+                          className={`bg-white dark:bg-zinc-900 border-2 ${isResolved ? 'border-zinc-205/50 dark:border-white/5' : 'border-emerald-500/20 dark:border-emerald-500/10'} rounded-2.5xl p-6 flex flex-col gap-4 shadow-sm relative overflow-hidden`}
+                        >
+                          <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${isResolved ? 'bg-zinc-300 dark:bg-zinc-800' : 'bg-emerald-500'}`}></div>
+
+                          <div className="flex justify-between items-start flex-wrap gap-4 pl-2">
+                            <div>
+                              <div className="flex items-center gap-2.5 flex-wrap">
+                                <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-500 text-white px-2.5 py-1 rounded-lg">
+                                  Contact Ticket Inquiry
+                                </span>
+                                <span className="text-xs font-black text-slate-800 dark:text-zinc-200">{item.username}</span>
+                                {item.email && (
+                                  <a 
+                                    href={`mailto:${item.email}`}
+                                    className="text-[10px] font-semibold text-blue-500 hover:underline hover:text-blue-600"
+                                    title="Click to respond via mail client"
+                                  >
+                                    [{item.email}]
+                                  </a>
+                                )}
+                                <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-md border ${isResolved ? 'bg-zinc-100 text-zinc-500 border-zinc-200' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 animate-pulse'}`}>
+                                  {isResolved ? 'Resolved' : 'Pending Action'}
+                                </span>
+                              </div>
+                              <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 font-mono mt-1.5">
+                                Submitted: {new Date(item.created_at).toLocaleString()}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {!isResolved && (
+                                <button
+                                  disabled={actioning === item.id}
+                                  onClick={() => handleApprove(item.id, 'ticket', false)}
+                                  className="px-4 py-2 bg-emerald-500 text-white hover:bg-emerald-600 disabled:bg-emerald-800 font-black text-[9px] uppercase tracking-wider rounded-lg transition-transform hover:scale-105 active:scale-95 shadow-md shadow-emerald-500/10 cursor-pointer border-0"
+                                >
+                                  Mark Resolved
+                                </button>
+                              )}
+                              <button
+                                disabled={actioning === item.id}
+                                onClick={() => handleDelete(item.id, 'ticket', false)}
+                                className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 disabled:bg-slate-200 font-black text-[9px] uppercase tracking-wider rounded-lg transition-all cursor-pointer border-0"
+                              >
+                                Delete Ticket
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="bg-slate-50 dark:bg-zinc-850 p-4 rounded-xl border border-black/5 dark:border-white/5 pl-4 ml-2">
+                            <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
                               {item.comment}
                             </p>
                           </div>
+                        </div>
+                      );
+                    }
+                  } else if (item.type === 'feedback') {
+                    // Website layout/feature rating feedback (from header widgets or quick links)
+                    return (
+                      <div 
+                        key={item.id} 
+                        className="bg-white dark:bg-zinc-900 border-2 border-indigo-500/20 dark:border-indigo-500/10 rounded-2.5xl p-6 flex flex-col gap-4 shadow-sm relative overflow-hidden"
+                      >
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
 
-                          <div className="text-[10px] text-zinc-400 dark:text-zinc-500 font-semibold">
-                            <span className="font-black text-slate-500">SLA Guide:</span> Go to the Applications catalog, configure the active clearance gateway URL, then mark this ticket resolved.
+                        <div className="flex justify-between items-start flex-wrap gap-4 pl-2">
+                          <div>
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                              <span className="text-[9px] font-black uppercase tracking-widest bg-indigo-500 text-white px-2.5 py-1 rounded-lg">
+                                Website Platform Feedback
+                              </span>
+                              <span className="text-xs font-black text-slate-800 dark:text-zinc-200">{item.username}</span>
+                              <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-md border bg-indigo-500/10 text-indigo-500 border-indigo-500/20">
+                                Portal Feedback
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className="text-sm font-bold text-amber-500">
+                                {'★'.repeat(item.rating)}
+                                <span className="opacity-25">{'★'.repeat(Math.max(0, 5 - item.rating))}</span>
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 font-mono">
+                                Logged: {new Date(item.created_at).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              disabled={actioning === item.id}
+                              onClick={() => handleDelete(item.id, 'feedback', false)}
+                              className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 disabled:bg-slate-200 font-black text-[9px] uppercase tracking-wider rounded-lg transition-all cursor-pointer border-0"
+                            >
+                              Delete
+                            </button>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 w-full md:w-auto shrink-0 border-t border-black/5 md:border-none pt-4 md:pt-0 pl-2">
-                          <button
-                            disabled={actioning === item.id}
-                            onClick={() => handleDelete(item.id, true)}
-                            className="w-full md:w-auto px-5 py-2.5 bg-rose-500 text-white hover:bg-rose-600 disabled:bg-rose-800 text-[10px] font-black uppercase tracking-wider rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
-                          >
-                            <CheckSquare className="w-3.5 h-3.5" />
-                            {actioning === item.id ? 'Fixing...' : 'Mark Resolved'}
-                          </button>
+                        <div className="bg-slate-50 dark:bg-zinc-850 p-4 rounded-xl border border-black/5 dark:border-white/5 pl-4 ml-2">
+                          <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                            {item.comment}
+                          </p>
                         </div>
                       </div>
                     );
                   } else {
+                    // Standard App Review
                     return (
                       <div 
                         key={item.id} 
@@ -1250,7 +1619,7 @@ const ReviewsModerationTab = ({ db }: { db: any }) => {
                             <div className="flex items-center gap-2.5 flex-wrap">
                               <span className="text-xs font-black text-slate-800 dark:text-zinc-200">{item.username}</span>
                               <span className="text-[9px] font-black uppercase tracking-wider bg-pink-500/10 text-pink-500 px-2.5 py-0.5 rounded-md">
-                                App: {item.app_id}
+                                App ID Ref: {item.app_id}
                               </span>
                               <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-md border ${item.is_approved ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
                                 {item.is_approved ? 'Published' : 'Under Review'}
@@ -1263,7 +1632,7 @@ const ReviewsModerationTab = ({ db }: { db: any }) => {
                                 <span className="opacity-25">{'★'.repeat(Math.max(0, 5 - item.rating))}</span>
                               </span>
                               <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 font-mono">
-                                {new Date(item.created_at).toLocaleString()}
+                                Created: {new Date(item.created_at).toLocaleString()}
                               </span>
                             </div>
                           </div>
@@ -1272,18 +1641,18 @@ const ReviewsModerationTab = ({ db }: { db: any }) => {
                             {!item.is_approved && (
                               <button
                                 disabled={actioning === item.id}
-                                onClick={() => handleApprove(item.id)}
-                                className="px-4 py-2 bg-emerald-500 text-white hover:bg-emerald-600 disabled:bg-emerald-800 font-black text-[9px] uppercase tracking-wider rounded-lg transition-transform hover:scale-105 active:scale-95 shadow-md shadow-emerald-500/10 cursor-pointer"
+                                onClick={() => handleApprove(item.id, 'review', false)}
+                                className="px-4 py-2 bg-emerald-500 text-white hover:bg-emerald-600 disabled:bg-emerald-800 font-black text-[9px] uppercase tracking-wider rounded-lg transition-transform hover:scale-105 active:scale-95 shadow-md shadow-emerald-500/10 cursor-pointer border-0"
                               >
                                 Approve Publication
                               </button>
                             )}
                             <button
                               disabled={actioning === item.id}
-                              onClick={() => handleDelete(item.id, false)}
-                              className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white disabled:bg-slate-200 font-black text-[9px] uppercase tracking-wider rounded-lg transition-all cursor-pointer"
+                              onClick={() => handleDelete(item.id, 'review', false)}
+                              className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 disabled:bg-slate-200 font-black text-[9px] uppercase tracking-wider rounded-lg transition-all cursor-pointer border-0"
                             >
-                              Delete
+                              Delete Review
                             </button>
                           </div>
                         </div>
@@ -1348,7 +1717,7 @@ export default function AdminDashboard() {
       return;
     }
     if (fetchFailedRef.current) {
-      console.error("Sync blocked: previous vault fetch failed due to quota or network block. We cannot overwrite the vault without knowing its entire previous state.");
+      console.warn("Sync blocked: previous vault fetch failed due to quota or network block. We cannot overwrite the vault without knowing its entire previous state.");
       return;
     }
     try {
@@ -1369,8 +1738,8 @@ export default function AdminDashboard() {
         await setDoc(doc(db, 'store_data', 'secure_links'), payload);
         await setDoc(doc(db, 'store_data', 'sec_public_links'), payload);
       }
-    } catch (e) {
-      console.error("Failed to sync secure vault:", e);
+    } catch (e: any) {
+      console.warn("Failed to sync secure vault (fallback tracking active):", e.message || e);
     }
   };
 
@@ -1460,7 +1829,8 @@ export default function AdminDashboard() {
 
         // Static Site Offline/Client-side Fallback (checks Firestore database if backend API didn't verify)
         if (!adminVerified) {
-           if (currentUser.emailVerified && currentUser.email?.toLowerCase() === 'defentechscholar@gmail.com') {
+           const fallbackAdmin = (import.meta.env.VITE_ADMIN_EMAIL || 'defentechscholar@gmail.com').toLowerCase();
+           if (currentUser.emailVerified && currentUser.email?.toLowerCase() === fallbackAdmin) {
                adminVerified = true;
            } else {
                try {
@@ -1472,8 +1842,8 @@ export default function AdminDashboard() {
                        const emailDoc = await getDoc(doc(db, 'admins', currentUser.email));
                        if (emailDoc.exists()) adminVerified = true;
                    }
-               } catch (err) {
-                   console.error("Firestore static admin check failed:", err);
+               } catch (err: any) {
+                   console.warn("Firestore static admin check failed:", err.message || err);
                }
            }
         }
@@ -1526,11 +1896,11 @@ export default function AdminDashboard() {
                       decrypted.items.forEach((it: any) => secureMap.set(it.id, it.url));
                     }
                   } else {
-                    console.error("Server link decryption failed:", await res.text());
+                    console.warn("Server link decryption failed (using local fallback map):", await res.text());
                     fetchFailedRef.current = true;
                   }
-                } catch (decErr) {
-                  console.error("Failed to decrypt secure references:", decErr);
+                } catch (decErr: any) {
+                  console.warn("Failed to decrypt secure references (quota or network issue):", decErr.message || decErr);
                   fetchFailedRef.current = true;
                 }
               } else if (snapData.items) {
@@ -1538,6 +1908,29 @@ export default function AdminDashboard() {
               }
             }
             
+            // Always attempt to overlay with local filesystem backup (helpful on Firestore under quota 429)
+            try {
+              const idToken = await auth?.currentUser?.getIdToken();
+              if (idToken) {
+                const bkRes = await fetch('/api/v1/admin/backup-links-get', {
+                  headers: { 'Authorization': `Bearer ${idToken}` }
+                });
+                if (bkRes.ok) {
+                  const bkJSON = await bkRes.json();
+                  if (bkJSON && bkJSON.items) {
+                    bkJSON.items.forEach((it: any) => {
+                      if (it.url) {
+                        secureMap.set(it.id, it.url);
+                      }
+                    });
+                    console.log("Overlayed secure references from container filesystem backup successfully.");
+                  }
+                }
+              }
+            } catch (bkErr) {
+              console.warn("Failed to overlay with local backup:", bkErr);
+            }
+
             cachedSecureMapRef.current = secureMap;
             const mergedApps = mockApps.map(a => ({...a, more_information_url: secureMap.get(a.id) || a.more_information_url }));
             setAppsList(mergedApps);
@@ -1547,7 +1940,7 @@ export default function AdminDashboard() {
               syncSecureVault();
             }
           }).catch(err => {
-            console.error("Failed to load secure references:", err);
+            console.warn("Failed to load secure references (Fallback memory used):", err.message || err);
             fetchFailedRef.current = true;
             setAppsList(mockApps);
           }).finally(() => {
@@ -1604,17 +1997,19 @@ export default function AdminDashboard() {
           const newsSnap = await getDoc(newsDocRef);
           if (!newsSnap.exists()) {
             console.log("Admin Seeder: Seeding news to Firestore...");
-            await setDoc(newsDocRef, { items: mockNews });
+            const sanitizedNews = JSON.parse(JSON.stringify({ items: mockNews }));
+            await setDoc(newsDocRef, sanitizedNews);
           }
 
           const videosDocRef = doc(db, 'store_data', 'videos');
           const videosSnap = await getDoc(videosDocRef);
           if (!videosSnap.exists()) {
             console.log("Admin Seeder: Seeding videos to Firestore...");
-            await setDoc(videosDocRef, { items: mockVideos });
+            const sanitizedVideos = JSON.parse(JSON.stringify({ items: mockVideos }));
+            await setDoc(videosDocRef, sanitizedVideos);
           }
-        } catch (e) {
-          console.error("Admin Seeder failed to check/seed empty tables:", e);
+        } catch (e: any) {
+          console.warn("Admin Seeder failed to check/seed empty tables (fallback memory used):", e.message || e);
         }
       };
       const t = setTimeout(autoSeed, 1500);
@@ -1937,30 +2332,32 @@ export default function AdminDashboard() {
     });
   };
 
-  const handleAddNews = () => {
+  const handleAddNews = (initialData?: any): string => {
+    const newId = Math.random().toString(36).substr(2, 9);
     const newItem: NewsItem = {
-      id: Math.random().toString(36).substr(2, 9),
-      slug: 'new-news',
-      title: 'New News',
-      logo_url: '',
-      description: 'News description...',
-      description_html: '<p>News HTML...</p>',
+      id: newId,
+      slug: initialData?.slug || 'new-news',
+      title: initialData?.title || 'New News',
+      logo_url: initialData?.logo_url || '',
+      description: initialData?.description || 'News description...',
+      description_html: initialData?.description_html || '<p>News HTML...</p>',
       date: new Date().toISOString(),
       author: 'Admin',
       read_time: '2 min',
       tags: [],
       ceo_name: 'CEO Name',
       ceo_description: 'CEO Description',
-      seo_title: 'News SEO Title',
-      seo_description: 'News SEO Meta Description',
+      seo_title: initialData?.seo_title || 'News SEO Title',
+      seo_description: initialData?.seo_description || 'News SEO Meta Description',
       seo_keywords: '',
       og_image_url: '',
       canonical_url: '',
-      target_region: 'Global',
-      content: 'Detailed markdown content here...',
+      target_region: initialData?.target_region || 'Global',
+      content: initialData?.content || 'Detailed markdown content here...',
       link: ''
     };
-    setNewsList([...newsList, newItem]);
+    setNewsList((prev: any) => [...prev, newItem]);
+    return newId;
   };
 
   const handleDeleteNews = (id: string) => {
@@ -2208,6 +2605,7 @@ export default function AdminDashboard() {
                   saveMockNews={saveMockNews} 
                   saving={saving} 
                   setSaving={setSaving}
+                  appsList={appsList}
                 />
               )}
               {activeTab === 'blogs' && (

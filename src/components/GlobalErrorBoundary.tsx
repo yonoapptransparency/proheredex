@@ -138,9 +138,41 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
                     </div>
 
                     <div className="overflow-auto max-h-48 text-[11px] font-mono leading-relaxed text-red-600 dark:text-red-400 whitespace-pre-wrap select-text">
-                      <p className="font-bold mb-1">{this.state.error.toString()}</p>
+                      {(() => {
+                        const errMsg = this.state.error.message;
+                        if (errMsg && errMsg.startsWith('{') && errMsg.endsWith('}')) {
+                          try {
+                            const parsed = JSON.parse(errMsg);
+                            if (parsed && typeof parsed === 'object' && 'error' in parsed && 'operationType' in parsed) {
+                              return (
+                                <div className="space-y-3 text-left">
+                                  <div className="bg-red-500/10 border border-red-500/25 rounded-2xl p-4 text-xs text-red-600 dark:text-red-400 font-semibold flex items-start gap-2.5">
+                                    <span className="font-mono uppercase tracking-wider bg-red-600/15 text-red-700 dark:text-red-400 px-2 py-0.5 rounded-lg text-[9px] shrink-0 font-bold border border-red-500/10">
+                                      {parsed.operationType} Fail
+                                    </span>
+                                    <span>
+                                      Failed to resolve database collections for targeting reference: <strong className="font-mono text-zinc-900 dark:text-white">{parsed.path || 'unknown'}</strong>
+                                    </span>
+                                  </div>
+                                  <div className="text-zinc-800 dark:text-zinc-200 bg-zinc-100/60 dark:bg-zinc-900 border border-black/[0.04] dark:border-white/[0.04] rounded-2xl p-4 font-mono text-left max-h-32 overflow-y-auto">
+                                    {String(parsed.error)}
+                                  </div>
+                                  {parsed.authInfo?.userId && (
+                                    <div className="text-[10px] text-zinc-500 flex flex-wrap gap-x-4 gap-y-1 border-t border-zinc-200/50 dark:border-zinc-800/50 pt-2.5 font-mono select-none">
+                                      <span>UID: {parsed.authInfo.userId}</span>
+                                      {parsed.authInfo.email && <span>EMAIL: {parsed.authInfo.email}</span>}
+                                      {parsed.authInfo.emailVerified !== null && <span>VERIFIED: {String(parsed.authInfo.emailVerified)}</span>}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            }
+                          } catch (_) {}
+                        }
+                        return <p className="font-bold mb-1">{this.state.error.toString()}</p>;
+                      })()}
                       {this.state.errorInfo?.componentStack && (
-                        <p className="mt-2 text-zinc-500 dark:text-zinc-500">
+                        <p className="mt-2 text-zinc-400 dark:text-zinc-600">
                           {this.state.errorInfo.componentStack}
                         </p>
                       )}

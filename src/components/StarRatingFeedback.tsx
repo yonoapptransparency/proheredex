@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Star, MessageSquare, Check, X, Chrome, ShieldAlert, Heart, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { db, isFirebaseConfigured } from '../lib/firebase';
+import { db, isFirebaseConfigured, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
 export default function StarRatingFeedback() {
@@ -87,7 +87,7 @@ export default function StarRatingFeedback() {
       triggerHaptic();
     } catch (err) {
       console.warn('Could not post website feedback to firebase, saved locally instead', err);
-      setSubmitted(true);
+      handleFirestoreError(err, OperationType.CREATE, 'website_feedback');
     } finally {
       setSubmitting(false);
     }

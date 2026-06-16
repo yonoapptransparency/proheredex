@@ -55,7 +55,7 @@ export default function FallbackRouteMatcher() {
       setIsRefreshing(true);
       console.log(`Fallback Match: Slug "${slug}" not found in cache. Triggering full sync...`);
       refreshAll(true)
-        .catch(err => console.error("Fallback route match auto-sync failed:", err))
+        .catch(err => console.warn("Fallback route match auto-sync failed:", err.message || err))
         .finally(() => {
           setTriedRefresh(true);
           setIsRefreshing(false);

@@ -5,7 +5,7 @@ import { getAdminPath } from './lib/utils';
 
 let cachedData: any = null;
 let lastFetchTime = 0;
-const CACHE_TTL = 120000; // 2 minutes cache to prevent extreme blocking on each pageload
+const CACHE_TTL = 3600000; // 1 hour cache to reduce read quota consumption on shared projects
 let isFetchingStoreData = false;
 
 function getRawFirebaseConfig(): any {
@@ -102,7 +102,7 @@ export async function fetchStoreData() {
   if (cachedData && !isSuperStale) {
     if (isStale && !isFetchingStoreData) {
       // Background revalidation without blocking
-      doFetchStoreData().catch(e => console.error("Background store fetch failed:", e));
+      doFetchStoreData().catch(e => console.warn("Background store fetch failed (using local or cached fallback safely):", e));
     }
     return cachedData;
   }
@@ -113,10 +113,21 @@ export async function fetchStoreData() {
 
 async function doFetchStoreData() {
   const now = Date.now();
+  
+  let localFullBackup: any = null;
+  try {
+    const fullBackupPath = path.join(process.cwd(), 'src/lib/staticDataFull.json');
+    if (fs.existsSync(fullBackupPath)) {
+      localFullBackup = JSON.parse(fs.readFileSync(fullBackupPath, 'utf8'));
+    }
+  } catch (e) {
+    console.warn("Failed to read staticDataFull.json:", e);
+  }
+
   const config = getRawFirebaseConfig();
   if (!config) {
-    console.warn('No firebase config found for SEO rendering, using static mock fallback.');
-    const mockData = {
+    console.warn('No firebase config found for SEO rendering, using static/local fallback.');
+    const mockData = localFullBackup || {
       apps: mockApps,
       settings: mockSettings,
       news: mockNews,
@@ -134,7 +145,7 @@ async function doFetchStoreData() {
     config.apiKey.includes("YOUR_API_KEY");
 
   if (isApiKeyEmptyOrPlaceholder) {
-    const mockData = {
+    const mockData = localFullBackup || {
       apps: mockApps,
       settings: mockSettings,
       news: mockNews,
@@ -158,13 +169,26 @@ async function doFetchStoreData() {
       'Pragma': 'no-cache'
     };
 
+    const apiSuffix = config.apiKey ? `?key=${config.apiKey}` : '';
+
     const [settingsRes, newsRes, blogsRes, videosRes, metaRes] = await Promise.all([
-      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/settings`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
-      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/news`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
-      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/blogs`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
-      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/videos`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
-      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_meta`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null)
+      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/settings${apiSuffix}`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
+      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/news${apiSuffix}`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
+      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/blogs${apiSuffix}`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
+      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/videos${apiSuffix}`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null),
+      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_meta${apiSuffix}`, { cache: 'no-store', headers: cacheHeaders, signal: AbortSignal.timeout(8000) }).catch(() => null)
     ]);
+
+    const isErrorStatus = (res: any) => {
+      if (!res) return true; // network timeout / offline
+      if (!res.ok && res.status !== 404) return true; // quota (429), permissions (403), etc.
+      return false;
+    };
+
+    if (isErrorStatus(settingsRes) || isErrorStatus(metaRes) || isErrorStatus(newsRes) || isErrorStatus(blogsRes) || isErrorStatus(videosRes)) {
+      const statusStr = `settings: ${settingsRes?.status || 'fail'}, meta: ${metaRes?.status || 'fail'}`;
+      throw new Error(`Database fetch failed with non-404 error status (likely quota limit reached): ${statusStr}`);
+    }
 
     let numChunks = 5;
     if (metaRes && metaRes.ok) {
@@ -175,7 +199,7 @@ async function doFetchStoreData() {
     }
 
     const chunkPromises = Array.from({ length: numChunks }).map((_, i) => 
-      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_chunk_${i}`, {
+      fetch(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/store_data/apps_chunk_${i}${apiSuffix}`, {
         cache: 'no-store',
         headers: cacheHeaders,
         signal: AbortSignal.timeout(8000)
@@ -232,9 +256,13 @@ async function doFetchStoreData() {
     cachedData = { apps, settings, news, blogs, videos };
     lastFetchTime = now;
     return cachedData;
-  } catch (error) {
-    console.error('Failed to fetch store data for SEO:', error);
-    const mockFallback = {
+  } catch (error: any) {
+    if (error.message?.includes('429')) {
+      console.info('Firestore quota limit reached. Using local fallback.');
+    } else {
+      console.warn('Failed to fetch store data for SEO (gracefully falling back to high-integrity cache / local backup):', error);
+    }
+    const mockFallback = localFullBackup || {
       apps: mockApps,
       settings: mockSettings,
       news: mockNews,

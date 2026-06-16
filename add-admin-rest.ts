@@ -2,7 +2,8 @@ import fs from 'fs';
 
 async function run() {
   const config = JSON.parse(fs.readFileSync('./firebase-applet-config.json', 'utf8'));
-  const url = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/admins/defentechscholar@gmail.com`;
+  const adminEmail = (process.argv[2] || process.env.ADMIN_EMAIL || 'defentechscholar@gmail.com').toLowerCase().trim();
+  const url = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/admins/${adminEmail}`;
   
   try {
     const res = await fetch(url, {
@@ -12,7 +13,7 @@ async function run() {
       },
       body: JSON.stringify({
         fields: {
-          email: { stringValue: 'defentechscholar@gmail.com' },
+          email: { stringValue: adminEmail },
           role: { stringValue: 'admin' },
           created_at: { stringValue: new Date().toISOString() }
         }

@@ -3,6 +3,7 @@ import { useLocation, BrowserRouter as Router, Routes, Route, Link, Navigate } f
 import { HelmetProvider } from 'react-helmet-async';
 import { Menu, Shield, ShieldCheck, Info, ArrowRight, X, LayoutGrid, Newspaper, Sparkles, Send, MoreHorizontal, Search, Video } from 'lucide-react';
 import Home from './pages/Home';
+import PublicChatbot from './components/PublicChatbot';
 import React, { useState, useEffect, useMemo, Suspense, lazy, ComponentType, LazyExoticComponent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -170,6 +171,7 @@ import Ticker from './components/Ticker';
 import SupportWidget from './components/SupportWidget';
 import GlobalSearch from './components/GlobalSearch';
 import StarRatingFeedback from './components/StarRatingFeedback';
+import QuickHub from './components/QuickHub';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -304,6 +306,9 @@ function Header() {
                 <span className="text-[13px] text-zinc-500 group-hover:text-zinc-800 dark:group-hover:text-zinc-200 transition-colors truncate">Search...</span>
               </button>
 
+              {/* Unified Portal Quick Access Hub */}
+              <QuickHub isMobileSize={false} />
+
               {settings.helpline_telegram && (
                 <a 
                   href={settings.helpline_telegram.startsWith('http') ? settings.helpline_telegram : `https://t.me/${settings.helpline_telegram.replace('@', '')}`}
@@ -328,6 +333,10 @@ function Header() {
             >
               <Search className="w-4 h-4" />
             </button>
+
+            {/* Unified Portal Quick Access Hub */}
+            <QuickHub isMobileSize={true} />
+
             {settings.helpline_telegram && (
               <a 
                 href={settings.helpline_telegram.startsWith('http') ? settings.helpline_telegram : `https://t.me/${settings.helpline_telegram.replace('@', '')}`}
@@ -696,7 +705,7 @@ function BackgroundPrefetcher() {
 }
 
 function AppContent() {
-  const { settings, apps = [], news = [], blogs = [], videos = [] } = useData();
+  const { settings, apps = [], news = [], blogs = [], videos = [], quotaExceeded } = useData();
   const location = useLocation();
   const [isAgeVerified, setIsAgeVerified] = useState(true);
 
@@ -961,6 +970,29 @@ function AppContent() {
       <BackgroundPrefetcher />
       <ScrollToTop />
       {memoizedHeader}
+
+      {quotaExceeded && (
+        <div className="w-full bg-amber-500/10 border-b border-amber-500/20 text-amber-600 dark:text-amber-400 py-3 text-xs sm:text-sm font-semibold animate-fade-in z-50">
+          <div className="max-w-[1550px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4 px-3 sm:px-6 md:px-10 text-center md:text-left">
+            <div className="flex items-center gap-2.5">
+              <svg className="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>
+                <strong>Shared Firebase Sandbox Quota Exceeded:</strong> Because this app uses the shared sandbox project (<code className="bg-amber-500/20 px-1 rounded text-amber-700 dark:text-amber-300">gen-lang-client</code>), the global 50k reads/day ceiling is frequently exhausted by other builders. Your listed items are 100% safe! Standard visitors load items instantly via our server backup cache. For dedicated, permanent access, you can easily connect your own free Firebase project for free in minutes!
+              </span>
+            </div>
+            <a 
+              href="https://console.firebase.google.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold uppercase text-[10px] tracking-wider rounded-lg transition-all shadow-md shrink-0 active:scale-95"
+            >
+              Get Dedicated DB Free
+            </a>
+          </div>
+        </div>
+      )}
       
       <main className="flex-1 w-full max-w-[1550px] mx-auto px-3 sm:px-6 md:px-10 py-3 pb-16 sm:pb-24 overflow-x-hidden relative">
         <Suspense fallback={<LoadingScreen />}>
@@ -1010,6 +1042,8 @@ function AppContent() {
           </AnimatePresence>
         </Suspense>
       </main>
+      
+      {!isAdminPath && <PublicChatbot />}
       
       <Ticker />
       {memoizedFooter}

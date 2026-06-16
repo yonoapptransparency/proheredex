@@ -138,8 +138,8 @@ export default function AppDetails() {
         console.log(`Deep Link Sync: App "${slug}" not found in local cache. Syncing latest indices...`);
         try {
           await refreshAll(true);
-        } catch (e) {
-          console.error("Deep Link Auto-Sync failed:", e);
+        } catch (e: any) {
+          console.warn("Deep Link Auto-Sync failed:", e.message || e);
         } finally {
           if (active) {
             setTriedRefresh(true);

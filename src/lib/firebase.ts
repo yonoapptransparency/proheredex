@@ -69,11 +69,75 @@ export const app = firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null 
 export const auth = app ? getAuth(app) : null as any;
 
 // EXPERIMENTAL FORCE LONG POLLING IS REQUIRED for Indian Mobile ISPs and Sandbox environments!
-export const db = app ? initializeFirestore(app, {
-  experimentalForceLongPolling: true
-}, firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId) : null as any;
+import { getFirestore } from 'firebase/firestore';
+
+let firestoreInstance: any = null;
+if (app) {
+  try {
+    firestoreInstance = initializeFirestore(app, {
+      experimentalForceLongPolling: true
+    }, firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId);
+  } catch (e) {
+    console.warn("Firestore already initialized. Reusing existing instance.");
+    firestoreInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId);
+  }
+}
+
+export const db = firestoreInstance;
 
 export const isFirebaseConfigured = !!app && firebaseConfig.apiKey !== 'PLACEHOLDER' && firebaseConfig.apiKey.trim() !== '' && !firebaseConfig.apiKey.includes('YOUR_API_KEY');
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const user = auth?.currentUser;
+  
+  const errInfo: FirestoreErrorInfo = {
+    error: errorMessage,
+    authInfo: {
+      userId: user?.uid || null,
+      email: user?.email || null,
+      emailVerified: user?.emailVerified || null,
+      isAnonymous: user?.isAnonymous || null,
+      tenantId: user?.tenantId || null,
+      providerInfo: user?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  
+  const jsonString = JSON.stringify(errInfo);
+  console.warn('Firestore Error (Fallback handled): ', jsonString);
+  return new Error(jsonString);
+}
 
 
 

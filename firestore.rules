@@ -16,8 +16,7 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth != null && 
              request.auth.token.email_verified == true &&
-             (request.auth.token.email == 'defentechscholar@gmail.com' ||
-              exists(/databases/$(database)/documents/admins/$(request.auth.uid)) || 
+             (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) || 
               exists(/databases/$(database)/documents/admins/$(request.auth.token.email)));
     }
 
@@ -30,8 +29,31 @@ service cloud.firestore {
              data.rating is number && data.rating >= 1 && data.rating <= 5 &&
              data.comment is string && data.comment.size() <= 2000 &&
              data.created_at is string && data.created_at.size() <= 64 &&
-             data.helpful_count is int &&
+             data.helpful_count is number &&
              data.is_approved is bool &&
+             data.source is string && data.source.size() <= 128;
+    }
+
+    // Comprehensive payload validation for website feedback
+    function isValidFeedback(data) {
+      return data.keys().hasAll(['username', 'rating', 'comment', 'created_at', 'source']) &&
+             data.keys().size() == 5 &&
+             data.username is string && data.username.size() <= 200 &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() <= 2000 &&
+             data.created_at is string && data.created_at.size() <= 64 &&
+             data.source is string && data.source.size() <= 128;
+    }
+
+    // Comprehensive payload validation for support tickets
+    function isValidTicket(data) {
+      return data.keys().hasAll(['username', 'email', 'comment', 'created_at', 'status', 'source']) &&
+             data.keys().size() == 6 &&
+             data.username is string && data.username.size() <= 200 &&
+             data.email is string && data.email.size() <= 200 &&
+             data.comment is string && data.comment.size() <= 3000 &&
+             data.created_at is string && data.created_at.size() <= 64 &&
+             data.status is string && data.status.size() <= 64 &&
              data.source is string && data.source.size() <= 128;
     }
 
@@ -59,7 +81,7 @@ service cloud.firestore {
 
     match /reviews/{reviewId} {
       allow read: if true;
-      allow create: if isValidId(reviewId) && isValidReview(request.resource.data);
+      allow create: if isValidId(reviewId) && isValidReview(request.resource.data) && (request.resource.data.is_approved == false || isAdmin());
       allow update: if isValidId(reviewId) && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reported', 'report_count']) || isAdmin());
       allow delete: if isValidId(reviewId) && isAdmin();
     }
@@ -75,6 +97,16 @@ service cloud.firestore {
 
     match /missing_link_reports/{reportId} {
       allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /website_feedback/{feedbackId} {
+      allow create: if isValidId(feedbackId) && isValidFeedback(request.resource.data);
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /support_tickets/{ticketId} {
+      allow create: if request.auth != null && isValidId(ticketId) && isValidTicket(request.resource.data);
       allow read, update, delete: if isAdmin();
     }
   }
