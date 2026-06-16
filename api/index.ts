@@ -260,7 +260,7 @@ function verifyToken(token: string, ip: string, sessionId: string, fingerprint: 
     // Skip strict IP/Session/Fingerprint constraint because cellular rotators, CDNs, and sandbox iframes frequently present variable headers.
     // Cryptographic HMAC check below ensures 100% security on its own.
     if (tSession !== sessionId) {
-      console.warn(`[DEFENSE_WARN] Session mismatch: ${tSession} !== ${sessionId}. Proceeding safely as signature is cryptographically valid.`);
+      return false;
     }
     if (tFp !== fingerprint) {
       console.warn(`[DEFENSE_WARN] Fingerprint mismatch: ${tFp} !== ${fingerprint}. Proceeding safely as signature is cryptographically valid.`);
@@ -733,7 +733,7 @@ app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], async (req, res) => 
       }
 
       if (tSession !== finalSid) {
-        console.warn(`[DEFENSE_WARN] Session mismatch on download: ${tSession} !== ${finalSid}. Proceeding safely as signature is cryptographically valid.`);
+        return res.status(403).send("<h1>403 Forbidden</h1><p>Session mismatch.</p>");
       }
 
       // Spend token to prevent reuse / replay attacks
@@ -777,8 +777,7 @@ app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], async (req, res) => 
               if (fields?.encryptedData?.stringValue) {
                 const encryptedBlob = fields.encryptedData.stringValue;
                 const decryptedText = safeDecrypt(encryptedBlob, AES_SECRET);
-                console.log("Decrypted text length:", decryptedText ? decryptedText.length : 0);
-                if (decryptedText) {
+                                if (decryptedText) {
                   const linksArray = JSON.parse(decryptedText);
                   const linkObj = linksArray.find((v: any) => v.id === appId);
                   if (linkObj && linkObj.url) {
@@ -819,7 +818,7 @@ app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], async (req, res) => 
                 const encryptedUrl = backup[appId];
                 if (encryptedUrl) {
                   if (encryptedUrl.startsWith('U2FsdGVkX1')) {
-                    const AES_SECRET = process.env.AES_SECRET || ['Shehzad', '@', '4874'].join('');
+                    const AES_SECRET = process.env.AES_SECRET as string;
                     targetUrl = safeDecrypt(encryptedUrl, AES_SECRET);
                   } else {
                     targetUrl = encryptedUrl;
@@ -969,7 +968,10 @@ app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], async (req, res) => 
       
       // Admin access check via firestore (strictly requires verified email to prevent hijack/spoofing attempts)
       let isDbAdmin = false;
-      const configuredAdminEmail = (process.env.ADMIN_EMAIL || 'defentechscholar@gmail.com').toLowerCase();
+      const configuredAdminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
+      if (!configuredAdminEmail) {
+        return res.status(500).json({ error: 'Server misconfiguration: ADMIN_EMAIL not set.' });
+      }
       if (email === configuredAdminEmail && user.emailVerified === true) {
         isDbAdmin = true;
       }
@@ -1210,7 +1212,7 @@ app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], async (req, res) => 
       if (fs.existsSync(backupPath)) {
         const backupData = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
         const decryptedItems: { id: string, url: string }[] = [];
-        const AES_SECRET = process.env.AES_SECRET || ['Shehzad', '@', '4874'].join('');
+        const AES_SECRET = process.env.AES_SECRET as string;
         for (const [appId, encUrl] of Object.entries(backupData)) {
           let decryptedUrl = '';
           if (typeof encUrl === 'string') {

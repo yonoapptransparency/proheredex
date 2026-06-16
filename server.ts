@@ -287,7 +287,7 @@ function verifyToken(token: string, ip: string, sessionId: string, fingerprint: 
     // Skip strict IP/Fingerprint/Session constraints because cellular rotators, CDNs, and sandbox iframes frequently present variable headers.
     // Cryptographic HMAC check below ensures 100% security on its own.
     if (tSession !== sessionId) {
-      console.warn(`[WARN] Session mismatch: ${tSession} !== ${sessionId}. Proceeding safely as signature is cryptographically valid.`);
+      return false;
     }
     if (Math.floor(Date.now() / 1000) > parseInt(expires, 10)) {
       console.warn(`[WARN] Signature expired.`);
@@ -630,7 +630,10 @@ async function startServer() {
       
       // Admin access check via firestore (strictly requires verified email to prevent hijack/spoofing attempts)
       let isDbAdmin = false;
-      const configuredAdminEmail = (process.env.ADMIN_EMAIL || 'defentechscholar@gmail.com').toLowerCase();
+      const configuredAdminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
+      if (!configuredAdminEmail) {
+        return res.status(500).json({ error: 'Server misconfiguration: ADMIN_EMAIL not set.' });
+      }
       if (email === configuredAdminEmail && user.emailVerified === true) {
         isDbAdmin = true;
       }
@@ -1177,7 +1180,7 @@ async function startServer() {
       if (fs.existsSync(backupPath)) {
         const backupData = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
         const decryptedItems: { id: string, url: string }[] = [];
-        const AES_SECRET = process.env.AES_SECRET || ['Shehzad', '@', '4874'].join('');
+        const AES_SECRET = process.env.AES_SECRET as string;
         for (const [appId, encUrl] of Object.entries(backupData)) {
           let decryptedUrl = '';
           if (typeof encUrl === 'string') {
@@ -1750,8 +1753,8 @@ ${JSON.stringify(publicContext, null, 2)}`;
         }
 
         if (tSession !== finalSid) {
-          console.warn(`[WARN] Session mismatch on download: ${tSession} !== ${finalSid}. Proceeding safely as signature is cryptographically valid.`);
-        }
+        return res.status(403).send("<h1>403 Forbidden</h1><p>Session mismatch.</p>");
+      }
 
         // Spend token to prevent reuse / replay attacks
         // usedTokens.add(token);
@@ -1792,16 +1795,12 @@ ${JSON.stringify(publicContext, null, 2)}`;
               if (fields?.encryptedData?.stringValue) {
                 const encryptedBlob = fields.encryptedData.stringValue;
                 const decryptedText = safeDecrypt(encryptedBlob, AES_SECRET);
-                console.log("Decrypted text length:", decryptedText ? decryptedText.length : 0);
-                if (decryptedText) {
+                                if (decryptedText) {
                   const linksArray = JSON.parse(decryptedText);
-                  fs.appendFileSync('debug.log', `DEBUG: appId: ${appId}, length: ${linksArray.length}\n`);
-                  fs.appendFileSync('debug.log', `DEBUG: first few links: ${JSON.stringify(linksArray.slice(0, 2))}\n`);
-                  const linkObj = linksArray.find((v: any) => v.id === appId);
+                                                      const linkObj = linksArray.find((v: any) => v.id === appId);
                   if (linkObj && linkObj.url) {
                     const encryptedUrl = linkObj.url;
-                    fs.appendFileSync('debug.log', `DEBUG: encryptedUrl: ${encryptedUrl}\n`);
-                    if (encryptedUrl.startsWith('U2FsdGVkX1')) {
+                                        if (encryptedUrl.startsWith('U2FsdGVkX1')) {
                       targetUrl = safeDecrypt(encryptedUrl, AES_SECRET);
                     } else {
                       targetUrl = encryptedUrl; // Legacy plaintext
@@ -1839,7 +1838,7 @@ ${JSON.stringify(publicContext, null, 2)}`;
                 const encryptedUrl = backup[appId];
                 if (encryptedUrl) {
                   if (encryptedUrl.startsWith('U2FsdGVkX1')) {
-                    const AES_SECRET = process.env.AES_SECRET || ['Shehzad', '@', '4874'].join('');
+                    const AES_SECRET = process.env.AES_SECRET as string;
                     targetUrl = safeDecrypt(encryptedUrl, AES_SECRET);
                   } else {
                     targetUrl = encryptedUrl;
