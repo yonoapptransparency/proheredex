@@ -134,7 +134,10 @@ router.get(["/v1/secure-payload", "/v1/file-payload"], async (req, res) => {
       if (!targetUrl || !targetUrl.startsWith("http")) {
         if (req.query.json === "true")
           return res.status(404).json({ error: "Destination link is currently not ready." });
-        return res.redirect(302, "/");
+        // Redirect back to the app gateway page so user sees a clear "not configured" state
+        // rather than landing on the homepage with no explanation
+        const fallbackPath = appId ? `/gateway/${encodeURIComponent(appId)}` : "/";
+        return res.redirect(302, fallbackPath);
       }
 
       try {

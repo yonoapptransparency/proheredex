@@ -83,7 +83,7 @@ function ensureSession(req: Request, res: Response): string {
 }
 
 export function generateToken(ip: string, sessionId: string, fingerprint: string): string {
-  const EXPIRY = 120;
+  const EXPIRY = 600;
   const expires = Math.floor(Date.now() / 1000) + EXPIRY;
   const payload = `${ip}|${sessionId}|${fingerprint}|${expires}`;
   const sig = crypto.createHmac("sha256", TOKEN_SECRET).update(payload).digest("hex");

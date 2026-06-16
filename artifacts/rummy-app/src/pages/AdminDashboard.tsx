@@ -2221,8 +2221,12 @@ export default function AdminDashboard() {
         
       const editApp = editingAppId ? appsList.find(a => a.id === editingAppId) : null;
       let encryptedUrlVal = editApp?.more_information_url || '';
-      const inputUrl = formData.get('more_information_url') as string;
-      if (inputUrl && !inputUrl.startsWith('U2FsdGVkX1')) {
+      const inputUrl = (formData.get('more_information_url') as string || '').trim();
+      if (inputUrl === '') {
+         // Admin explicitly cleared the URL field — wipe any existing encrypted value
+         encryptedUrlVal = '';
+      } else if (!inputUrl.startsWith('U2FsdGVkX1')) {
+         // New plain URL entered — encrypt it
          try {
             const idToken = await auth?.currentUser?.getIdToken();
             const res = await fetch('/api/v1/admin/encrypt', {
@@ -2237,14 +2241,15 @@ export default function AdminDashboard() {
                encryptedUrlVal = (await res.json()).encrypted;
             } else {
                alert(`Failed to secure URL: ${await res.text()}`);
-               return; // Abort save if encryption fails
+               return;
             }
          } catch (err: any) {
             console.error("Failed to secure URL", err);
             alert(`Failed to secure URL: ${err.message}`);
             return;
          }
-      } else if (inputUrl) {
+      } else {
+         // Already encrypted — keep as-is
          encryptedUrlVal = inputUrl;
       }
       
@@ -2307,6 +2312,9 @@ export default function AdminDashboard() {
       
       await saveMockApps(updatedApps);
       setAppsList(updatedApps);
+      // Explicitly sync the secure vault after every app save to guarantee the vault
+      // stays consistent with the latest encrypted URL map
+      syncSecureVault().catch(e => console.warn("Post-save vault sync failed:", e));
       triggerHaptic();
       setEditingAppId(null);
       alert(editingAppId ? 'Success: Application Updated & Verified on Cloud!' : 'Success: New Application Published & Verified on Cloud!');
