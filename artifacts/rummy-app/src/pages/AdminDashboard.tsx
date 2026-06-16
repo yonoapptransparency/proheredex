@@ -1758,7 +1758,9 @@ export default function AdminDashboard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${idToken}`
         },
-        body: JSON.stringify({ items })
+        // replace=true: cachedSecureMapRef is the authoritative source — vault is replaced, not merged.
+        // This ensures URLs that were cleared by the admin are actually removed from the vault.
+        body: JSON.stringify({ items, replace: true })
       });
       if (res.ok) {
         const { encrypted } = await res.json();

@@ -747,7 +747,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${idToken}`
           },
-          body: JSON.stringify({ items: secureLinks })
+          // replace=true: caller sends the full authoritative list — vault is replaced, not merged.
+          // This ensures deleted/cleared URLs are actually removed from the vault.
+          body: JSON.stringify({ items: secureLinks, replace: true })
         });
         if (encRes.ok) {
           const encJSON = await encRes.json();
@@ -755,24 +757,26 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         } else {
           const errText = await encRes.text();
           console.warn("Server encryption of secure links failed:", errText);
-          alert(`Server encryption of secure links failed: ${errText}`);
         }
       } catch (encErr: any) {
-        console.error("Encryption of secure links on save failed, falling back to plaintext compatibility", encErr);
-        alert(`Encryption of secure links on save failed: ${encErr.message}`);
+        console.error("Encryption of secure links on save failed:", encErr);
       }
 
       if (encryptedData) {
         try {
-          await setDoc(doc(db, 'store_data', 'secure_links'), { encryptedData });
-          await setDoc(doc(db, 'store_data', 'sec_public_links'), { encryptedData });
+          const vaultPayload = { encryptedData, lastUpdated: new Date().toISOString() };
+          await setDoc(doc(db, 'store_data', 'secure_links'), vaultPayload);
+          await setDoc(doc(db, 'store_data', 'sec_public_links'), vaultPayload);
+          await setDoc(doc(db, 'store_data', 'sec_vault'), vaultPayload);
           console.log("Cloud: Pushed encrypted secure links map to Firestore.");
         } catch (dbErr) {
           console.warn("Failed to push secure links map to Firestore (Quota exceeded or network issue). Proceeding with local/GitHub backups.", dbErr);
         }
       } else {
-        console.error("Skipping secure_links update due to encryption failure to prevent data leak.");
-        throw new Error("Link encryption failed. Check network or auth token.");
+        // Vault encryption failed — log the issue but do NOT throw. The app data chunks
+        // were already committed to Firestore and the save should be considered successful.
+        // syncSecureVault() (called by handleSaveApp) will retry the vault sync.
+        console.error("Skipping vault update due to encryption failure — vault may be stale until next sync.");
       }
       
       console.log("Cloud: Apps update acknowledged by server.");

@@ -97,37 +97,41 @@ router.post("/v1/admin/encrypt", verifyAdminToken, (req, res) => {
 });
 
 router.post("/v1/admin/encrypt-links", verifyAdminToken, async (req, res) => {
-  const { items } = req.body;
+  const { items, replace } = req.body;
   if (!items || !Array.isArray(items)) { res.status(400).json({ error: "Valid links array is required." }); return; }
 
   const AES_SECRET = process.env.AES_SECRET as string;
   if (!AES_SECRET?.trim()) { res.status(500).json({ error: "AES_SECRET environment variable is missing." }); return; }
 
   try {
-    let existingItems: any[] = [];
-    let config: any;
-    try { config = getRawFirebaseConfig(); } catch {}
+    const finalMap = new Map<string, any>();
 
-    if (config) {
-      const apiSuffix = config.apiKey ? `?key=${config.apiKey}` : "";
-      const db = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents`;
-      for (const docName of ["sec_public_links", "secure_links", "sec_vault"]) {
-        try {
-          const r = await fetch(`${db}/store_data/${docName}${apiSuffix}`);
-          const d = await r.json() as any;
-          if (d && !d.error && d.fields?.encryptedData?.stringValue) {
-            const dec = safeDecrypt(d.fields.encryptedData.stringValue, AES_SECRET);
-            if (dec) {
-              const parsed = JSON.parse(dec);
-              if (Array.isArray(parsed)) { existingItems = parsed; break; }
+    // When replace=true, skip loading existing items — the caller owns the full authoritative list.
+    // When replace=false (legacy/merge mode), pre-populate from the vault so existing entries are kept.
+    if (!replace) {
+      let existingItems: any[] = [];
+      let config: any;
+      try { config = getRawFirebaseConfig(); } catch {}
+
+      if (config) {
+        const apiSuffix = config.apiKey ? `?key=${config.apiKey}` : "";
+        const db = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents`;
+        for (const docName of ["sec_public_links", "secure_links", "sec_vault"]) {
+          try {
+            const r = await fetch(`${db}/store_data/${docName}${apiSuffix}`);
+            const d = await r.json() as any;
+            if (d && !d.error && d.fields?.encryptedData?.stringValue) {
+              const dec = safeDecrypt(d.fields.encryptedData.stringValue, AES_SECRET);
+              if (dec) {
+                const parsed = JSON.parse(dec);
+                if (Array.isArray(parsed)) { existingItems = parsed; break; }
+              }
             }
-          }
-        } catch {}
+          } catch {}
+        }
       }
+      existingItems.forEach((e: any) => { if (e?.id) finalMap.set(e.id, e); });
     }
-
-    const finalMap = new Map();
-    existingItems.forEach((e: any) => { if (e?.id) finalMap.set(e.id, e); });
 
     const processedItems = items.map((item: any) => {
       let finalUrl = item.url || "";
@@ -141,9 +145,13 @@ router.post("/v1/admin/encrypt-links", verifyAdminToken, async (req, res) => {
     });
 
     processedItems.forEach((newItem: any) => {
-      if (newItem?.id) {
-        const existing = finalMap.get(newItem.id);
-        if (newItem.url || !existing) finalMap.set(newItem.id, newItem);
+      if (!newItem?.id) return;
+      if (newItem.url) {
+        finalMap.set(newItem.id, newItem);
+      } else {
+        // Explicit empty URL = delete this entry from the vault.
+        // In replace mode every item is explicit; in merge mode only submitted items are explicit.
+        finalMap.delete(newItem.id);
       }
     });
 

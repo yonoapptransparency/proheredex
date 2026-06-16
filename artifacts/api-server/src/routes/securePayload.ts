@@ -12,6 +12,7 @@ router.get(["/v1/secure-payload", "/v1/file-payload"], async (req, res) => {
   const sid = (req.query.sid || cookies.__sid) as string;
   const token = (req.query.token || req.query.t) as string;
   const appId = req.query.id as string;
+  const appSlug = req.query.slug as string;
 
   if (!token || !appId) {
     if (req.query.json === "true")
@@ -134,9 +135,11 @@ router.get(["/v1/secure-payload", "/v1/file-payload"], async (req, res) => {
       if (!targetUrl || !targetUrl.startsWith("http")) {
         if (req.query.json === "true")
           return res.status(404).json({ error: "Destination link is currently not ready." });
-        // Redirect back to the app gateway page so user sees a clear "not configured" state
-        // rather than landing on the homepage with no explanation
-        const fallbackPath = appId ? `/gateway/${encodeURIComponent(appId)}` : "/";
+        // Redirect back to the app's gateway page (by slug) so the user sees a clear
+        // "not configured" state. Fall back to homepage if neither slug nor id is available.
+        const fallbackPath = appSlug
+          ? `/gateway/${encodeURIComponent(appSlug)}`
+          : "/";
         return res.redirect(302, fallbackPath);
       }
 

@@ -67,11 +67,12 @@ const _EP = {
 
 interface ClearanceButtonProps {
   appId: string;
+  slug?: string;
   status: 'Verified' | 'Caution' | 'Unsafe';
   variant?: 'default' | 'compact';
 }
 
-export default function ClearanceButton({ appId, status, variant = 'default' }: ClearanceButtonProps) {
+export default function ClearanceButton({ appId, slug, status, variant = 'default' }: ClearanceButtonProps) {
   const [phase, setPhase] = useState<'idle'|'working'|'ready'|'error'>('idle');
   const [dynamicLink, setDynamicLink] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -499,6 +500,7 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
       // which cannot be parsed as JSON. Just open it directly in the browser.
       const params = new URLSearchParams({ t: token, id: appId });
       if (sid) params.set('sid', sid);
+      if (slug) params.set('slug', slug);
       const finalUrl = `${_EP.payload}?${params.toString()}`;
 
       setDynamicLink(finalUrl);
