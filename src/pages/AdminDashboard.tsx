@@ -2235,9 +2235,11 @@ export default function AdminDashboard() {
         : name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
         
       const editApp = editingAppId ? appsList.find(a => a.id === editingAppId) : null;
-      let encryptedUrlVal = editApp?.more_information_url || '';
+      // CRITICAL FIX: Treat empty input as "keep existing" if we already have a secure link for this app
+      let encryptedUrlVal = (editingAppId ? cachedSecureMapRef.current.get(editingAppId) : '') || '';
+      
       const inputUrl = formData.get('more_information_url') as string;
-      if (inputUrl && !inputUrl.startsWith('U2FsdGVkX1')) {
+      if (inputUrl && inputUrl.trim() !== '' && !inputUrl.startsWith('U2FsdGVkX1')) {
          try {
             const idToken = await auth?.currentUser?.getIdToken();
             const res = await fetch('/api/v1/admin/encrypt', {
@@ -2309,9 +2311,10 @@ export default function AdminDashboard() {
       
       if (encryptedUrlVal) {
           cachedSecureMapRef.current.set(actualAppId, encryptedUrlVal);
-      } else {
-          cachedSecureMapRef.current.delete(actualAppId);
       }
+      // If encryptedUrlVal is empty, we don't delete from the map anymore, 
+      // allowing the admin to "keep" the hidden secure link without re-entering it.
+      // To explicitly delete a link, one would have to clear it in the DB or we'd need a "Clear Link" button.
       
       let updatedApps;
       if (editingAppId) {
