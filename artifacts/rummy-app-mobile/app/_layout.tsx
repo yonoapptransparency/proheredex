@@ -14,8 +14,8 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { DataProvider } from "@/contexts/DataContext";
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
@@ -24,6 +24,15 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="app/[slug]"
+        options={{
+          headerShown: true,
+          title: "",
+          headerTransparent: false,
+        }}
+      />
+      <Stack.Screen name="+not-found" />
     </Stack>
   );
 }
@@ -48,9 +57,11 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView>
+          <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
-              <RootLayoutNav />
+              <DataProvider>
+                <RootLayoutNav />
+              </DataProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>
