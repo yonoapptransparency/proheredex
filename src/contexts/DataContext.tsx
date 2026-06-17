@@ -741,7 +741,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Save secure links mapping separately (fully encrypted to prevent read-leak of download URLs)
-      const secureLinks = newApps.map(a => ({ id: a.id, slug: a.slug, url: a.more_information_url || '' }));
+      const secureLinks = newApps.map(a => ({ id: a.id, url: a.more_information_url || '' }));
       let encryptedData = '';
       try {
         const { getAuth } = await import('firebase/auth');

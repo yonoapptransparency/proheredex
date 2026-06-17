@@ -94,7 +94,11 @@ const isRealValueForSecret = (val: string): boolean => {
 const CF_TURNSTILE_SECRET = isRealValueForSecret(rawTurnstileSecret) ? rawTurnstileSecret : '';
 
 async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
-  if (!CF_TURNSTILE_SECRET || !token) return true;
+  if (!CF_TURNSTILE_SECRET) return true;
+  if (!token) {
+    console.warn('[CF_TURNSTILE] Rejected: Token missing from request. IP:', ip);
+    return false;
+  }
   try {
     const params = new URLSearchParams({
       secret: CF_TURNSTILE_SECRET,

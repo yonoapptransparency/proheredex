@@ -142,9 +142,7 @@ async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
     const data: any = await res.json();
     if (!data.success) {
       console.warn('[CF_TURNSTILE] Failed:', data['error-codes']);
-      // Fail-open: if Turnstile fails but isn't explicitly "invalid", allow the human through.
-      // This prevents "Ghost Blocks" where real users are stuck on a spinning wheel.
-      return true; 
+      return false;
     }
     return true;
   } catch (e) {
@@ -179,8 +177,7 @@ const rateLimit = (ip: string): boolean => {
   }
   e.count++;
   ipMap.set(ip, e);
-  // Relaxed rate limit for public links (from 30 to 60) to accommodate shared office/home IPs
-  return e.count > 60;
+  return e.count > MAX_HITS;
 };
 
 // Retrieve reliable representation of current client's remote address
@@ -262,8 +259,8 @@ function verifyToken(token: string, ip: string, sessionId: string, fingerprint: 
     
     // Skip strict IP/Session/Fingerprint constraint because cellular rotators, CDNs, and sandbox iframes frequently present variable headers.
     // Cryptographic HMAC check below ensures 100% security on its own.
-    if (tSession && sessionId && tSession !== sessionId) {
-      console.warn(`[DEFENSE_WARN] Session mismatch, but signature is valid. Proceeding.`);
+    if (tSession !== sessionId) {
+      return false;
     }
     if (tFp !== fingerprint) {
       console.warn(`[DEFENSE_WARN] Fingerprint mismatch: ${tFp} !== ${fingerprint}. Proceeding safely as signature is cryptographically valid.`);
@@ -429,7 +426,7 @@ app.get("/api/v1/link-check", async (req, res) => {
             const dec = safeDecrypt(d.fields.encryptedData.stringValue, AES_SECRET);
             if (dec) {
               const arr = JSON.parse(dec);
-              if (arr.find((v: any) => (v.id === appId || (v.slug && v.slug === appId)) && v.url)) {
+              if (arr.find((v: any) => v.id === appId && v.url)) {
                 return res.json({ configured: true });
               }
             }
@@ -438,10 +435,7 @@ app.get("/api/v1/link-check", async (req, res) => {
         // Legacy unencrypted items array
         if (d.fields?.items?.arrayValue?.values) {
           const found = d.fields.items.arrayValue.values.find(
-            (v: any) => {
-              const f = v.mapValue?.fields;
-              return (f?.id?.stringValue === appId || (f?.slug?.stringValue && f.slug.stringValue === appId)) && f?.url?.stringValue;
-            }
+            (v: any) => v.mapValue?.fields?.id?.stringValue === appId && v.mapValue?.fields?.url?.stringValue
           );
           if (found) return res.json({ configured: true });
         }
@@ -458,17 +452,12 @@ app.get("/api/v1/link-check", async (req, res) => {
         const chunkD = await chunkR.json();
         if (!chunkD.error && chunkD.fields?.items?.arrayValue?.values) {
           const item = chunkD.fields.items.arrayValue.values.find(
-            (v: any) => {
-              const f = v.mapValue?.fields;
-              return f?.id?.stringValue === appId || (f?.slug?.stringValue && f.slug.stringValue === appId);
-            }
+            (v: any) => v.mapValue?.fields?.id?.stringValue === appId
           );
           if (item?.mapValue?.fields) {
-            const f = item.mapValue.fields;
-            const hasUrl = f.more_information_url?.stringValue
-                        || f.download_url?.stringValue
-                        || f.encrypted_download_url?.stringValue
-                        || f.link_configured?.booleanValue === true;
+            const hasUrl = item.mapValue.fields.more_information_url?.stringValue
+                        || item.mapValue.fields.download_url?.stringValue
+                        || item.mapValue.fields.link_configured?.booleanValue === true;
             if (hasUrl) return res.json({ configured: true });
           }
         }
@@ -790,8 +779,8 @@ app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], async (req, res) => 
                 const decryptedText = safeDecrypt(encryptedBlob, AES_SECRET);
                                 if (decryptedText) {
                   const linksArray = JSON.parse(decryptedText);
-	                  const linkObj = linksArray.find((v: any) => v.id === appId || (v.slug && v.slug === appId));
-	                  if (linkObj && linkObj.url) {
+                  const linkObj = linksArray.find((v: any) => v.id === appId);
+                  if (linkObj && linkObj.url) {
                     const encryptedUrl = linkObj.url;
                     if (encryptedUrl.startsWith('U2FsdGVkX1')) {
                       targetUrl = safeDecrypt(encryptedUrl, AES_SECRET);
@@ -803,11 +792,8 @@ app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], async (req, res) => 
               } else if (fields?.items?.arrayValue?.values) {
                 // Backward compatibility for legacy unencrypted list schema
                 const linksArray = fields.items.arrayValue.values;
-	                const linkObj = linksArray.find((v: any) => {
-	                    const f = v.mapValue.fields;
-	                    return f.id?.stringValue === appId || (f.slug?.stringValue && f.slug.stringValue === appId);
-	                });
-	                if (linkObj && linkObj.mapValue.fields.url) {
+                const linkObj = linksArray.find((v: any) => v.mapValue.fields.id.stringValue === appId);
+                if (linkObj && linkObj.mapValue.fields.url) {
                   const encryptedUrl = linkObj.mapValue.fields.url.stringValue;
                   if (encryptedUrl) {
                     if (encryptedUrl.startsWith('U2FsdGVkX1')) {
@@ -829,17 +815,8 @@ app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], async (req, res) => 
               const backupPath = path.join(process.cwd(), 'src/lib/secure_links_backup.json');
               if (fs.existsSync(backupPath)) {
                 const backup = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
-	                // Backup is Record<string, string> (id -> url)
-	                let encryptedUrl = backup[appId];
-	                if (!encryptedUrl) {
-	                    // Try searching values if appId is a slug
-	                    const entry = Object.entries(backup).find(([_, val]) => {
-	                        // This is tricky as backup only has id->url. 
-	                        // We'll rely on the Firestore chunks fallback for slug-based lookup if ID fails.
-	                        return false; 
-	                    });
-	                }
-	                if (encryptedUrl) {
+                const encryptedUrl = backup[appId];
+                if (encryptedUrl) {
                   if (encryptedUrl.startsWith('U2FsdGVkX1')) {
                     const AES_SECRET = process.env.AES_SECRET as string;
                     targetUrl = safeDecrypt(encryptedUrl, AES_SECRET);
@@ -869,12 +846,9 @@ app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], async (req, res) => 
                 const chunkData = await chunkResponse.json();
                 if (!chunkData.error && chunkData.fields?.items?.arrayValue?.values) {
                     const values = chunkData.fields.items.arrayValue.values;
-	                    const item = values.find((v: any) => {
-	                        const f = v.mapValue.fields;
-	                        return f.id?.stringValue === appId || (f.slug?.stringValue && f.slug.stringValue === appId);
-	                    });
-	                    if (item && item.mapValue.fields) {
-	                        const encryptedUrlField = item.mapValue.fields.more_information_url?.stringValue || item.mapValue.fields.download_url?.stringValue || item.mapValue.fields.encrypted_download_url?.stringValue;
+                    const item = values.find((v: any) => v.mapValue.fields.id.stringValue === appId);
+                    if (item && item.mapValue.fields) {
+                        const encryptedUrlField = item.mapValue.fields.more_information_url?.stringValue || item.mapValue.fields.download_url?.stringValue;
                         if (encryptedUrlField) {
                             if (encryptedUrlField.startsWith('U2FsdGVkX1')) {
                                 targetUrl = safeDecrypt(encryptedUrlField, AES_SECRET);
@@ -963,16 +937,6 @@ app.get(["/api/v1/secure-payload", "/api/v1/file-payload"], async (req, res) => 
     const idToken = authHeader.split('Bearer ')[1];
     if (!idToken || idToken === 'null' || idToken === 'undefined') {
       return res.status(401).json({ error: 'Unauthorized: Empty session verification token.' });
-    }
-
-    // Optional: Check Turnstile token if provided in headers (X-Turnstile-Token)
-    const turnstileToken = req.headers['x-turnstile-token'] as string;
-    if (turnstileToken) {
-      const ip = getIp(req);
-      const isHuman = await verifyTurnstile(turnstileToken, ip);
-      if (!isHuman) {
-        return res.status(403).json({ error: 'Security check failed: Bot detected.' });
-      }
     }
 
     try {
@@ -1684,8 +1648,7 @@ app.get('/robots.txt', async (req, res) => {
     if (!data) throw new Error("No data");
     const { news = [], blogs = [], videos = [] } = data;
     
-    const adminPath = process.env.VITE_ADMIN_PATH || 'admin';
-    let robots = `User-agent: *\nAllow: /\nDisallow: /${adminPath}/\nDisallow: /admin/\nDisallow: /api/\n`;
+    let robots = `User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/\n`;
     
     // Block crawling of empty section pages
     if (blogs.length === 0) robots += `Disallow: /blogs\n`;
@@ -1705,15 +1668,6 @@ app.get('/robots.txt', async (req, res) => {
 app.get("/api/v1/download/:id", async (req, res) => {
   const appId = req.params.id;
   if (!appId) return res.status(400).send("Bad Request");
-  
-  try {
-    const data = await fetchStoreData();
-    const app = data.apps?.find((a: any) => a.id === appId || a.slug === appId);
-    if (app && app.slug) {
-      return res.redirect(302, `/gateway/${app.slug}`);
-    }
-  } catch (e) {}
-  
   return res.redirect(302, `/gateway/${appId}`);
 });
 

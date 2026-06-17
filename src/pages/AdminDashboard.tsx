@@ -198,13 +198,8 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
       if (usr) {
         try {
           const idToken = await usr.getIdToken();
-          // Retrieve optional Turnstile token from session if available
-          const turnstileToken = sessionStorage.getItem('admin_turnstile_token');
           const res = await fetch('/api/v1/admin/verify', {
-            headers: { 
-              'Authorization': `Bearer ${idToken}`,
-              'X-Turnstile-Token': turnstileToken || ''
-            }
+            headers: { 'Authorization': `Bearer ${idToken}` }
           });
           const data = await res.json();
           if (data.authorized && active) {
@@ -1760,10 +1755,7 @@ export default function AdminDashboard() {
       return;
     }
     try {
-      const items = Array.from(cachedSecureMapRef.current.entries()).map(([k, v]) => {
-          const app = appsList.find(a => a.id === k);
-          return { id: k, slug: app?.slug, url: v };
-      });
+      const items = Array.from(cachedSecureMapRef.current.entries()).map(([k, v]) => ({ id: k, url: v }));
       const idToken = await auth?.currentUser?.getIdToken();
       const res = await fetch('/api/v1/admin/encrypt-links', {
         method: 'POST',
@@ -1846,11 +1838,9 @@ export default function AdminDashboard() {
         let adminVerified = false;
         try {
           const idToken = await currentUser.getIdToken();
-          const turnstileToken = sessionStorage.getItem('admin_turnstile_token');
           const verifyRes = await fetch('/api/v1/admin/verify', {
             headers: {
-              'Authorization': `Bearer ${idToken}`,
-              'X-Turnstile-Token': turnstileToken || ''
+              'Authorization': `Bearer ${idToken}`
             }
           });
           if (verifyRes.ok) {
@@ -2235,11 +2225,9 @@ export default function AdminDashboard() {
         : name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
         
       const editApp = editingAppId ? appsList.find(a => a.id === editingAppId) : null;
-      // CRITICAL FIX: Treat empty input as "keep existing" if we already have a secure link for this app
-      let encryptedUrlVal = (editingAppId ? cachedSecureMapRef.current.get(editingAppId) : '') || '';
-      
+      let encryptedUrlVal = editApp?.more_information_url || '';
       const inputUrl = formData.get('more_information_url') as string;
-      if (inputUrl && inputUrl.trim() !== '' && !inputUrl.startsWith('U2FsdGVkX1')) {
+      if (inputUrl && !inputUrl.startsWith('U2FsdGVkX1')) {
          try {
             const idToken = await auth?.currentUser?.getIdToken();
             const res = await fetch('/api/v1/admin/encrypt', {
@@ -2311,10 +2299,9 @@ export default function AdminDashboard() {
       
       if (encryptedUrlVal) {
           cachedSecureMapRef.current.set(actualAppId, encryptedUrlVal);
+      } else {
+          cachedSecureMapRef.current.delete(actualAppId);
       }
-      // If encryptedUrlVal is empty, we don't delete from the map anymore, 
-      // allowing the admin to "keep" the hidden secure link without re-entering it.
-      // To explicitly delete a link, one would have to clear it in the DB or we'd need a "Clear Link" button.
       
       let updatedApps;
       if (editingAppId) {
@@ -2559,7 +2546,6 @@ export default function AdminDashboard() {
 
   const handleLogout = async () => {
     triggerHaptic();
-    sessionStorage.removeItem('admin_turnstile_token');
     await signOut(auth);
   };
 
