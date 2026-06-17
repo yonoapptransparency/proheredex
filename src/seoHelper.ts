@@ -227,6 +227,16 @@ async function doFetchStoreData() {
       delete app.more_information_url;
       delete app.encrypted_download_url;
       delete app.download_url;
+      
+      // GHOST FIX: Ensure all fields are primitive to avoid [object Object] during SSR stringification
+      for (const key in app) {
+        if (app[key] && typeof app[key] === 'object' && !Array.isArray(app[key])) {
+          if (app[key].stringValue) app[key] = app[key].stringValue;
+          else if (app[key].integerValue) app[key] = parseInt(app[key].integerValue, 10);
+          else if (app[key].booleanValue) app[key] = app[key].booleanValue;
+        }
+      }
+      
       return app;
     });
     

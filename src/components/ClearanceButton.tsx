@@ -190,7 +190,8 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
   useEffect(() => {
     setLinkConfigured(null);
     let cancelled = false;
-    fetch(`/api/v1/link-check?id=${encodeURIComponent(appId)}`)
+    const safeAppId = typeof appId === 'object' ? (appId as any).id : String(appId);
+    fetch(`/api/v1/link-check?id=${encodeURIComponent(safeAppId)}`)
       .then(r => r.json())
       .then(data => { if (!cancelled) setLinkConfigured(data.configured !== false); })
       .catch(() => { if (!cancelled) setLinkConfigured(true); }); // fail-open
@@ -502,7 +503,9 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
       // Step 4: Build the clearance URL — the backend 302-redirects to the real link.
       // DO NOT fetch() this URL — fetch follows the redirect to the external site (HTML),
       // which cannot be parsed as JSON. Just open it directly in the browser.
-      const params = new URLSearchParams({ t: token, id: appId });
+      // Ghost Fix: Ensure appId is a string. If it's an object (e.g. from SSR), stringify its ID field.
+      const safeAppId = typeof appId === 'object' ? (appId as any).id : String(appId);
+      const params = new URLSearchParams({ t: token, id: safeAppId });
       if (sid) params.set('sid', sid);
       const finalUrl = `${_EP.payload}?${params.toString()}`;
 
