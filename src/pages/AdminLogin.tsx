@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Shield, Mail, KeyRound, Loader2 } from 'lucide-react';
+import { Shield, Mail, KeyRound, Loader2, Lock } from 'lucide-react';
 import { auth } from '../lib/firebase';
 import { useData } from '../contexts/DataContext';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
@@ -24,6 +24,8 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('');
   const [attempts, setAttempts] = useState(0);
   const [lockedUntil, setLockedUntil] = useState(0);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileContainerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const host = window.location.hostname;
@@ -42,18 +44,54 @@ export default function AdminLogin() {
         setAuthenticated(true);
       }
     });
-    return unsubscribe;
+        return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    // Initialize Turnstile for Admin Login
+    const siteKey = (import.meta as any).env?.VITE_CF_TURNSTILE_SITE_KEY;
+    if (!siteKey || !turnstileContainerRef.current) return;
+
+    const scriptId = 'cf-turnstile-script';
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+
+    const checkTurnstile = setInterval(() => {
+      if ((window as any).turnstile && turnstileContainerRef.current) {
+        clearInterval(checkTurnstile);
+        (window as any).turnstile.render(turnstileContainerRef.current, {
+          sitekey: siteKey,
+          callback: (token: string) => setTurnstileToken(token),
+          'expired-callback': () => setTurnstileToken(null),
+          'error-callback': () => setTurnstileToken(null),
+        });
+      }
+    }, 500);
+
+    return () => clearInterval(checkTurnstile);
   }, []);
 
 
-
   const handleGoogleLogin = async () => {
+    if (!turnstileToken && (import.meta as any).env?.VITE_CF_TURNSTILE_SITE_KEY) {
+      setError("Please complete the security check.");
+      return;
+    }
     setIsLoading(true);
     setError(null);
     setMessage(null);
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
+      if (turnstileToken) {
+        sessionStorage.setItem('admin_turnstile_token', turnstileToken);
+      }
     } catch (err: any) {
       if (err.code === 'auth/unauthorized-domain') {
         setError(<>
@@ -80,11 +118,18 @@ export default function AdminLogin() {
       setError("Please enter both email and password.");
       return;
     }
+    if (!turnstileToken && (import.meta as any).env?.VITE_CF_TURNSTILE_SITE_KEY) {
+      setError("Please complete the security check.");
+      return;
+    }
     setIsLoading(true);
     setError(null);
     setMessage(null);
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      if (turnstileToken) {
+        sessionStorage.setItem('admin_turnstile_token', turnstileToken);
+      }
     } catch (err: any) {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
@@ -177,6 +222,7 @@ export default function AdminLogin() {
         </div>
 
         <form onSubmit={handleEmailLogin} className="space-y-4">
+          <div ref={turnstileContainerRef} className="flex justify-center my-4"></div>
           <div className="space-y-2">
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />

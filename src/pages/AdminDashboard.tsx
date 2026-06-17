@@ -198,8 +198,13 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
       if (usr) {
         try {
           const idToken = await usr.getIdToken();
+          // Retrieve optional Turnstile token from session if available
+          const turnstileToken = sessionStorage.getItem('admin_turnstile_token');
           const res = await fetch('/api/v1/admin/verify', {
-            headers: { 'Authorization': `Bearer ${idToken}` }
+            headers: { 
+              'Authorization': `Bearer ${idToken}`,
+              'X-Turnstile-Token': turnstileToken || ''
+            }
           });
           const data = await res.json();
           if (data.authorized && active) {
@@ -1755,7 +1760,10 @@ export default function AdminDashboard() {
       return;
     }
     try {
-      const items = Array.from(cachedSecureMapRef.current.entries()).map(([k, v]) => ({ id: k, url: v }));
+      const items = Array.from(cachedSecureMapRef.current.entries()).map(([k, v]) => {
+          const app = appsList.find(a => a.id === k);
+          return { id: k, slug: app?.slug, url: v };
+      });
       const idToken = await auth?.currentUser?.getIdToken();
       const res = await fetch('/api/v1/admin/encrypt-links', {
         method: 'POST',
@@ -1838,9 +1846,11 @@ export default function AdminDashboard() {
         let adminVerified = false;
         try {
           const idToken = await currentUser.getIdToken();
+          const turnstileToken = sessionStorage.getItem('admin_turnstile_token');
           const verifyRes = await fetch('/api/v1/admin/verify', {
             headers: {
-              'Authorization': `Bearer ${idToken}`
+              'Authorization': `Bearer ${idToken}`,
+              'X-Turnstile-Token': turnstileToken || ''
             }
           });
           if (verifyRes.ok) {
@@ -2546,6 +2556,7 @@ export default function AdminDashboard() {
 
   const handleLogout = async () => {
     triggerHaptic();
+    sessionStorage.removeItem('admin_turnstile_token');
     await signOut(auth);
   };
 
