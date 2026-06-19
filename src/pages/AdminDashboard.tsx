@@ -556,7 +556,7 @@ const BannersTab = React.memo(({ banners, handleAddBanner, handleRemoveBanner, h
   </div>
 ));
 
-const GithubTab = React.memo(({ pushAllToGitHub, gitConfig, saveGitConfig, generatePreview }: any) => {
+const GithubTab = React.memo(({ pushAllToGitHub, gitConfig, saveGitConfig, generatePreview, appsList }: any) => {
   const [logs, setLogs] = React.useState<string[]>([]);
   const [syncing, setSyncing] = React.useState(false);
   const [showPreview, setShowPreview] = React.useState(false);
@@ -585,7 +585,7 @@ const GithubTab = React.memo(({ pushAllToGitHub, gitConfig, saveGitConfig, gener
     try {
       await pushAllToGitHub(undefined, (msg: string) => {
         setLogs(prev => [...prev, msg]);
-      });
+      }, appsList);
       setLogs(prev => [...prev, "Sync completed successfully!"]);
     } catch (err: any) {
       setLogs(prev => [...prev, `ERROR: ${err.message || 'Push failed'}`]);
@@ -618,7 +618,10 @@ const GithubTab = React.memo(({ pushAllToGitHub, gitConfig, saveGitConfig, gener
            <ShieldAlert className="w-5 h-5" /> Security Notice
         </h3>
         <p className="text-sm font-bold text-rose-700/80 mb-2">
-          The more_information_url (your private clearance redirect gateways) are specifically blocked from being sent to GitHub to keep them 100% private and secure.
+          The more_information_url (your private clearance redirect gateways) are encrypted before being pushed to GitHub to keep them secure.
+        </p>
+        <p className="text-sm font-bold text-rose-700/80">
+          ⚠️ WARNING: You must configure the <code className="bg-black/10 px-1 py-0.5 rounded">AES_SECRET</code> environment variable in your Vercel/production deployment exactly as it is set here, or secure links will fail to decrypt.
         </p>
       </div>
 
@@ -2905,7 +2908,7 @@ export default function AdminDashboard() {
                 <ReviewsModerationTab db={db} />
               )}
               {activeTab === 'github' && (
-                <GithubTab pushAllToGitHub={pushAllToGitHub} gitConfig={gitConfig} saveGitConfig={saveGitConfig} generatePreview={() => generateStaticDataFileCode(appsList, mockSettings, newsList, blogs, videosList)} />
+                <GithubTab pushAllToGitHub={pushAllToGitHub} gitConfig={gitConfig} saveGitConfig={saveGitConfig} appsList={appsList} generatePreview={() => generateStaticDataFileCode(appsList, mockSettings, newsList, blogs, videosList)} />
               )}
               {activeTab === 'settings' && (
                 <SettingsTab key={mockSettings.site_title || 'settings'} mockSettings={mockSettings} handleSaveSettings={handleSaveSettings} saving={saving} />

@@ -979,7 +979,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const pushAllToGitHub = React.useCallback(async (customConfig?: GitConfig, onProgress?: (msg: string) => void) => {
+  const pushAllToGitHub = React.useCallback(async (customConfig?: GitConfig, onProgress?: (msg: string) => void, overrideApps?: any[]) => {
     const configToUse = customConfig || gitConfig;
     if (!configToUse) {
       throw new Error("GitHub synchronization is not configured.");
@@ -989,11 +989,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (onProgress) onProgress(msg);
     };
 
+    const targetApps = overrideApps || apps;
+
     log("GitHub Sync: Manually pushing all static data to repository...");
     log("GitHub Sync: Generating secure payload...");
-    const updatedCode = generateStaticDataFileCode(apps, settings, news, blogs, videos);
+    const updatedCode = generateStaticDataFileCode(targetApps, settings, news, blogs, videos);
     
-    log(`GitHub Sync: Payload generated successfully (${apps.length} apps, ${news.length} news items).`);
+    log(`GitHub Sync: Payload generated successfully (${targetApps.length} apps, ${news.length} news items).`);
     log("GitHub Sync: Uploading public static data to GitHub...");
     
     await commitFileToGitHub({
@@ -1018,7 +1020,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const vaultRes = await fetch('/api/v1/admin/seal-vault', {
          method: 'POST',
          headers: { 'Content-Type': 'application/json', ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}) },
-         body: JSON.stringify({ items: apps })
+         body: JSON.stringify({ items: targetApps })
       });
 
       if (vaultRes.ok) {
@@ -1057,7 +1059,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
            'Content-Type': 'application/json',
            ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
          },
-         body: JSON.stringify({ apps, settings, news, blogs, videos })
+         body: JSON.stringify({ apps: targetApps, settings, news, blogs, videos })
       });
       if (syncRes.ok) {
          log("GitHub Sync: System fully synced securely.");

@@ -1550,27 +1550,38 @@ const rateLimitMap = new Map<string, number[]>();
 
   // Lookup 2: Git Vault & Backup JSON
   try {
-    const vaultPath = require('path').join(process.cwd(), 'src/lib/secureVault.ts');
-    if (require('fs').existsSync(vaultPath)) {
-      const vaultContent = require('fs').readFileSync(vaultPath, 'utf8');
-      const match = vaultContent.match(/export const ENCRYPTED_LINKS = "([^"]+)";/);
-      if (match && match[1]) {
+    let matchEncrypted = "";
+    try {
+      const mod = require('../src/lib/secureVault.ts');
+      if (mod && mod.ENCRYPTED_LINKS) matchEncrypted = mod.ENCRYPTED_LINKS;
+    } catch(e){}
+
+    if (!matchEncrypted) {
+       const vaultPath = require('path').join(process.cwd(), 'src/lib/secureVault.ts');
+       if (require('fs').existsSync(vaultPath)) {
+         const vaultContent = require('fs').readFileSync(vaultPath, 'utf8');
+         const match = vaultContent.match(/export const ENCRYPTED_LINKS = "([^"]+)";/);
+         if (match && match[1]) matchEncrypted = match[1];
+       }
+    }
+
+    if (matchEncrypted) {
         // @ts-ignore
         const AES_SECRET = process.env.AES_SECRET || (typeof AES_SECRET_GLOBAL !== 'undefined' ? AES_SECRET_GLOBAL : '');
         let dec = '';
-        if (typeof safeDecrypt !== 'undefined') dec = safeDecrypt(match[1], AES_SECRET);
+        if (typeof safeDecrypt !== 'undefined') dec = safeDecrypt(matchEncrypted, AES_SECRET);
         else {
            const CryptoJS = require('crypto-js');
-           const bytes = CryptoJS.AES.decrypt(match[1], AES_SECRET);
+           const bytes = CryptoJS.AES.decrypt(matchEncrypted, AES_SECRET);
            dec = bytes.toString(CryptoJS.enc.Utf8);
         }
         if (dec) {
            const map = JSON.parse(dec);
            if (map[appId]) return res.json({ configured: true });
         }
-      }
     }
   } catch(e) {}
+
   
   
   // Lookup 3: Local Offline Backup directly
@@ -1864,16 +1875,27 @@ ${JSON.stringify(publicContext, null, 2)}`;
           // Fallback to secure Vault from Github push
           if (!targetUrl || !targetUrl.startsWith('http')) {
             try {
-              const vaultPath = require('path').join(process.cwd(), 'src/lib/secureVault.ts');
-              if (require('fs').existsSync(vaultPath)) {
-                const vaultContent = require('fs').readFileSync(vaultPath, 'utf8');
-                const match = vaultContent.match(/export const ENCRYPTED_LINKS = "([^"]+)";/);
-                if (match && match[1]) {
+              let matchEncrypted = "";
+              try {
+                const mod = require('../src/lib/secureVault.ts');
+                if (mod && mod.ENCRYPTED_LINKS) matchEncrypted = mod.ENCRYPTED_LINKS;
+              } catch(e){}
+
+              if (!matchEncrypted) {
+                 const vaultPath = require('path').join(process.cwd(), 'src/lib/secureVault.ts');
+                 if (require('fs').existsSync(vaultPath)) {
+                   const vaultContent = require('fs').readFileSync(vaultPath, 'utf8');
+                   const match = vaultContent.match(/export const ENCRYPTED_LINKS = "([^"]+)";/);
+                   if (match && match[1]) matchEncrypted = match[1];
+                 }
+              }
+
+              if (matchEncrypted) {
                   let dec = '';
-                  if (typeof safeDecrypt !== 'undefined') dec = safeDecrypt(match[1], AES_SECRET);
+                  if (typeof safeDecrypt !== 'undefined') dec = safeDecrypt(matchEncrypted, AES_SECRET);
                   else {
                      const CryptoJS = require('crypto-js');
-                     const bytes = CryptoJS.AES.decrypt(match[1], AES_SECRET);
+                     const bytes = CryptoJS.AES.decrypt(matchEncrypted, AES_SECRET);
                      dec = bytes.toString(CryptoJS.enc.Utf8);
                   }
                   if (dec) {
@@ -1887,7 +1909,6 @@ ${JSON.stringify(publicContext, null, 2)}`;
                         }
                      }
                   }
-                }
               }
             } catch (e) {
               console.warn("Vault decryption failed", e);
