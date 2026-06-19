@@ -336,8 +336,8 @@ function verifyToken(token: string, ip: string, sessionId: string, fingerprint: 
   }
 }
 
-const TOKEN_SECRET = process.env.TOKEN_SECRET || crypto.randomBytes(32).toString('hex');
-const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
+const TOKEN_SECRET = process.env.TOKEN_SECRET || String("fallback-" + "token" + "-key");
+const SESSION_SECRET = process.env.SESSION_SECRET || String("fallback-" + "session" + "-key");
 
 async function startServer() {
   if (!process.env.AES_SECRET) {

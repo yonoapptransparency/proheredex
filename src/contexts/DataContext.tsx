@@ -60,84 +60,59 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     if (initialData?.apps && initialData.apps.length > 0) return initialData.apps;
     try {
       const cached = secureStorage.getItem('rummystore_apps');
-      return cached ? JSON.parse(cached) : [];
+      if (cached && cached !== '[]') return JSON.parse(cached);
+      return mockApps;
     } catch {
-      return [];
+      return mockApps;
     }
   });
   const [settings, setSettings] = useState<GlobalSettings>(() => {
     if (initialData?.settings && initialData.settings.site_title) return initialData.settings;
     try {
       const cached = secureStorage.getItem('rummystore_settings');
-      return cached ? JSON.parse(cached) : {
-        site_title: "",
-        meta_description: "",
-        logo_url: "",
-        favicon_url: "",
-        helpline_whatsapp: "",
-        helpline_telegram: "",
-        support_email: "",
-        disclaimer_text: "",
-        ethics_discrimination_text: "",
-        ticker_text: "",
-        animations_enabled: true,
-        categories: [],
-        banners: []
-      };
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.site_title) return parsed;
+      }
+      return mockSettings;
     } catch {
-      return {
-        site_title: "",
-        meta_description: "",
-        logo_url: "",
-        favicon_url: "",
-        helpline_whatsapp: "",
-        helpline_telegram: "",
-        support_email: "",
-        disclaimer_text: "",
-        ethics_discrimination_text: "",
-        ticker_text: "",
-        animations_enabled: true,
-        categories: [],
-        banners: []
-      };
+      return mockSettings;
     }
   });
   const [news, setNews] = useState<NewsItem[]>(() => {
     if (initialData?.news && initialData.news.length > 0) return initialData.news;
     try {
       const cached = secureStorage.getItem('rummystore_news');
-      return cached ? JSON.parse(cached) : [];
+      if (cached && cached !== '[]') return JSON.parse(cached);
+      return mockNews;
     } catch {
-      return [];
+      return mockNews;
     }
   });
   const [blogs, setBlogs] = useState<BlogPost[]>(() => {
     if (initialData?.blogs && initialData.blogs.length > 0) return initialData.blogs;
     try {
       const cached = secureStorage.getItem('rummystore_blogs');
-      return cached ? JSON.parse(cached) : [];
+      if (cached && cached !== '[]') return JSON.parse(cached);
+      return mockBlogs;
     } catch {
-      return [];
+      return mockBlogs;
     }
   });
   const [videos, setVideos] = useState<VideoItem[]>(() => {
     if (initialData?.videos && initialData.videos.length > 0) return initialData.videos;
     try {
       const cached = secureStorage.getItem('rummystore_videos');
-      return cached ? JSON.parse(cached) : [];
+      if (cached && cached !== '[]') return JSON.parse(cached);
+      return mockVideos;
     } catch {
-      return [];
+      return mockVideos;
     }
   });
   // Fast persistent loading state management - initialized dynamically based on cache
   const [loading, setLoading] = useState(() => {
     if (initialData?.apps && initialData.apps.length > 0) return false;
-    try {
-      const cachedApps = secureStorage.getItem('rummystore_apps');
-      return !cachedApps || cachedApps === '[]';
-    } catch {
-      return true;
-    }
+    return false; // Instant loading mode: We always have mock fallback data now
   });
   
   useEffect(() => {
