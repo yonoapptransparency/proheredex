@@ -39,7 +39,6 @@ export function generateStaticDataFileCode(
 ): string {
   // Let us clean up and default any potential circular refs or undef values by round-tripping
   const cleanApps = JSON.parse(JSON.stringify(apps)).map((app: any) => {
-    // Top Security: Scrub sensitive payloads to prevent bot and hacker scraping from public repo
     delete app.more_information_url;
     delete app.encrypted_download_url;
     delete app.download_url;

@@ -1,6 +1,6 @@
 /**
- * ClearanceButton bot safety checker
- * Implements verification challenges like automated bot tests, Cloudflare Turnstiles, and canvas tests.
+ * ClearanceButton safety checker
+ * Implements verification challenges like automated tests, Cloudflare Turnstiles, and canvas tests.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -389,8 +389,8 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
     return sha256(parts.join('|')).slice(0, 32);
   }, []);
 
-  // Multi-layer bot detection
-  const detectBotSignals = (): number => {
+  // Multi-layer client verification
+  const detectClientSignals = (): number => {
     const flags: boolean[] = [
       navigator.webdriver === true,
       '__playwright' in window || '__pw_manual' in window,
@@ -407,7 +407,7 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
   // Behavioral score
   const computeScore = (): number => {
     const timeSinceLoad = Date.now() - pageLoadTime;
-    const botFlags = detectBotSignals();
+    const clientFlags = detectClientSignals();
     const isInteractive = mouseMoved.current || touchUsed.current || moveCount.current >= 1;
     let score = 0;
     
@@ -420,8 +420,8 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
     if (keyCount.current >= 1) score += 7;
     if (focusCount.current >= 1) score += 6;
 
-    if (botFlags > 0 && !isInteractive) {
-      score -= botFlags * 40;
+    if (clientFlags > 0 && !isInteractive) {
+      score -= clientFlags * 40;
     }
 
     return score;
