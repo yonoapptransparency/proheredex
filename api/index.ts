@@ -1569,18 +1569,12 @@ const rateLimitMap = new Map<string, number[]>();
   // Lookup 2: Git Vault & Backup JSON
   try {
     let matchEncrypted = "";
-    try {
-      const mod = require('../src/lib/secureVault.ts');
-      if (mod && mod.ENCRYPTED_LINKS) matchEncrypted = mod.ENCRYPTED_LINKS;
-    } catch(e){}
-
-    if (!matchEncrypted) {
-       const vaultPath = require('path').join(process.cwd(), 'src/lib/secureVault.ts');
-       if (require('fs').existsSync(vaultPath)) {
-         const vaultContent = require('fs').readFileSync(vaultPath, 'utf8');
-         const match = vaultContent.match(/export const ENCRYPTED_LINKS = "([^"]+)";/);
-         if (match && match[1]) matchEncrypted = match[1];
-       }
+    
+    const vaultPath = require('path').join(process.cwd(), 'src/lib/secureVault.ts');
+    if (require('fs').existsSync(vaultPath)) {
+      const vaultContent = require('fs').readFileSync(vaultPath, 'utf8');
+      const match = vaultContent.match(/export const ENCRYPTED_LINKS = "([^"]+)";/);
+      if (match && match[1]) matchEncrypted = match[1];
     }
 
     if (matchEncrypted) {
@@ -1838,7 +1832,7 @@ ${JSON.stringify(publicContext, null, 2)}`;
   });
 
   // API Route: Process temporary dynamic download token
-  app.get("/api/v1/file-payload", async (req, res) => {
+  app.get("/api/v1/gateway-resolve", async (req, res) => {
     // Note: Checking is already completed on the upstream post endpoints (/api/v1/process-file)
     // to support various mobile browsers and system download managers that might strip browser-like headers.
 
@@ -1900,18 +1894,12 @@ ${JSON.stringify(publicContext, null, 2)}`;
           if (!targetUrl || !targetUrl.startsWith('http')) {
             try {
               let matchEncrypted = "";
-              try {
-                const mod = require('../src/lib/secureVault.ts');
-                if (mod && mod.ENCRYPTED_LINKS) matchEncrypted = mod.ENCRYPTED_LINKS;
-              } catch(e){}
-
-              if (!matchEncrypted) {
-                 const vaultPath = require('path').join(process.cwd(), 'src/lib/secureVault.ts');
-                 if (require('fs').existsSync(vaultPath)) {
-                   const vaultContent = require('fs').readFileSync(vaultPath, 'utf8');
-                   const match = vaultContent.match(/export const ENCRYPTED_LINKS = "([^"]+)";/);
-                   if (match && match[1]) matchEncrypted = match[1];
-                 }
+              
+              const vaultPath = require('path').join(process.cwd(), 'src/lib/secureVault.ts');
+              if (require('fs').existsSync(vaultPath)) {
+                const vaultContent = require('fs').readFileSync(vaultPath, 'utf8');
+                const match = vaultContent.match(/export const ENCRYPTED_LINKS = "([^"]+)";/);
+                if (match && match[1]) matchEncrypted = match[1];
               }
 
               if (matchEncrypted) {
@@ -1985,28 +1973,36 @@ ${JSON.stringify(publicContext, null, 2)}`;
           console.error("Firestore retrieval or decryption failed", err);
         }
         
-        if (targetUrl && !targetUrl.startsWith('http://') && !targetUrl.startsWith('https://') && targetUrl.includes('.')) {
-          targetUrl = 'https://' + targetUrl;
+        if (targetUrl && !targetUrl.startsWith('http://') && !targetUrl.startsWith('https://') && !targetUrl.startsWith('/')) {
+          if (targetUrl.includes('.')) {
+            targetUrl = 'https://' + targetUrl;
+          }
         }
         
-        if (!targetUrl || !targetUrl.startsWith('http')) {
+        if (!targetUrl || (!targetUrl.startsWith('http') && !targetUrl.startsWith('/'))) {
           console.error("CRITICAL: Failed to retrieve or decrypt URL for app:", appId, "Result:", targetUrl);
           return res.status(404).json({ error: "Download link not found or not yet configured for this app." });
         }
 
         // Apply Mistake 5 fix: Add affiliate referral code server-side
         try {
-          const targetUrlObj = new URL(targetUrl);
-          if (!targetUrlObj.searchParams.has('code')) {
-            const affiliateCode = process.env.AFFILIATE_CODE;
-            if (affiliateCode) {
-              targetUrlObj.searchParams.set('code', affiliateCode);
-              targetUrl = targetUrlObj.toString();
+          if (targetUrl.startsWith('http')) {
+            const targetUrlObj = new URL(targetUrl);
+            const isGoogle = targetUrlObj.hostname.includes('google.com') || targetUrlObj.hostname.includes('googleapis.com');
+            if (!isGoogle && !targetUrlObj.searchParams.has('code')) {
+              const affiliateCode = process.env.AFFILIATE_CODE;
+              if (affiliateCode) {
+                targetUrlObj.searchParams.set('code', affiliateCode);
+                targetUrl = targetUrlObj.toString();
+              }
             }
           }
         } catch (e) {}
 
         res.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+        if (req.query.json === 'true') {
+          return res.json({ redirect: targetUrl });
+        }
         return res.redirect(302, targetUrl);
       } catch (err) {
         if (req.query.json === 'true') return res.status(403).json({ error: "Error decoding parameter." });
@@ -2031,8 +2027,26 @@ ${JSON.stringify(publicContext, null, 2)}`;
     (tokenStore as any).delete(token);
     usedTokens.add(token);
 
+    let finalFallbackUrl = tokenData.targetUrl;
+    try {
+      if (finalFallbackUrl.startsWith('http')) {
+        const targetUrlObj = new URL(finalFallbackUrl);
+        const isGoogle = targetUrlObj.hostname.includes('google.com') || targetUrlObj.hostname.includes('googleapis.com');
+        if (!isGoogle && !targetUrlObj.searchParams.has('code')) {
+          const affiliateCode = process.env.AFFILIATE_CODE;
+          if (affiliateCode) {
+            targetUrlObj.searchParams.set('code', affiliateCode);
+            finalFallbackUrl = targetUrlObj.toString();
+          }
+        }
+      }
+    } catch (e) {}
+
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-    return res.redirect(302, tokenData.targetUrl);
+    if (req.query.json === 'true') {
+      return res.json({ redirect: finalFallbackUrl });
+    }
+    return res.redirect(302, finalFallbackUrl);
   });
 
   // API Route: Public unsecure SEO friendly download endpoint redirects to gateway

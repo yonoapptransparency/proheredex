@@ -1805,7 +1805,7 @@ ${JSON.stringify(publicContext, null, 2)}`;
   });
 
   // API Route: Process temporary dynamic download token
-  app.get("/api/v1/file-payload", async (req, res) => {
+  app.get("/api/v1/gateway-resolve", async (req, res) => {
     // Note: Checking is already completed on the upstream post endpoints (/api/v1/process-file)
     // to support various mobile browsers and system download managers that might strip browser-like headers.
 
@@ -1941,29 +1941,37 @@ ${JSON.stringify(publicContext, null, 2)}`;
           console.error("Firestore retrieval or decryption failed", err);
         }
         
-        if (targetUrl && !targetUrl.startsWith('http://') && !targetUrl.startsWith('https://') && targetUrl.includes('.')) {
-          targetUrl = 'https://' + targetUrl;
+        if (targetUrl && !targetUrl.startsWith('http://') && !targetUrl.startsWith('https://') && !targetUrl.startsWith('/')) {
+          if (targetUrl.includes('.')) {
+            targetUrl = 'https://' + targetUrl;
+          }
         }
         
-        if (!targetUrl || !targetUrl.startsWith('http')) {
+        if (!targetUrl || (!targetUrl.startsWith('http') && !targetUrl.startsWith('/'))) {
           console.error("CRITICAL: Failed to retrieve or decrypt URL for app:", appId, "Result:", targetUrl);
           return res.status(404).json({ error: "Download link not found or not yet configured for this app." });
         }
 
         // Apply Mistake 5 fix: Add affiliate referral code server-side
         try {
-          const targetUrlObj = new URL(targetUrl);
-          if (!targetUrlObj.searchParams.has('code')) {
-            const affiliateCode = process.env.AFFILIATE_CODE;
-            if (affiliateCode) {
-              targetUrlObj.searchParams.set('code', affiliateCode);
-              targetUrl = targetUrlObj.toString();
+          if (targetUrl.startsWith('http')) {
+            const targetUrlObj = new URL(targetUrl);
+            const isGoogle = targetUrlObj.hostname.includes('google.com') || targetUrlObj.hostname.includes('googleapis.com');
+            if (!isGoogle && !targetUrlObj.searchParams.has('code')) {
+              const affiliateCode = process.env.AFFILIATE_CODE;
+              if (affiliateCode) {
+                targetUrlObj.searchParams.set('code', affiliateCode);
+                targetUrl = targetUrlObj.toString();
+              }
             }
           }
         } catch (e) {}
 
         console.log("FINAL REDIRECT TARGET IS:", targetUrl);
         res.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+        if (req.query.json === 'true') {
+          return res.json({ redirect: targetUrl });
+        }
         return res.redirect(302, targetUrl);
       } catch (err) {
         if (req.query.json === 'true') return res.status(403).json({ error: "Error decoding parameter." });
@@ -1988,8 +1996,26 @@ ${JSON.stringify(publicContext, null, 2)}`;
     (tokenStore as any).delete(token);
     usedTokens.add(token);
 
+    let finalFallbackUrl = tokenData.targetUrl;
+    try {
+      if (finalFallbackUrl.startsWith('http')) {
+        const targetUrlObj = new URL(finalFallbackUrl);
+        const isGoogle = targetUrlObj.hostname.includes('google.com') || targetUrlObj.hostname.includes('googleapis.com');
+        if (!isGoogle && !targetUrlObj.searchParams.has('code')) {
+          const affiliateCode = process.env.AFFILIATE_CODE;
+          if (affiliateCode) {
+            targetUrlObj.searchParams.set('code', affiliateCode);
+            finalFallbackUrl = targetUrlObj.toString();
+          }
+        }
+      }
+    } catch (e) {}
+
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-    return res.redirect(302, tokenData.targetUrl);
+    if (req.query.json === 'true') {
+      return res.json({ redirect: finalFallbackUrl });
+    }
+    return res.redirect(302, finalFallbackUrl);
   });
 
   // API Route: Public unsecure SEO friendly download endpoint redirects to gateway

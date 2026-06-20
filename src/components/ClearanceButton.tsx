@@ -68,7 +68,7 @@ function sha256(ascii: string): string {
 const _EP = {
   challenge: '/api/v1/init-file',
   process:   '/api/v1/process-file',
-  payload:   '/api/v1/file-payload',
+  payload:   '/api/v1/gateway-resolve',
 };
 
 interface ClearanceButtonProps {
@@ -451,7 +451,7 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
     }
   };
 
-  const triggerHandshake = async () => {
+  const triggerHandshake = async (targetWin: Window | null = null) => {
     setPhase('working');
     setErrorMsg('');
 
@@ -505,23 +505,37 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
       const { token } = await tokenResponse.json();
       if (!token) throw new Error('No token received. Please try again.');
 
-      // Step 4: Build the clearance URL — the backend 302-redirects to the real link.
-      // DO NOT fetch() this URL — fetch follows the redirect to the external site (HTML),
-      // which cannot be parsed as JSON. Just open it directly in the browser.
-      const params = new URLSearchParams({ t: token, id: appId });
+      // Step 4: Fetch the final URL via the JSON endpoint to bypass iframe/window.open restrictions
+      const params = new URLSearchParams({ t: token, id: appId, json: 'true' });
       if (sid) params.set('sid', sid);
-      const finalUrl = `${window.location.origin}${_EP.payload}?${params.toString()}`;
+      const payloadUrl = `${_EP.payload}?${params.toString()}`;
+      
+      const payloadResponse = await fetch(payloadUrl);
+      if (!payloadResponse.ok) {
+        const errorData = await payloadResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to retrieve the final destination.');
+      }
+      
+      const payloadData = await payloadResponse.json();
+      if (!payloadData.redirect) {
+        throw new Error('Destination link not found in response.');
+      }
 
-      setDynamicLink(finalUrl);
+      setDynamicLink(payloadData.redirect);
       setPhase('ready');
       setTokenCountdown(600);
 
-      // Auto-navigate user to prevent 2nd click requirement
-      // Use replace so they don't go back and hit a spent token
-      window.location.replace(finalUrl);
+      if (targetWin) {
+        targetWin.location.href = payloadData.redirect;
+      } else {
+        window.location.href = payloadData.redirect;
+      }
 
     } catch (err: any) {
       console.error('Clearance handshake failed:', err);
+      if (targetWin) {
+        targetWin.close();
+      }
       setErrorMsg(err.message || 'Initialization did not complete. Please retry.');
       setPhase('error');
       setTimeout(resetState, 4000);
@@ -540,7 +554,16 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
       window.navigator.vibrate(50);
     }
     
-    triggerHandshake();
+    let targetWin: Window | null = null;
+    try {
+      targetWin = window.open('', '_blank');
+      if (targetWin) {
+        targetWin.document.write('<html><head><title>Loading...</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="background:#18181b; color:#18181b; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; font-family:sans-serif;"><i>Generating dynamic connection...</i></body></html>');
+        targetWin.document.close();
+      }
+    } catch(e) {}
+
+    triggerHandshake(targetWin);
   };
 
   const isGenerating = phase === 'working';
@@ -624,7 +647,7 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => window.location.replace(dynamicLink)}
+                  onClick={() => window.open(dynamicLink, '_blank', 'noopener,noreferrer')}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-5 rounded-xl flex items-center justify-center gap-1.5 transition-colors text-sm shadow-md h-[44px]"
                 >
                   <span className="font-bold flex items-center gap-1.5">More Info <CheckCircle2 className="w-4 h-4" /></span>
@@ -638,7 +661,7 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
                 >
                   <motion.button 
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => window.location.replace(dynamicLink)}
+                    onClick={() => window.open(dynamicLink, '_blank', 'noopener,noreferrer')}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-10 rounded-2xl flex items-center justify-center gap-3 transition-colors shadow-md shrink-0"
                   >
                     <span>More Info</span>
