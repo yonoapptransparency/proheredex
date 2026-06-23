@@ -884,6 +884,32 @@ const SettingsTab = React.memo(({ mockSettings, handleSaveSettings, saving }: an
         </div>
       </div>
 
+      <div className="space-y-6">
+        <h3 className="font-black text-pink-500 border-b border-pink-500/10 pb-2 uppercase tracking-widest text-xs italic">Social Media Links</h3>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Facebook URL</label>
+            <input type="text" name="social_facebook" defaultValue={mockSettings.social_links?.facebook} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-medium" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Instagram URL</label>
+            <input type="text" name="social_instagram" defaultValue={mockSettings.social_links?.instagram} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-medium" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">Twitter / X URL</label>
+            <input type="text" name="social_twitter" defaultValue={mockSettings.social_links?.twitter} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-medium" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">LinkedIn URL</label>
+            <input type="text" name="social_linkedin" defaultValue={mockSettings.social_links?.linkedin} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-medium" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black opacity-60 mb-1 uppercase tracking-widest italic dark:text-white">YouTube URL</label>
+            <input type="text" name="social_youtube" defaultValue={mockSettings.social_links?.youtube} className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 focus:ring-4 focus:ring-pink-500/20 dark:text-white font-medium" />
+          </div>
+        </div>
+      </div>
+
       <button type="submit" disabled={saving} className="min-h-[64px] px-12 bg-pink-500 hover:bg-pink-600 text-white font-black uppercase tracking-widest italic rounded-[2rem] transition-all flex items-center justify-center gap-3 shadow-2xl shadow-pink-500/30 hover:scale-[1.02] active:scale-95 disabled:opacity-50">
         {saving ? 'Synchronizing Cloud...' : <><Shield className="w-6 h-6"/> Sync Global Identity Settings</>}
       </button>
@@ -1741,6 +1767,7 @@ export default function AdminDashboard() {
   const [categoriesList, setCategoriesList] = useState<string[]>(mockSettings.categories || []);
   const [quickLinksList, setQuickLinksList] = useState(mockSettings.quick_links || []);
   const [websiteFaqsList, setWebsiteFaqsList] = useState(mockSettings.website_faqs || []);
+  const [developersList, setDevelopersList] = useState(mockSettings.developers || []);
   const [newCatInput, setNewCatInput] = useState('');
   const [user, setUser] = useState<any>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -2145,6 +2172,40 @@ export default function AdminDashboard() {
     setWebsiteFaqsList(updated);
   };
 
+  const handleSaveDevelopers = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const updatedSettings = {
+        ...mockSettings,
+        developers: developersList,
+      };
+      await saveMockSettings(updatedSettings);
+      triggerHaptic();
+      alert('Developers saved successfully!');
+    } catch (err: any) {
+      alert('Error saving developers: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddDeveloper = () => {
+    setDevelopersList([...developersList, { name: 'New Developer', role: 'Role', image_url: '', github: '', twitter: '', bio: '' }]);
+  };
+
+  const handleRemoveDeveloper = (index: number) => {
+    const updated = [...developersList];
+    updated.splice(index, 1);
+    setDevelopersList(updated);
+  };
+
+  const handleDeveloperChange = (index: number, field: string, value: string) => {
+    const updated = [...developersList];
+    updated[index] = { ...updated[index], [field]: value };
+    setDevelopersList(updated);
+  };
+
   const addCategory = async () => {
     const trimmed = newCatInput.trim();
     if (trimmed && !categoriesList.includes(trimmed)) {
@@ -2233,6 +2294,14 @@ export default function AdminDashboard() {
         hero_title_animation: formData.get('hero_title_animation') as string,
         hero_title_text: formData.get('hero_title_text') as string,
         hero_title_subtitle: formData.get('hero_title_subtitle') as string,
+        
+        social_links: {
+          facebook: formData.get('social_facebook') as string || '',
+          instagram: formData.get('social_instagram') as string || '',
+          twitter: formData.get('social_twitter') as string || '',
+          linkedin: formData.get('social_linkedin') as string || '',
+          youtube: formData.get('social_youtube') as string || '',
+        },
         
         categories: categoriesList,
         banners: banners
@@ -2670,6 +2739,7 @@ export default function AdminDashboard() {
             
             <SidebarItem id="quicklinks" label="Quick Links" icon={Compass} active={activeTab === 'quicklinks'} onClick={handleTabChange} />
             <SidebarItem id="websitefaqs" label="Website FAQs" icon={HelpCircle} active={activeTab === 'websitefaqs'} onClick={handleTabChange} />
+            <SidebarItem id="developers" label="Developers" icon={Users} active={activeTab === 'developers'} onClick={handleTabChange} />
             <SidebarItem id="categories" label="Categories" icon={Layers} active={activeTab === 'categories'} onClick={handleTabChange} />
             <SidebarItem id="banners" label="Ad Banners" icon={LayoutDashboard} active={activeTab === 'banners'} onClick={handleTabChange} />
             
@@ -2837,6 +2907,66 @@ export default function AdminDashboard() {
                     
                     <button type="submit" disabled={saving} className="min-h-[64px] w-full max-w-sm ml-auto block px-12 bg-pink-500 text-white font-black uppercase tracking-widest italic rounded-[2rem] shadow-xl shadow-pink-500/30">
                       Sync FAQs to Live
+                    </button>
+                  </form>
+                </div>
+              )}
+              {activeTab === 'developers' && (
+                <div className="animate-fade-in">
+                  <div className="flex justify-between items-center mb-8 border-b-4 border-pink-500/20 pb-4">
+                    <h2 className="text-2xl font-black dark:text-white uppercase italic tracking-tighter">Developers Management</h2>
+                    <button onClick={handleAddDeveloper} className="bg-pink-500/10 text-pink-500 px-6 py-3 rounded-xl border-2 border-pink-500/20 flex items-center gap-2 font-black uppercase tracking-widest italic text-[10px]"><Plus className="w-4 h-4" /> Add Developer</button>
+                  </div>
+                  
+                  <form onSubmit={handleSaveDevelopers} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {developersList.map((dev: any, index: number) => (
+                        <div key={index} className="bg-zinc-50 dark:bg-zinc-800/40 border-2 border-black/5 dark:border-white/5 rounded-2xl p-6 shadow-sm relative">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveDeveloper(index)}
+                            className="absolute top-4 right-4 text-rose-500 bg-rose-500/10 p-2 rounded-xl hover:bg-rose-500 hover:text-white transition-all z-10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                          
+                          <div className="space-y-4 pt-2">
+                            <div>
+                              <label className="block text-[10px] font-black opacity-60 mb-2 uppercase tracking-widest italic dark:text-white">Name</label>
+                              <input required type="text" value={dev.name} onChange={(e) => handleDeveloperChange(index, 'name', e.target.value)} className="w-full bg-white dark:bg-zinc-900 border-2 border-black/10 dark:border-white/10 rounded-xl p-3 font-bold dark:text-white" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-black opacity-60 mb-2 uppercase tracking-widest italic dark:text-white">Role</label>
+                              <input required type="text" value={dev.role} onChange={(e) => handleDeveloperChange(index, 'role', e.target.value)} className="w-full bg-white dark:bg-zinc-900 border-2 border-black/10 dark:border-white/10 rounded-xl p-3 font-medium dark:text-white" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-black opacity-60 mb-2 uppercase tracking-widest italic dark:text-white">Image URL (Avatar)</label>
+                              <input type="text" value={dev.image_url} onChange={(e) => handleDeveloperChange(index, 'image_url', e.target.value)} className="w-full bg-white dark:bg-zinc-900 border-2 border-black/10 dark:border-white/10 rounded-xl p-3 font-medium dark:text-white" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-black opacity-60 mb-2 uppercase tracking-widest italic dark:text-white">GitHub URL (Optional)</label>
+                              <input type="text" value={dev.github} onChange={(e) => handleDeveloperChange(index, 'github', e.target.value)} className="w-full bg-white dark:bg-zinc-900 border-2 border-black/10 dark:border-white/10 rounded-xl p-3 font-medium dark:text-white" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-black opacity-60 mb-2 uppercase tracking-widest italic dark:text-white">Twitter URL (Optional)</label>
+                              <input type="text" value={dev.twitter} onChange={(e) => handleDeveloperChange(index, 'twitter', e.target.value)} className="w-full bg-white dark:bg-zinc-900 border-2 border-black/10 dark:border-white/10 rounded-xl p-3 font-medium dark:text-white" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-black opacity-60 mb-2 uppercase tracking-widest italic dark:text-white">Bio (Optional)</label>
+                              <textarea rows={2} value={dev.bio} onChange={(e) => handleDeveloperChange(index, 'bio', e.target.value)} className="w-full bg-white dark:bg-zinc-900 border-2 border-black/10 dark:border-white/10 rounded-xl p-3 font-medium dark:text-white resize-none"></textarea>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {developersList.length === 0 && (
+                        <div className="col-span-1 md:col-span-2 text-center py-12 opacity-50 border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl dark:text-white font-bold italic">
+                          No developers added yet.
+                        </div>
+                      )}
+                    </div>
+                    
+                    <button type="submit" disabled={saving} className="min-h-[64px] w-full max-w-sm ml-auto block px-12 bg-pink-500 text-white font-black uppercase tracking-widest italic rounded-[2rem] shadow-xl shadow-pink-500/30">
+                      Sync Developers to Live
                     </button>
                   </form>
                 </div>

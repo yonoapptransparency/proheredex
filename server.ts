@@ -540,6 +540,7 @@ async function startServer() {
       xml += `  <url>\n    <loc>${host}/blogs</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
       xml += `  <url>\n    <loc>${host}/videos</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
       xml += `  <url>\n    <loc>${host}/about</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
+      xml += `  <url>\n    <loc>${host}/developers</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
       xml += `  <url>\n    <loc>${host}/contact</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
       xml += `  <url>\n    <loc>${host}/privacy</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.3</priority>\n  </url>\n`;
       xml += `  <url>\n    <loc>${host}/terms</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.3</priority>\n  </url>\n`;

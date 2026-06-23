@@ -7,6 +7,7 @@ import { DataProvider, useData } from './contexts/DataContext';
 import { useLocation, BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { Menu, Shield, ShieldCheck, Info, ArrowRight, X, LayoutGrid, Newspaper, Sparkles, Send, MoreHorizontal, Search, Video, Star, Facebook, Instagram, Twitter, Linkedin, Youtube, Bot } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Home from './pages/Home';
 import PublicChatbot from './components/PublicChatbot';
 import React, { useState, useEffect, useMemo, Suspense, lazy, ComponentType, LazyExoticComponent } from 'react';
@@ -22,25 +23,50 @@ function LoadingScreen() {
   );
 }
 
-import AppDetails from './pages/AppDetails';
-import GatewayPage from './pages/GatewayPage';
-import NewApps from './pages/NewApps';
-import NewsPage from './pages/NewsPage';
-import VideosPage from './pages/VideosPage';
-import About from './pages/About';
-import Contact from './pages/Contact';
-import Privacy from './pages/Privacy';
-import Terms from './pages/Terms';
-import Responsibility from './pages/Responsibility';
-import Notice from './pages/Notice';
-import Ethics from './pages/Ethics';
-import Disclaimer from './pages/Disclaimer';
-import NewsDetailPage from './pages/NewsDetailPage';
-import Blogs from './pages/Blogs';
-import BlogDetailPage from './pages/BlogDetailPage';
-import VideoDetailPage from './pages/VideoDetailPage';
-import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
+// Background Route Prefetching Strategy
+const pageFactories = {
+  AppDetails: () => import('./pages/AppDetails'),
+  GatewayPage: () => import('./pages/GatewayPage'),
+  NewApps: () => import('./pages/NewApps'),
+  NewsPage: () => import('./pages/NewsPage'),
+  VideosPage: () => import('./pages/VideosPage'),
+  About: () => import('./pages/About'),
+  Contact: () => import('./pages/Contact'),
+  Privacy: () => import('./pages/Privacy'),
+  Terms: () => import('./pages/Terms'),
+  Responsibility: () => import('./pages/Responsibility'),
+  Notice: () => import('./pages/Notice'),
+  Ethics: () => import('./pages/Ethics'),
+  Disclaimer: () => import('./pages/Disclaimer'),
+  Developers: () => import('./pages/Developers'),
+  NewsDetailPage: () => import('./pages/NewsDetailPage'),
+  Blogs: () => import('./pages/Blogs'),
+  BlogDetailPage: () => import('./pages/BlogDetailPage'),
+  VideoDetailPage: () => import('./pages/VideoDetailPage')
+};
+
+const AppDetails = lazy(pageFactories.AppDetails);
+const GatewayPage = lazy(pageFactories.GatewayPage);
+const NewApps = lazy(pageFactories.NewApps);
+const NewsPage = lazy(pageFactories.NewsPage);
+const VideosPage = lazy(pageFactories.VideosPage);
+const About = lazy(pageFactories.About);
+const Contact = lazy(pageFactories.Contact);
+const Privacy = lazy(pageFactories.Privacy);
+const Terms = lazy(pageFactories.Terms);
+const Responsibility = lazy(pageFactories.Responsibility);
+const Notice = lazy(pageFactories.Notice);
+const Ethics = lazy(pageFactories.Ethics);
+const Disclaimer = lazy(pageFactories.Disclaimer);
+const Developers = lazy(pageFactories.Developers);
+const NewsDetailPage = lazy(pageFactories.NewsDetailPage);
+const Blogs = lazy(pageFactories.Blogs);
+const BlogDetailPage = lazy(pageFactories.BlogDetailPage);
+const VideoDetailPage = lazy(pageFactories.VideoDetailPage);
+
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+
 import FallbackRouteMatcher from './components/FallbackRouteMatcher';
 
 import { getAdminPath } from './lib/utils';
@@ -49,6 +75,7 @@ import SupportWidget from './components/SupportWidget';
 import GlobalSearch from './components/GlobalSearch';
 import StarRatingFeedback from './components/StarRatingFeedback';
 import QuickHub from './components/QuickHub';
+import LanguageSelector from './components/LanguageSelector';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -63,6 +90,7 @@ function ScrollToTop() {
 function Header() {
   const { settings } = useData();
   const { pathname } = useLocation();
+  const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -121,15 +149,15 @@ function Header() {
           
           <nav className="hidden md:flex items-center gap-4 lg:gap-8 text-sm font-medium">
             <Link to="/" onClick={triggerHaptic} className={`transition-all p-2 tracking-wide relative ${pathname === '/' ? 'text-blue-600' : 'text-zinc-600 hover:text-blue-500 dark:text-zinc-300'}`}>
-              Home
+              {t('Home')}
               {pathname === '/' && <motion.div layoutId="header-active" className="absolute -bottom-1 left-2 right-2 h-[2px] bg-blue-600 rounded-t-full" />}
             </Link>
             <Link to="/new-apps" onClick={triggerHaptic} className={`transition-all p-2 tracking-wide flex items-center gap-1.5 relative ${pathname === '/new-apps' ? 'text-blue-600' : 'text-zinc-600 hover:text-blue-500 dark:text-zinc-300'}`}>
-              New Apps <span className="flex w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+              {t('New Releases')} <span className="flex w-1.5 h-1.5 rounded-full bg-blue-500"></span>
               {pathname === '/new-apps' && <motion.div layoutId="header-active" className="absolute -bottom-1 left-2 right-2 h-[2px] bg-blue-600 rounded-t-full" />}
             </Link>
             <Link to="/news" onClick={triggerHaptic} className={`transition-all p-2 tracking-wide relative ${pathname === '/news' ? 'text-blue-600' : 'text-zinc-600 hover:text-blue-500 dark:text-zinc-300'}`}>
-              News
+              {t('News')}
               {pathname === '/news' && <motion.div layoutId="header-active" className="absolute -bottom-1 left-2 right-2 h-[2px] bg-blue-600 rounded-t-full" />}
             </Link>
             <div className="relative group/more" onMouseEnter={() => setMoreOpen(true)} onMouseLeave={() => setMoreOpen(false)}>
@@ -195,11 +223,15 @@ function Header() {
                 aria-label="Search Store"
               >
                 <Search className="w-3.5 h-3.5 text-zinc-400 group-hover:text-blue-500 transition-colors shrink-0" />
-                <span className="text-[13px] text-zinc-500 group-hover:text-zinc-800 dark:group-hover:text-zinc-200 transition-colors truncate">Search...</span>
+                <span className="text-[13px] text-zinc-500 group-hover:text-zinc-800 dark:group-hover:text-zinc-200 transition-colors truncate">{t('Search')}</span>
               </button>
 
               {/* Unified Portal Quick Access Hub */}
               <QuickHub isMobileSize={false} />
+              
+              <div className="w-40">
+                <LanguageSelector />
+              </div>
 
               {settings.helpline_telegram && (
                 <a 
@@ -275,7 +307,11 @@ function Header() {
               </button>
             </div>
             
-            <nav className="grid grid-cols-2 gap-3 mb-6 shrink-0">
+            <div className="mb-6 z-50 relative">
+              <LanguageSelector />
+            </div>
+
+            <nav className="grid grid-cols-2 gap-3 mb-6 shrink-0 relative z-40">
               {[
                 { action: () => window.dispatchEvent(new Event('open-public-chatbot')), label: 'AI Assistant', icon: Bot },
                 { to: '/', label: 'Home', icon: LayoutGrid },
@@ -378,6 +414,7 @@ function Footer() {
         <h4 className="text-slate-900 font-bold mb-1">Company</h4>
         <Link to="/" className="text-slate-600 hover:text-blue-600 font-medium transition-colors text-sm">Home</Link>
         <Link to="/about" className="text-slate-600 hover:text-blue-600 font-medium transition-colors text-sm">About Us</Link>
+        <Link to="/developers" className="text-slate-600 hover:text-blue-600 font-medium transition-colors text-sm">Our Team</Link>
         <Link to="/contact" className="text-slate-600 hover:text-blue-600 font-medium transition-colors text-sm">Contact</Link>
       </div>
       
@@ -454,11 +491,21 @@ function Footer() {
         <div className="text-xs text-slate-500 flex flex-col md:flex-row items-center gap-4">
           <span>&copy; {new Date().getFullYear()} {settings.site_title}. All rights reserved.</span>
           <div className="flex items-center gap-3 md:ml-4">
-            <a href="#" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Facebook className="w-4 h-4" /></a>
-            <a href="#" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Instagram className="w-4 h-4" /></a>
-            <a href="#" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Twitter className="w-4 h-4" /></a>
-            <a href="#" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Linkedin className="w-4 h-4" /></a>
-            <a href="#" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Youtube className="w-4 h-4" /></a>
+            {settings.social_links?.facebook && (
+              <a href={settings.social_links.facebook} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Facebook className="w-4 h-4" /></a>
+            )}
+            {settings.social_links?.instagram && (
+              <a href={settings.social_links.instagram} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Instagram className="w-4 h-4" /></a>
+            )}
+            {settings.social_links?.twitter && (
+              <a href={settings.social_links.twitter} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Twitter className="w-4 h-4" /></a>
+            )}
+            {settings.social_links?.linkedin && (
+              <a href={settings.social_links.linkedin} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Linkedin className="w-4 h-4" /></a>
+            )}
+            {settings.social_links?.youtube && (
+              <a href={settings.social_links.youtube} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Youtube className="w-4 h-4" /></a>
+            )}
           </div>
         </div>
         <div className="scale-90 opacity-70 hover:opacity-100 transition-opacity">
@@ -604,6 +651,17 @@ function AppContent() {
   const adminPath = getAdminPath();
   const isAdminPath = location.pathname.startsWith(`/${adminPath}`);
 
+  // Prefetch other pages in the background after initial render so subsequent navigation is instant
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      Object.values(pageFactories).forEach(factory => {
+        try { factory(); } catch (e) {}
+      });
+    }, 2500); // 2.5s delay to prioritize the first page's performance footprint
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   const triggerHaptic = () => {
     if (window.navigator && window.navigator.vibrate) {
       setTimeout(() => {
@@ -663,6 +721,10 @@ function AppContent() {
       pageTitle = `About Us - ${siteTitle}`;
       pageDesc = settings.meta_description || '';
       pageKeywords = settings.seo_keywords || '';
+    } else if (path === '/developers') {
+      pageTitle = `Meet Our Team - ${siteTitle}`;
+      pageDesc = `Meet the brilliant developers behind ${siteTitle}. Discover our team's expertise and passion.`;
+      pageKeywords = 'team, developers, creators';
     } else if (path === '/contact') {
       pageTitle = `Contact Us - ${siteTitle}`;
       pageDesc = settings.meta_description || '';
@@ -906,6 +968,7 @@ function AppContent() {
             <Route path="/info/:slug" element={<GatewayPage />} />
             <Route path="/gateway/:slug" element={<GatewayPage />} />
             <Route path="/about" element={<About />} />
+            <Route path="/developers" element={<Developers />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />

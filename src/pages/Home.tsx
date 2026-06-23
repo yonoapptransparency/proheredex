@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo, useDeferredValue } from 'react';
 import { Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useData } from '../contexts/DataContext';
-import { Search, ShieldAlert, ShieldCheck, Sparkles, ArrowRight, TrendingUp, Star, SlidersHorizontal, ChevronDown, ListFilter } from 'lucide-react';
+import { Search, ShieldAlert, ShieldCheck, Sparkles, ArrowRight, TrendingUp, Star, SlidersHorizontal, ChevronDown, ListFilter, Github, Twitter } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
 import { FeaturedBanner, PlayStoreTabs, TopChartItem, AppListItem, AppListItemSkeleton, TopChartItemSkeleton, NewAdditionItemSkeleton } from '../components/PlayStoreUI';

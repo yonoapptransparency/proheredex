@@ -766,6 +766,9 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
         ogImage = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
       }
     }
+  } else if (urlPath.startsWith('/developers')) {
+    title = `Meet Our Team | ${siteTitle}`;
+    description = `Meet the brilliant developers behind ${siteTitle}. Discover our team's expertise and passion.`;
   } else {
     // Dynamic mapping for root-level routes
     const possibleSlug = decodeURIComponent(urlPath.replace(/^\/|\/$/g, '').split('?')[0]);

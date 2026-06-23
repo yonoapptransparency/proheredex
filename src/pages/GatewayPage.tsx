@@ -335,26 +335,7 @@ export default function GatewayPage() {
         </div>
       </div>
 
-      {app.red_box_msg && app.red_box_msg.trim() !== '.' && app.red_box_msg.trim() !== '' && (
-        <div className="bg-rose-50/50 dark:bg-rose-900/10 border-l-4 border-rose-500 rounded-r-xl p-4 text-sm text-rose-800 dark:text-rose-200 mb-6 font-medium animate-fade-in flex items-start gap-3 shadow-sm mx-4 sm:mx-auto max-w-4xl">
-          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-rose-500" />
-          <div className="leading-relaxed whitespace-pre-wrap">{app.red_box_msg}</div>
-        </div>
-      )}
 
-      {app.yellow_box_msg && app.yellow_box_msg.trim() !== '.' && app.yellow_box_msg.trim() !== '' && (
-        <div className="bg-amber-50/50 dark:bg-amber-900/10 border-l-4 border-amber-500 rounded-r-xl p-4 text-sm text-amber-800 dark:text-amber-200 mb-6 font-medium animate-fade-in flex items-start gap-3 shadow-sm mx-4 sm:mx-auto max-w-4xl">
-          <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5 text-amber-500" />
-          <div className="leading-relaxed whitespace-pre-wrap">{app.yellow_box_msg}</div>
-        </div>
-      )}
-
-      {app.idea_box_msg && app.idea_box_msg.trim() !== '.' && app.idea_box_msg.trim() !== '' && (
-        <div className="bg-blue-50/50 dark:bg-blue-900/10 border-l-4 border-blue-500 rounded-r-xl p-4 text-sm text-blue-800 dark:text-blue-200 mb-6 font-medium animate-fade-in flex items-start gap-3 shadow-sm mx-4 sm:mx-auto max-w-4xl">
-          <Info className="w-5 h-5 shrink-0 mt-0.5 text-blue-500" />
-          <div className="leading-relaxed whitespace-pre-wrap">{app.idea_box_msg}</div>
-        </div>
-      )}
 
       {/* FAQ Intel */}
       {app.faqs && app.faqs.length > 0 && (

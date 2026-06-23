@@ -8,6 +8,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App';
 import GlobalErrorBoundary from './components/GlobalErrorBoundary';
 import './index.css';
+import './i18n';
 
 // Remove the SSR SEO pre-rendered content off-screen div once React takes over to avoid duplicate content penalty
 document.getElementById('seo-prerender')?.remove();

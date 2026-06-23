@@ -6,12 +6,12 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, setDoc, getDoc, getDocFromServer } from 'firebase/firestore';
-import { db, auth, OperationType, FirestoreErrorInfo, handleFirestoreError } from '../lib/firebase';
+import { db, auth, OperationType, FirestoreErrorInfo, handleFirestoreError, isFirebaseConfigured } from '../lib/firebase';
 import { AppConfig, GlobalSettings, NewsItem, BlogPost, VideoItem } from '../lib/staticData';
 import { GitConfig, generateStaticDataFileCode, commitFileToGitHub } from '../lib/githubSync';
 import { secureStorage } from '../lib/secureStorage';
 
-const isFirebaseConfigured = false;
+
 
 // Providing fallback data immediately helps avoid layout shifts
 import { mockApps, mockSettings, mockNews, mockBlogs, mockVideos } from '../lib/staticData';
@@ -677,7 +677,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         console.warn("Could not retrieve idToken for local backup.");
         return;
       }
-      const res = await fetch('/api/v1/admin/backup-data', {
+      const res = await fetch('/api/v1/admin/sync-local', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -787,23 +787,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           path: 'src/lib/staticData.ts',
           content: updatedCode,
           message: `Admin Release: Added/Updated apps catalog`
-        }).then(async () => {
-          try {
-            const { getAuth } = await import('firebase/auth');
-            const authObj = getAuth();
-            const idToken = await authObj.currentUser?.getIdToken();
-            await fetch('/api/v1/admin/sync-local', {
-               method: 'POST',
-               headers: {
-                 'Content-Type': 'application/json',
-                 ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
-               },
-               body: JSON.stringify({ apps: newApps, settings, news, blogs, videos })
-            });
-            console.log("Local sync complete.");
-          } catch(e){}
         }).catch(err => console.error("Background auto-sync commit failed:", err));
       }
+      
+      await updateLocalContainerBackup(newApps, settings, news, blogs, videos);
     } catch (err: any) {
       console.error("Save Apps Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/apps');
@@ -839,6 +826,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           message: `Admin Release: Updated platform configurations`
         }).catch(err => console.error("Background auto-sync commit failed:", err));
       }
+      
+      await updateLocalContainerBackup(apps, settingsWithTime, news, blogs, videos);
     } catch (err: any) {
       console.error("Save Settings Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/settings');
@@ -871,6 +860,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           message: `Admin Release: Added/Updated news indexes`
         }).catch(err => console.error("Background auto-sync commit failed:", err));
       }
+      
+      await updateLocalContainerBackup(apps, settings, newNews, blogs, videos);
     } catch (err: any) {
       console.error("Save News Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/news');
@@ -903,6 +894,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           message: `Admin Release: Added/Updated blog posts`
         }).catch(err => console.error("Background auto-sync commit failed:", err));
       }
+      
+      await updateLocalContainerBackup(apps, settings, news, newBlogs, videos);
     } catch (err: any) {
       console.error("Save Blogs Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/blogs');
@@ -935,6 +928,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           message: `Admin Release: Added/Updated video listings`
         }).catch(err => console.error("Background auto-sync commit failed:", err));
       }
+      
+      await updateLocalContainerBackup(apps, settings, news, blogs, newVideos);
     } catch (err: any) {
       console.error("Save Videos Error:", err);
       handleFirestoreError(err, OperationType.WRITE, 'store_data/videos');
@@ -986,6 +981,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
 
     log("GitHub Sync: Public static data successfully synced.");
+    
+    log("Local System: Applying backend static data patch...");
+    await updateLocalContainerBackup(targetApps, settings, news, blogs, videos);
+    log("Local System: Patch applied successfully.");
 
     log("GitHub Sync: Building AES Encrypted Vault for hidden secure links...");
     try {
