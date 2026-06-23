@@ -2010,33 +2010,10 @@ ${JSON.stringify(publicContext, null, 2)}`;
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
-    const { createServer: createViteServer } = await import("vite");
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "custom",
+    // Development is handled by server.ts, api/index.ts is just for Vercel Production serverless execution
+    app.get('*', (req, res) => {
+      res.send("Development should use server.ts");
     });
-    app.use(vite.middlewares);
-    
-    // We override index.html serving to inject our SEO tags locally too!
-    app.use('*', async (req, res, next) => {
-      // Allow assets to be handled by Vite
-      if (req.originalUrl.includes('.')) return next();
-      try {
-        let template = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
-        template = await vite.transformIndexHtml(req.originalUrl, template);
-        const protocol = req.headers["x-forwarded-proto"] || req.protocol || "http";
-        const host = req.headers["x-forwarded-host"] || req.get("host") || "localhost:3000";
-        const hostUrl = `${String(protocol).split(',')[0].trim()}://${String(host).split(',')[0].trim()}`;
-        const userAgent = req.headers['user-agent'] || '';
-        template = await injectSeoTags(template, req.originalUrl, hostUrl, userAgent);
-        fs.writeFileSync(path.resolve(process.cwd(), 'debug-inject.log'), "Injected length: " + template.length + " has_initial: " + template.includes("__INITIAL_DATA__"));
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
-      } catch (e: any) {
-        vite.ssrFixStacktrace(e);
-        next(e);
-      }
-    });
-
   } else {
     const getDistPath = (): string => {
       const pathsToTry = [
@@ -2119,13 +2096,15 @@ ${JSON.stringify(publicContext, null, 2)}`;
     res.status(500).send("<h1>500 Internal Server Error</h1><p>An unexpected error occurred.</p>");
   });
 
-  app.listen(PORT as number, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
+  if (!process.env.VERCEL) {
+    app.listen(PORT as number, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT}`);
+      // Eagerly populate cache so first user gets instant response
+      fetchStoreData().catch(e => console.log("Silent initial cache warming failed: ", e));
+    });
+  } else {
     // Eagerly populate cache so first user gets instant response
     fetchStoreData().catch(e => console.log("Silent initial cache warming failed: ", e));
-  });
-
-
-
+  }
 
 export default app;
