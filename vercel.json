@@ -10,6 +10,7 @@
     { "source": "/api/v1/secure-fetch", "destination": "/api/index" },
     { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/sitemap.xml", "destination": "/api/index" },
+    { "source": "/(.*\\.(php|env|yml|yaml|ini|conf|log|sql|tar|gz|zip|bak|git|rsa))", "destination": "/404" },
     { "source": "/(.*)", "destination": "/api/index" }
   ]
 }

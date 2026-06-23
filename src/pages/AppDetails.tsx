@@ -14,6 +14,7 @@ import { AppListItem } from '../components/PlayStoreUI';
 import { motion, AnimatePresence } from 'framer-motion';
 import UserReviews from '../components/UserReviews';
 import PlayStoreRatingSection from '../components/PlayStoreRatingSection';
+import AccordionItem from '../components/AccordionItem';
 
 export function AppDetailsSkeleton() {
   return (
@@ -616,20 +617,7 @@ export default function AppDetails() {
             </h2>
             <div className="space-y-4">
               {app.faqs.map((faq, idx) => (
-                 <div key={idx} className="border border-black/5 dark:border-white/10 rounded-2xl p-1 bg-white dark:bg-zinc-900 shadow-sm">
-                  <details className="group">
-                     <summary className="font-medium p-4 cursor-pointer select-none flex items-center justify-between text-base text-zinc-900 dark:text-zinc-100">
-                      <span className="flex-1 pr-4">{faq.question}</span>
-                       <div className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 group-open:rotate-45 transition-transform shrink-0">
-                         +
-                       </div>
-                    </summary>
-                    <div 
-                       className="px-4 pb-4 pt-0 text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: safeHtml(faq.answer) }}
-                    />
-                  </details>
-                </div>
+                 <AccordionItem key={idx} question={faq.question} answer={faq.answer} />
               ))}
             </div>
           </div>

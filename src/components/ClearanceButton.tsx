@@ -470,7 +470,11 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
 
       if (!challengeResponse.ok) {
         const errorData = await challengeResponse.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Initialization request was denied.');
+        let errMsg = errorData.error;
+        if (typeof errMsg === 'object') {
+          errMsg = errMsg.message || errMsg.error || JSON.stringify(errMsg);
+        }
+        throw new Error(errMsg || 'Initialization request was denied.');
       }
 
       const { nonce, difficulty, sid } = await challengeResponse.json();
@@ -499,7 +503,11 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
 
       if (!tokenResponse.ok) {
         const errorData = await tokenResponse.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Verification failed. Please try again.');
+        let errMsg = errorData.error;
+        if (typeof errMsg === 'object') {
+          errMsg = errMsg.message || errMsg.error || JSON.stringify(errMsg);
+        }
+        throw new Error(errMsg || 'Verification failed. Please try again.');
       }
 
       const { token } = await tokenResponse.json();
@@ -525,7 +533,11 @@ export default function ClearanceButton({ appId, status, variant = 'default' }: 
       if (targetWin) {
         targetWin.close();
       }
-      setErrorMsg(err.message || 'Initialization did not complete. Please retry.');
+      let safeErrorStr = err.message;
+      if (typeof safeErrorStr === 'object') {
+        safeErrorStr = JSON.stringify(safeErrorStr);
+      }
+      setErrorMsg(safeErrorStr || 'Initialization did not complete. Please retry.');
       setPhase('error');
       setTimeout(resetState, 4000);
     }

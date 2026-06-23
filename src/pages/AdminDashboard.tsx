@@ -1825,10 +1825,13 @@ export default function AdminDashboard() {
   }, [user, isAdminUser]);
 
   useEffect(() => {
-    const resetTimer = () => setSessionTimeLeft(15 * 60);
-    window.addEventListener('mousemove', resetTimer);
-    window.addEventListener('keydown', resetTimer);
-    window.addEventListener('click', resetTimer);
+    const resetTimer = () => setSessionTimeLeft(prev => {
+      if (prev < 15 * 60) return 15 * 60;
+      return prev;
+    });
+    window.addEventListener('mousemove', resetTimer, { passive: true });
+    window.addEventListener('keydown', resetTimer, { passive: true });
+    window.addEventListener('click', resetTimer, { passive: true });
     return () => {
       window.removeEventListener('mousemove', resetTimer);
       window.removeEventListener('keydown', resetTimer);
@@ -2030,6 +2033,8 @@ export default function AdminDashboard() {
       setVideosList(mockVideos);
       setCategoriesList(mockSettings.categories || []);
       setQuickLinksList(mockSettings.quick_links || []);
+      setWebsiteFaqsList(mockSettings.website_faqs || []);
+      setDevelopersList(mockSettings.developers || []);
     }
   }, [loading, mockApps, mockNews, mockSettings, mockBlogs, mockVideos, isAdminUser]);
 
@@ -2304,7 +2309,8 @@ export default function AdminDashboard() {
         },
         
         categories: categoriesList,
-        banners: banners
+        banners: banners,
+        website_faqs: websiteFaqsList
       };
       
       await saveMockSettings(updatedSettings);

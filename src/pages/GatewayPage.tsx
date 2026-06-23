@@ -13,6 +13,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ClearanceButton from '../components/ClearanceButton';
+import AccordionItem from '../components/AccordionItem';
 import { auth } from '../lib/firebase';
 
 export default function GatewayPage() {
@@ -347,18 +348,7 @@ export default function GatewayPage() {
             </h2>
             <div className="space-y-4">
               {app.faqs.map((faq, idx) => (
-                <div key={idx} className="border-b border-black/5 dark:border-white/5 pb-4">
-                  <details className="group">
-                    <summary className="font-semibold py-4 cursor-pointer select-none flex items-center justify-between text-zinc-900 dark:text-zinc-100 text-lg group-open:text-blue-600 transition-colors">
-                      <span className="flex-1 pr-6">{faq.question}</span>
-                      <ChevronRight className="w-5 h-5 text-zinc-400 group-open:rotate-90 transition-transform shrink-0" />
-                    </summary>
-                    <div 
-                      className="px-0 pb-6 pt-2 prose prose-zinc dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-400"
-                      dangerouslySetInnerHTML={{ __html: safeHtml(faq.answer) }}
-                    />
-                  </details>
-                </div>
+                <AccordionItem key={idx} question={faq.question} answer={faq.answer} />
               ))}
             </div>
           </div>

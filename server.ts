@@ -1917,6 +1917,11 @@ ${JSON.stringify(publicContext, null, 2)}`;
           console.error("Firestore retrieval or decryption failed", err);
         }
         
+        if (typeof targetUrl !== 'string') {
+          console.error("targetUrl resolved to an object instead of a string:", targetUrl);
+          return res.status(500).json({ error: "Download link encryption integrity failed." });
+        }
+        
         if (targetUrl && !targetUrl.startsWith('http://') && !targetUrl.startsWith('https://') && !targetUrl.startsWith('/')) {
           if (targetUrl.includes('.')) {
             targetUrl = 'https://' + targetUrl;
