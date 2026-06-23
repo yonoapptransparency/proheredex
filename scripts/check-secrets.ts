@@ -16,7 +16,7 @@ const patterns = [
 ];
 
 // Directories to skip
-const excludeDirs = ['node_modules', 'dist', '.git', '.next'];
+const excludeDirs = ['node_modules', 'dist', '.git', '.next', '.vercel'];
 
 function scanDirectory(dir: string): boolean {
   let foundSecrets = false;

@@ -119,8 +119,6 @@ export async function fetchStoreData() {
 async function doFetchStoreData() {
   const now = Date.now();
   
-  const { mockApps, mockSettings, mockNews, mockBlogs, mockVideos } = require('./lib/staticData');
-
   const data = {
     apps: mockApps || [],
     settings: mockSettings || {},

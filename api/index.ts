@@ -9,6 +9,7 @@ import crypto from "crypto";
 import compression from "compression";
 import fs from "fs";
 import { injectSeoTags, fetchStoreData, getField } from "../src/seoHelper";
+import { mockApps, mockSettings, mockNews, mockBlogs, mockVideos } from "../src/lib/staticData";
 import { generateStaticDataFileCode } from "../src/lib/githubSync";
 import CryptoJS from "crypto-js";
 import { GoogleGenAI, Type } from "@google/genai";
@@ -1322,7 +1323,6 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
   // Public API: Direct local filesystem backup endpoint to load fast fallback
   app.get("/api/v1/public/backup-data", (req, res) => {
     try {
-      const { mockApps, mockSettings, mockNews, mockBlogs, mockVideos } = require('../src/lib/staticData');
       return res.json({
         apps: mockApps || [],
         settings: mockSettings || {},
@@ -1339,7 +1339,6 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
   // Database fix endpoint - run once to fix broken secure links
   app.get("/api/v1/debug-seo", async (req, res) => {
     try {
-      const { fetchStoreData } = require('../src/seoHelper');
       const data = await fetchStoreData();
       res.json({
          hasData: !!data,
@@ -1642,7 +1641,6 @@ const rateLimitMap = new Map<string, number[]>();
       }
 
       // 2. Fetch public context
-      const { fetchStoreData } = require('../src/seoHelper');
       const data = await fetchStoreData();
       
       const publicContext = {
@@ -1678,7 +1676,6 @@ const rateLimitMap = new Map<string, number[]>();
         }))
       };
 
-      const { GoogleGenAI } = require("@google/genai");
       const client = new GoogleGenAI({
         apiKey,
         httpOptions: {
@@ -1741,7 +1738,6 @@ ${JSON.stringify(publicContext, null, 2)}`;
       const lowerMessage = message.trim().toLowerCase();
       
       try {
-        const { fetchStoreData } = require('../src/seoHelper');
         const data = await fetchStoreData();
         const apps = data.apps || [];
         
