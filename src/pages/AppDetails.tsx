@@ -230,7 +230,7 @@ export default function AppDetails() {
       "name": faq.question,
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": faq.answer.replace(/<[^>]*>?/gm, '')
+        "text": typeof faq.answer === 'string' ? faq.answer.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim() : faq.answer
       }
     }))
   } : null;
