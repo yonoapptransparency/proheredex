@@ -1859,6 +1859,7 @@ export default function AdminDashboard() {
   // This shields active typed text fields from being silently discarded by background snapshots
   const cachedSecureMapRef = React.useRef(new Map());
   const isInitializedRef = React.useRef(false);
+  const settingsInitializedRef = React.useRef(false);
   const fetchFailedRef = React.useRef(false);
 
   React.useEffect(() => {
@@ -2027,14 +2028,17 @@ export default function AdminDashboard() {
         isInitializedRef.current = true;
       }
       
-      setNewsList(mockNews);
-      setBanners(mockSettings.banners || []);
-      setBlogs(mockBlogs);
-      setVideosList(mockVideos);
-      setCategoriesList(mockSettings.categories || []);
-      setQuickLinksList(mockSettings.quick_links || []);
-      setWebsiteFaqsList(mockSettings.website_faqs || []);
-      setDevelopersList(mockSettings.developers || []);
+      if (!settingsInitializedRef.current && mockSettings && mockNews && mockBlogs && mockVideos) {
+        setNewsList(mockNews);
+        setBanners(mockSettings.banners || []);
+        setBlogs(mockBlogs);
+        setVideosList(mockVideos);
+        setCategoriesList(mockSettings.categories || []);
+        setQuickLinksList(mockSettings.quick_links || []);
+        setWebsiteFaqsList(mockSettings.website_faqs || []);
+        setDevelopersList(mockSettings.developers || []);
+        settingsInitializedRef.current = true;
+      }
     }
   }, [loading, mockApps, mockNews, mockSettings, mockBlogs, mockVideos, isAdminUser]);
 
@@ -2042,6 +2046,7 @@ export default function AdminDashboard() {
     setSaving(true);
     try {
       isInitializedRef.current = false;
+      settingsInitializedRef.current = false;
       await refreshAll();
       alert('GLOBAL WORKSPACE SYNC SUCCESSFUL: All local editors and visual configurations updated from Live cloud.');
     } catch (err: any) {
