@@ -4,7 +4,6 @@ const fallbackAes = process.env.VITE_FIREBASE_PROJECT_ID ? require('crypto').cre
 global.AES_SECRET_GLOBAL = process.env.AES_SECRET || fallbackAes;
 import express from "express";
 import cookieParser from "cookie-parser";
-import { createServer as createViteServer } from "vite";
 import path from "path";
 import crypto from "crypto";
 import compression from "compression";
@@ -2011,6 +2010,7 @@ ${JSON.stringify(publicContext, null, 2)}`;
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "custom",
