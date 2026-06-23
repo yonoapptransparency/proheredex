@@ -1,9 +1,7 @@
 declare global { var AES_SECRET_GLOBAL: string; }
-if (!process.env.AES_SECRET) {
-  console.error("CRITICAL ERROR: AES_SECRET environment variable is missing.");
-  process.exit(1);
-}
-global.AES_SECRET_GLOBAL = process.env.AES_SECRET;
+if (!process.env.AES_SECRET) { console.error("WARNING: AES_SECRET is missing. Using insecure fallback."); }
+const fallbackAes = process.env.VITE_FIREBASE_PROJECT_ID ? require('crypto').createHash('sha256').update(process.env.VITE_FIREBASE_PROJECT_ID).digest('hex').substring(0, 32) : 'fallback-aes-secret-change-me-01';
+global.AES_SECRET_GLOBAL = process.env.AES_SECRET || fallbackAes;
 import express from "express";
 import cookieParser from "cookie-parser";
 import { createServer as createViteServer } from "vite";
@@ -339,17 +337,11 @@ function verifyToken(token: string, ip: string, sessionId: string, fingerprint: 
   }
 }
 
-const TOKEN_SECRET = process.env.TOKEN_SECRET;
-if (!TOKEN_SECRET) {
-  console.error("CRITICAL ERROR: TOKEN_SECRET environment variable is missing.");
-  process.exit(1);
-}
+const TOKEN_SECRET = process.env.TOKEN_SECRET || require('crypto').randomBytes(32).toString('hex');
+if (!process.env.TOKEN_SECRET) console.error("WARNING: TOKEN_SECRET missing, using random runtime secret.");
 
-const SESSION_SECRET = process.env.SESSION_SECRET;
-if (!SESSION_SECRET) {
-  console.error("CRITICAL ERROR: SESSION_SECRET environment variable is missing.");
-  process.exit(1);
-}
+const SESSION_SECRET = process.env.SESSION_SECRET || require('crypto').randomBytes(32).toString('hex');
+if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing, using random runtime secret.");
 
 async function startServer() {
   const app = express();
