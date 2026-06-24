@@ -681,13 +681,69 @@ const GithubTab = React.memo(({ pushAllToGitHub, gitConfig, saveGitConfig, gener
   const [syncing, setSyncing] = React.useState(false);
   const [showPreview, setShowPreview] = React.useState(false);
   const [previewContent, setPreviewContent] = React.useState<string>("");
-  const [localConfig, setLocalConfig] = React.useState(gitConfig || { owner: '', repo: '', branch: 'main', token: '' });
+  const [localConfig, setLocalConfig] = React.useState(gitConfig || { owner: '', repo: '', branch: 'main', token: '', secureRepo: '' });
+  const [repoCreating, setRepoCreating] = React.useState(false);
+  const [repoCreateLogs, setRepoCreateLogs] = React.useState<string[]>([]);
 
   React.useEffect(() => {
     if (gitConfig) {
       setLocalConfig(gitConfig);
     }
   }, [gitConfig]);
+
+  const handleCreateSecureRepo = async () => {
+    if (!localConfig.owner || !localConfig.token) {
+      alert("Please fill out the Repository Owner and GitHub PAT in the card below before initializing the secure repository.");
+      return;
+    }
+
+    setRepoCreating(true);
+    const targetRepo = (localConfig.secureRepo || 'moreinfo').trim();
+    setRepoCreateLogs([`Initiating connection with GitHub API for owner "${localConfig.owner}"...`]);
+
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+
+      setRepoCreateLogs(prev => [...prev, `Calling server repository creation helper...`]);
+
+      const res = await fetch('/api/github-sync/create-repo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
+        },
+        body: JSON.stringify({
+          owner: localConfig.owner,
+          token: localConfig.token,
+          repo: targetRepo
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setRepoCreateLogs(prev => [
+          ...prev, 
+          data.alreadyExists 
+            ? `SUCCESS: Repository "${localConfig.owner}/${targetRepo}" already exists and is ready for use!` 
+            : `SUCCESS: Private repository "${localConfig.owner}/${targetRepo}" has been successfully created!`,
+          `URL: ${data.html_url}`
+        ]);
+        
+        const updatedConfig = { ...localConfig, secureRepo: targetRepo };
+        setLocalConfig(updatedConfig);
+        await saveGitConfig(updatedConfig);
+        setRepoCreateLogs(prev => [...prev, "System: Secure configuration successfully saved to Firestore."]);
+      } else {
+        throw new Error(data.message || "Failed to create secure repository");
+      }
+    } catch (err: any) {
+      setRepoCreateLogs(prev => [...prev, `ERROR: ${err.message}`]);
+    } finally {
+      setRepoCreating(false);
+    }
+  };
 
   const handleSaveConfig = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -774,6 +830,52 @@ const GithubTab = React.memo(({ pushAllToGitHub, gitConfig, saveGitConfig, gener
             <Save className="w-4 h-4" /> Save Configuration
           </button>
         </form>
+      </div>
+
+      {/* Bifurcated Secure Repository Setup Card */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+        <div className="flex items-center gap-2 mb-2 border-b border-black/5 dark:border-white/5 pb-2">
+          <ShieldAlert className="w-5 h-5 text-emerald-500" />
+          <h3 className="font-bold text-sm text-slate-900 dark:text-white">Bifurcated Secure Repository Setup (Anti-Scraper SEO Mode)</h3>
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+          To completely prevent search engines, scraper bots, and malicious crawlers from ever discovering your private <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">more_information_url</code> redirect links, the system splits storage:
+          <br />
+          1. <strong>Public SEO Content</strong>: Pushed openly to your main public repository (defined above).
+          <br />
+          2. <strong>Secure Redirect Vault</strong>: Pushed exclusively to a separate <strong>private secure repository</strong> (configured below) that bots cannot access.
+        </p>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Private Secure Repository Name</label>
+            <div className="flex gap-4">
+              <input 
+                type="text" 
+                value={localConfig.secureRepo || ''} 
+                onChange={e => setLocalConfig({...localConfig, secureRepo: e.target.value})} 
+                placeholder="moreinfo" 
+                className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-all font-mono" 
+              />
+              <button 
+                type="button"
+                onClick={handleCreateSecureRepo}
+                disabled={repoCreating}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-semibold text-sm transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {repoCreating ? 'Creating...' : 'Initialize Secure Private Repo'}
+              </button>
+            </div>
+          </div>
+          
+          {repoCreateLogs.length > 0 && (
+            <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-4 font-mono text-xs text-slate-600 dark:text-slate-400 space-y-1">
+              {repoCreateLogs.map((log, i) => (
+                <div key={i}>{log}</div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">

@@ -119,6 +119,25 @@ export async function fetchStoreData() {
 async function doFetchStoreData() {
   const now = Date.now();
   
+  const publicBackupPath = path.join(process.cwd(), 'src/lib/public_backup.json');
+  if (fs.existsSync(publicBackupPath)) {
+    try {
+      const backup = JSON.parse(fs.readFileSync(publicBackupPath, 'utf8'));
+      const data = {
+        apps: backup.apps || [],
+        settings: backup.settings || {},
+        news: backup.news || [],
+        blogs: backup.blogs || [],
+        videos: backup.videos || []
+      };
+      cachedData = data;
+      lastFetchTime = now;
+      return data;
+    } catch (e) {
+      console.error("Error reading public_backup.json in seoHelper:", e);
+    }
+  }
+
   const data = {
     apps: mockApps || [],
     settings: mockSettings || {},

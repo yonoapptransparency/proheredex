@@ -1,4 +1,10 @@
 {
+  "firestore": [
+    {
+      "database": "ai-studio-886315a4-8b9f-4ff6-8986-a90ad172210a",
+      "rules": "firestore.rules"
+    }
+  ],
   "hosting": {
     "public": "dist",
     "cleanUrls": true,

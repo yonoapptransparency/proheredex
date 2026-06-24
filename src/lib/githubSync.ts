@@ -9,6 +9,7 @@ export interface GitConfig {
   branch: string;
   token: string;
   autoSync: boolean;
+  secureRepo?: string;
 }
 
 /**
