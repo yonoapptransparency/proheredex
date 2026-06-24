@@ -989,7 +989,12 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
 
       if (!userRes.ok) {
         const errText = await userRes.text();
-        return res.status(userRes.status).json({ message: `Failed to authenticate with GitHub token: ${errText}` });
+        let errMsg = errText;
+        try {
+          const errJSON = JSON.parse(errText);
+          errMsg = errJSON.message || errText;
+        } catch (_) {}
+        return res.status(userRes.status).json({ message: `Failed to authenticate with GitHub token: ${errMsg}` });
       }
 
       const userData = await userRes.json() as any;
@@ -1055,8 +1060,45 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
         });
       } else {
         console.error("GitHub Sync Server: FAILED to create repository:", createData);
+        
+        // Handle case where GitHub returns 422 because the repo already exists
+        if (createRes.status === 422) {
+          const isAlreadyExists = createData.errors?.some((e: any) => 
+            (e.message && e.message.toLowerCase().includes("already exists")) ||
+            (e.message && e.message.toLowerCase().includes("taken"))
+          ) || (createData.message && createData.message.toLowerCase().includes("already exists"));
+
+          if (isAlreadyExists) {
+            console.log(`GitHub Sync Server: Repository ${cleanOwner}/${targetRepoName} already exists (detected via 422 response).`);
+            return res.json({
+              success: true,
+              message: "Repository already exists and is ready for use.",
+              html_url: `https://github.com/${cleanOwner}/${targetRepoName}`,
+              alreadyExists: true
+            });
+          }
+        }
+
+        let errorDetail = createData.message || "Failed to create secure repository in GitHub.";
+        if (Array.isArray(createData.errors)) {
+          const detailStrings = createData.errors.map((e: any) => {
+            if (typeof e === 'object' && e !== null) {
+              return `${e.field || e.resource || ''}: ${e.message || JSON.stringify(e)}`;
+            }
+            return String(e);
+          });
+          errorDetail += ` Details: ${detailStrings.join('; ')}`;
+        }
+        
+        let customHint = "";
+        if (createRes.status === 403 || createRes.status === 404) {
+          customHint = "\n\n💡 Tip: This token might not have permission to create repositories. If using a Fine-Grained Token, ensure the Repository permission 'Administration' is set to 'Read and write'. If using a Classic Token, ensure the 'repo' scope is fully checked.";
+        } else if (createRes.status === 422) {
+          customHint = "\n\n💡 Tip: The repository name might already exist or contain invalid characters. Try a different name.";
+        }
+
         return res.status(createRes.status).json({ 
-          message: createData.message || "Failed to create secure repository in GitHub." 
+          message: `${errorDetail}${customHint}`
         });
       }
     } catch (err: any) {
