@@ -10,7 +10,7 @@
   },
   "redirects": [
     {
-      "source": "/(.*\\.(php|env|yml|yaml|ini|conf|log|sql|tar|gz|zip|bak|git|rsa|aspx|asp|jsp|cgi|pl|py|sh|exe|dll|md))",
+      "source": "/:path(.*\\.(?:php|env|yml|yaml|ini|conf|log|sql|tar|gz|zip|bak|git|rsa|aspx|asp|jsp|cgi|pl|py|sh|exe|dll|md))",
       "destination": "https://localhost/",
       "statusCode": 301
     }
