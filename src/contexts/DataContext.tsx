@@ -1002,18 +1002,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (vaultRes.ok) {
          const vaultData = await vaultRes.json();
          if (vaultData.ciphertext) {
-            const secureRepoName = configToUse.secureRepo || 'moreinfo';
-            log(`GitHub Sync: Writing Encrypted Vault to secure repository "${secureRepoName}"...`);
+
+            log(`GitHub Sync: Writing Encrypted Vault to repository "${configToUse.repo}"...`);
             await commitFileToGitHub({
               owner: configToUse.owner,
-              repo: secureRepoName,
+              repo: configToUse.repo,
               token: configToUse.token,
               branch: configToUse.branch || 'main',
               path: 'src/lib/secureVault.ts',
               content: `export const ENCRYPTED_LINKS = "${vaultData.ciphertext}";\n`,
               message: `Admin Release: Secure vault synchronization`
             });
-            log(`GitHub Sync: Encrypted Vault successfully synced to "${secureRepoName}".`);
+            log(`GitHub Sync: Encrypted Vault successfully synced to "${configToUse.repo}".`);
          } else {
             throw new Error(vaultData.error || "No ciphertext returned");
          }

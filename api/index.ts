@@ -67,85 +67,6 @@ function getRawFirebaseConfig(): any {
   }
 }
 
-// Helper function to resolve the latest encrypted links from either local filesystem or the bifurcated private secure GitHub repository (Vercel Support)
-async function getEncryptedLinksFromVault(): Promise<string> {
-  // 1. Try local filesystem (development or if committed to main repo)
-  try {
-    const vaultPath = path.join(process.cwd(), 'src/lib/secureVault.ts');
-    if (fs.existsSync(vaultPath)) {
-      const vaultContent = fs.readFileSync(vaultPath, 'utf8');
-      const match = vaultContent.match(/export const ENCRYPTED_LINKS = "([^"]+)";/);
-      if (match && match[1] && match[1].length > 10) {
-        return match[1];
-      }
-    }
-  } catch (fsErr) {
-    console.warn("getEncryptedLinksFromVault: filesystem read failed:", fsErr);
-  }
-
-  // 2. Fetch dynamically from private secure GitHub repository (bifurcated setup support for Vercel production)
-  try {
-    const config = getRawFirebaseConfig();
-    if (config && config.projectId) {
-      const projectId = config.projectId;
-      const dbId = config.firestoreDatabaseId || '(default)';
-      const apiKey = config.apiKey;
-
-      let url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${dbId}/documents/sec_git/cfg`;
-      if (apiKey) {
-        url += `?key=${apiKey}`;
-      }
-
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json() as any;
-        const owner = data.fields?.owner?.stringValue;
-        const token = data.fields?.token?.stringValue;
-        const secureRepo = data.fields?.secureRepo?.stringValue || "moreinfo";
-        const branch = data.fields?.branch?.stringValue || "main";
-
-        if (owner && token) {
-          const cleanOwner = owner.trim();
-          const cleanToken = token.trim();
-          const cleanRepo = secureRepo.trim();
-          const cleanBranch = branch.trim();
-
-          const authHeader = cleanToken.toLowerCase().startsWith('ghp_') 
-            ? `token ${cleanToken}` 
-            : `Bearer ${cleanToken}`;
-          
-          const githubUrl = `https://api.github.com/repos/${cleanOwner}/${cleanRepo}/contents/src/lib/secureVault.ts?ref=${cleanBranch}`;
-          const ghRes = await fetch(githubUrl, {
-            headers: {
-              'Authorization': authHeader,
-              'Accept': 'application/vnd.github.v3+json',
-              'User-Agent': 'node-fetch'
-            }
-          });
-
-          if (ghRes.ok) {
-            const fileData = await ghRes.json() as any;
-            if (fileData && fileData.content) {
-              const decoded = Buffer.from(fileData.content, 'base64').toString('utf8');
-              const match = decoded.match(/export const ENCRYPTED_LINKS = "([^"]+)";/);
-              if (match && match[1]) {
-                console.log(`getEncryptedLinksFromVault: Successfully fetched and decrypted from bifurcated private repository "${cleanOwner}/${cleanRepo}"!`);
-                return match[1];
-              }
-            }
-          } else {
-            console.warn(`getEncryptedLinksFromVault: Failed to fetch secureVault.ts from GitHub (${ghRes.status})`);
-          }
-        }
-      }
-    }
-  } catch (gitErr: any) {
-    console.warn("getEncryptedLinksFromVault: dynamic GitHub fetch failed:", gitErr.message || gitErr);
-  }
-
-  return "";
-}
-
 
 
 // Cryptographic secrets for hashing, signature verification, and session identifiers
@@ -960,153 +881,6 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
     }
   });
 
-  // API Route: Secure Server-Side GitHub Repository Creation Helper
-  app.post("/api/github-sync/create-repo", verifyAdminToken, async (req, res) => {
-    try {
-      const { owner, token, repo } = req.body || {};
-      
-      if (!owner || !token) {
-        return res.status(400).json({ message: "Missing required parameters (owner, token)" });
-      }
-
-      const targetRepoName = (repo || "moreinfo").trim();
-      const cleanOwner = owner.trim();
-      const cleanToken = token.trim();
-
-      const authHeader = cleanToken.toLowerCase().startsWith('ghp_') 
-        ? `token ${cleanToken}` 
-        : `Bearer ${cleanToken}`;
-
-      // 1. Fetch authenticated GitHub user info to see if we are creating in user account or org
-      console.log("GitHub Sync Server: Fetching authenticated user info...");
-      const userRes = await fetch("https://api.github.com/user", {
-        headers: {
-          'Authorization': authHeader,
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'node-fetch'
-        }
-      });
-
-      if (!userRes.ok) {
-        const errText = await userRes.text();
-        let errMsg = errText;
-        try {
-          const errJSON = JSON.parse(errText);
-          errMsg = errJSON.message || errText;
-        } catch (_) {}
-        return res.status(userRes.status).json({ message: `Failed to authenticate with GitHub token: ${errMsg}` });
-      }
-
-      const userData = await userRes.json() as any;
-      const authenticatedUser = userData.login;
-      console.log(`GitHub Sync Server: Authenticated as GitHub user "${authenticatedUser}"`);
-
-      // 2. Check if repository already exists
-      console.log(`GitHub Sync Server: Checking if repository ${cleanOwner}/${targetRepoName} already exists...`);
-      const checkRepoRes = await fetch(`https://api.github.com/repos/${cleanOwner}/${targetRepoName}`, {
-        headers: {
-          'Authorization': authHeader,
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'node-fetch'
-        }
-      });
-
-      if (checkRepoRes.ok) {
-        const repoData = await checkRepoRes.json() as any;
-        console.log(`GitHub Sync Server: Repository ${cleanOwner}/${targetRepoName} already exists.`);
-        return res.json({ 
-          success: true, 
-          message: "Repository already exists.", 
-          html_url: repoData.html_url,
-          alreadyExists: true 
-        });
-      }
-
-      console.log(`GitHub Sync Server: Repository ${cleanOwner}/${targetRepoName} does not exist. Creating as PRIVATE repository...`);
-
-      // 3. Create the private repository
-      let createUrl = "https://api.github.com/user/repos";
-      if (cleanOwner.toLowerCase() !== authenticatedUser.toLowerCase()) {
-        console.log(`GitHub Sync Server: Owner "${cleanOwner}" matches organization, creating organization repository...`);
-        createUrl = `https://api.github.com/orgs/${cleanOwner}/repos`;
-      }
-
-      const createPayload = {
-        name: targetRepoName,
-        private: true,
-        description: "Secure data repository for more information URLs (SEO safe)",
-        auto_init: true
-      };
-
-      const createRes = await fetch(createUrl, {
-        method: "POST",
-        headers: {
-          'Authorization': authHeader,
-          'Content-Type': 'application/json',
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'node-fetch'
-        },
-        body: JSON.stringify(createPayload)
-      });
-
-      const createData = await createRes.json() as any;
-      if (createRes.ok) {
-        console.log(`GitHub Sync Server: Private repository ${cleanOwner}/${targetRepoName} created successfully.`);
-        return res.json({
-          success: true,
-          message: "Private repository created successfully.",
-          html_url: createData.html_url,
-          alreadyExists: false
-        });
-      } else {
-        console.error("GitHub Sync Server: FAILED to create repository:", createData);
-        
-        // Handle case where GitHub returns 422 because the repo already exists
-        if (createRes.status === 422) {
-          const isAlreadyExists = createData.errors?.some((e: any) => 
-            (e.message && e.message.toLowerCase().includes("already exists")) ||
-            (e.message && e.message.toLowerCase().includes("taken"))
-          ) || (createData.message && createData.message.toLowerCase().includes("already exists"));
-
-          if (isAlreadyExists) {
-            console.log(`GitHub Sync Server: Repository ${cleanOwner}/${targetRepoName} already exists (detected via 422 response).`);
-            return res.json({
-              success: true,
-              message: "Repository already exists and is ready for use.",
-              html_url: `https://github.com/${cleanOwner}/${targetRepoName}`,
-              alreadyExists: true
-            });
-          }
-        }
-
-        let errorDetail = createData.message || "Failed to create secure repository in GitHub.";
-        if (Array.isArray(createData.errors)) {
-          const detailStrings = createData.errors.map((e: any) => {
-            if (typeof e === 'object' && e !== null) {
-              return `${e.field || e.resource || ''}: ${e.message || JSON.stringify(e)}`;
-            }
-            return String(e);
-          });
-          errorDetail += ` Details: ${detailStrings.join('; ')}`;
-        }
-        
-        let customHint = "";
-        if (createRes.status === 403 || createRes.status === 404) {
-          customHint = "\n\n💡 Tip: This token might not have permission to create repositories. If using a Fine-Grained Token, ensure the Repository permission 'Administration' is set to 'Read and write'. If using a Classic Token, ensure the 'repo' scope is fully checked.";
-        } else if (createRes.status === 422) {
-          customHint = "\n\n💡 Tip: The repository name might already exist or contain invalid characters. Try a different name.";
-        }
-
-        return res.status(createRes.status).json({ 
-          message: `${errorDetail}${customHint}`
-        });
-      }
-    } catch (err: any) {
-      console.error("Server GitHub create-repo handler error:", err);
-      return res.status(500).json({ message: `Internal server error during repository creation: ${err.message || err}` });
-    }
-  });
-
   // API Route: Image Proxy (Hide Upstream Image Service Accounts)
   app.get("/api/v1/image", async (req, res) => {
     const url = req.query.url as string;
@@ -1499,24 +1273,37 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
   });
 
   // Admin API: Retrieve secure backup links for admin VIEW/EDIT mapping (with automatic secureVault.ts fallback and recovery)
-  app.get("/api/v1/admin/backup-links-get", verifyAdminToken, async (req, res) => {
+  app.get("/api/v1/admin/backup-links-get", verifyAdminToken, (req, res) => {
     try {
       const AES_SECRET = process.env.AES_SECRET || AES_SECRET_GLOBAL;
       const mergedBackup: Record<string, string> = {};
 
-      // 1. Try to load and parse from the encrypted secureVault.ts file (filesystem or private repo)
-      try {
-        const ciphertext = await getEncryptedLinksFromVault();
-        if (ciphertext) {
-          const dec = safeDecrypt(ciphertext, AES_SECRET);
-          if (dec) {
-            const vaultMap = JSON.parse(dec);
-            Object.assign(mergedBackup, vaultMap);
-            console.log("backup-links-get: Loaded secure links from secureVault.ts (filesystem or private repo)");
+      // 1. Try to load and parse from the encrypted secureVault.ts file committed to GitHub
+      const vaultPath = path.join(process.cwd(), 'src/lib/secureVault.ts');
+      if (fs.existsSync(vaultPath)) {
+        try {
+          const vaultContent = fs.readFileSync(vaultPath, 'utf8');
+          const match = vaultContent.match(/export const ENCRYPTED_LINKS = "([^"]+)";/);
+          if (match && match[1]) {
+            const ciphertext = match[1];
+            const dec = safeDecrypt(ciphertext, AES_SECRET);
+            if (dec) {
+              const parsed = JSON.parse(dec);
+              if (Array.isArray(parsed)) {
+                parsed.forEach(item => {
+                  if (item && item.id) {
+                    mergedBackup[item.id] = item.url || item.more_information_url || '';
+                  }
+                });
+              } else if (parsed && typeof parsed === 'object') {
+                Object.assign(mergedBackup, parsed);
+              }
+              console.log("backup-links-get: Loaded secure links from secureVault.ts");
+            }
           }
+        } catch (vaultErr: any) {
+          console.warn("backup-links-get: Failed to parse secureVault.ts:", vaultErr.message);
         }
-      } catch (vaultErr: any) {
-        console.warn("backup-links-get: Failed to parse secureVault.ts:", vaultErr.message);
       }
 
       // 2. Try to overlay with the local secure_links_backup.json file (filesystem fallback)
@@ -1856,27 +1643,38 @@ const rateLimitMap = new Map<string, number[]>();
     }
   } catch(e) {}
 
-  // Lookup 2: Git Vault (filesystem or private repo)
+  // Lookup 2: Git Vault & Backup JSON
   try {
-    const ciphertext = await getEncryptedLinksFromVault();
-    if (ciphertext) {
+    let matchEncrypted = "";
+    
+    const vaultPath = require('path').join(process.cwd(), 'src/lib/secureVault.ts');
+    if (require('fs').existsSync(vaultPath)) {
+      const vaultContent = require('fs').readFileSync(vaultPath, 'utf8');
+      const match = vaultContent.match(/export const ENCRYPTED_LINKS = "([^"]+)";/);
+      if (match && match[1]) matchEncrypted = match[1];
+    }
+
+    if (matchEncrypted) {
         // @ts-ignore
         const AES_SECRET = process.env.AES_SECRET || (typeof AES_SECRET_GLOBAL !== 'undefined' ? AES_SECRET_GLOBAL : '');
         let dec = '';
-        if (typeof safeDecrypt !== 'undefined') dec = safeDecrypt(ciphertext, AES_SECRET);
+        if (typeof safeDecrypt !== 'undefined') dec = safeDecrypt(matchEncrypted, AES_SECRET);
         else {
            const CryptoJS = require('crypto-js');
-           const bytes = CryptoJS.AES.decrypt(ciphertext, AES_SECRET);
+           const bytes = CryptoJS.AES.decrypt(matchEncrypted, AES_SECRET);
            dec = bytes.toString(CryptoJS.enc.Utf8);
         }
         if (dec) {
-           const map = JSON.parse(dec);
-           if (map[appId]) return res.json({ configured: true });
+           const parsed = JSON.parse(dec);
+           if (Array.isArray(parsed)) {
+              const found = parsed.some(item => item && item.id === appId && (item.url || item.more_information_url));
+              if (found) return res.json({ configured: true });
+           } else if (parsed && typeof parsed === 'object') {
+              if (parsed[appId]) return res.json({ configured: true });
+           }
         }
     }
-  } catch(e: any) {
-    console.warn("Vault check failed:", e);
-  }
+  } catch(e) {}
 
   // Lookup 3: Local Offline Backup directly
   try {
@@ -2123,21 +1921,37 @@ ${JSON.stringify(publicContext, null, 2)}`;
         try {
           const AES_SECRET = process.env.AES_SECRET || (typeof AES_SECRET_GLOBAL !== 'undefined' ? AES_SECRET_GLOBAL : '');
           
-          // Fallback to secure Vault from Github push (filesystem or private repo)
+          // Fallback to secure Vault from Github push
           if (!targetUrl || !targetUrl.startsWith('http')) {
             try {
-              const ciphertext = await getEncryptedLinksFromVault();
-              if (ciphertext) {
+              let matchEncrypted = "";
+              
+              const vaultPath = require('path').join(process.cwd(), 'src/lib/secureVault.ts');
+              if (require('fs').existsSync(vaultPath)) {
+                const vaultContent = require('fs').readFileSync(vaultPath, 'utf8');
+                const match = vaultContent.match(/export const ENCRYPTED_LINKS = "([^"]+)";/);
+                if (match && match[1]) matchEncrypted = match[1];
+              }
+
+              if (matchEncrypted) {
                   let dec = '';
-                  if (typeof safeDecrypt !== 'undefined') dec = safeDecrypt(ciphertext, AES_SECRET);
+                  if (typeof safeDecrypt !== 'undefined') dec = safeDecrypt(matchEncrypted, AES_SECRET);
                   else {
                      const CryptoJS = require('crypto-js');
-                     const bytes = CryptoJS.AES.decrypt(ciphertext, AES_SECRET);
+                     const bytes = CryptoJS.AES.decrypt(matchEncrypted, AES_SECRET);
                      dec = bytes.toString(CryptoJS.enc.Utf8);
                   }
                   if (dec) {
-                     const map = JSON.parse(dec);
-                     const encryptedUrl = map[appId];
+                     const parsed = JSON.parse(dec);
+                     let encryptedUrl = '';
+                     if (Array.isArray(parsed)) {
+                        const matchItem = parsed.find(item => item && item.id === appId);
+                        if (matchItem) {
+                           encryptedUrl = matchItem.url || matchItem.more_information_url || '';
+                        }
+                     } else if (parsed && typeof parsed === 'object') {
+                        encryptedUrl = parsed[appId];
+                     }
                      if (encryptedUrl) {
                         if (encryptedUrl.startsWith('U2FsdGVkX1')) {
                            targetUrl = safeDecrypt(encryptedUrl, AES_SECRET);
@@ -2176,8 +1990,16 @@ ${JSON.stringify(publicContext, null, 2)}`;
               const path = require('path');
               const backupPath = path.join(process.cwd(), 'src/lib/secure_links_backup.json');
               if (fs.existsSync(backupPath)) {
-                const backup = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
-                const encryptedUrl = backup[appId];
+                const parsed = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
+                let encryptedUrl = '';
+                if (Array.isArray(parsed)) {
+                  const matchItem = parsed.find(item => item && item.id === appId);
+                  if (matchItem) {
+                     encryptedUrl = matchItem.url || matchItem.more_information_url || '';
+                  }
+                } else if (parsed && typeof parsed === 'object') {
+                  encryptedUrl = parsed[appId];
+                }
                 if (encryptedUrl) {
                   const AES_SECRET = process.env.AES_SECRET || (typeof AES_SECRET_GLOBAL !== 'undefined' ? AES_SECRET_GLOBAL : '');
                   if (encryptedUrl.startsWith('U2FsdGVkX1')) {
