@@ -555,8 +555,7 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
               {/* Form Scrollable Body content */}
               <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 custom-scrollbar bg-slate-50/30 dark:bg-slate-900/10">
                 
-                {activeFormTab === 'general' && (
-                  <div className="animate-fade-in space-y-5">
+                <div className={activeFormTab === 'general' ? 'animate-fade-in space-y-5' : 'hidden'}>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
                         <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">App Name *</label>
@@ -795,10 +794,8 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
                       ></textarea>
                     </div>
                   </div>
-                )}
 
-                {activeFormTab === 'seo' && (
-                  <div className="animate-fade-in space-y-5">
+                <div className={activeFormTab === 'seo' ? 'animate-fade-in space-y-5' : 'hidden'}>
                     
                     <div>
                       <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Live Google SERP Simulator Preview</label>
@@ -900,10 +897,8 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
                       </div>
                     </div>
                   </div>
-                )}
 
-                {activeFormTab === 'content' && (
-                  <div className="animate-fade-in space-y-5">
+                <div className={activeFormTab === 'content' ? 'animate-fade-in space-y-5' : 'hidden'}>
                     <div>
                       <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Primary Gateway Access Link (Target URL to secure & encrypt)</label>
                       <div className="flex gap-2">
@@ -996,11 +991,9 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
                         placeholder="<p>Write standard paragraph HTML here...</p>"
                       ></textarea>
                     </div>
-                  </div>
-                )}
+                </div>
 
-                {activeFormTab === 'alerts' && (
-                  <div className="animate-fade-in space-y-5">
+                <div className={activeFormTab === 'alerts' ? 'animate-fade-in space-y-5' : 'hidden'}>
                     <p className="text-xs text-slate-500 dark:text-slate-400">Configure Markdown system notifications displayed in full-width alert cards directly on the app download page.</p>
                     
                     <div className="space-y-4">
@@ -1041,18 +1034,14 @@ const AppsTab = React.memo(({ appsList, editingAppId, setEditingAppId, handleDel
                       </div>
                     </div>
                   </div>
-                )}
 
-                {activeFormTab === 'faqs' && (
-                  <div className="animate-fade-in space-y-4">
+                <div className={activeFormTab === 'faqs' ? 'animate-fade-in space-y-4' : 'hidden'}>
                     <p className="text-xs text-slate-500 dark:text-slate-400">Manage interactive FAQs specific to this application. FAQs support structured HTML and formatting.</p>
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
                       <FaqEditor key={(editingAppId || 'new') + '_' + (formFields.faqs?.length || 0)} initialFaqs={formFields.faqs || []} />
                     </div>
                   </div>
-                )}
-
-              </div>
+                </div>
 
               {/* Form Sticky Action Footer */}
               <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">

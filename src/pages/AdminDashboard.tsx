@@ -2632,30 +2632,35 @@ export default function AdminDashboard() {
       const editApp = editingAppId ? appsList.find(a => a.id === editingAppId) : null;
       let encryptedUrlVal = editApp?.more_information_url || '';
       const inputUrl = formData.get('more_information_url') as string;
-      if (inputUrl && !inputUrl.startsWith('U2FsdGVkX1')) {
-         try {
-            const idToken = await auth?.currentUser?.getIdToken();
-            const res = await fetch('/api/v1/admin/encrypt', {
-               method: 'POST',
-               headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${idToken}`
-               },
-               body: JSON.stringify({ url: inputUrl })
-            });
-            if (res.ok) {
-               encryptedUrlVal = (await res.json()).encrypted;
-            } else {
-               alert(`Failed to secure URL: ${await res.text()}`);
-               return; // Abort save if encryption fails
-            }
-         } catch (err: any) {
-            console.error("Failed to secure URL", err);
-            alert(`Failed to secure URL: ${err.message}`);
-            return;
-         }
-      } else if (inputUrl) {
-         encryptedUrlVal = inputUrl;
+      if (inputUrl !== null && inputUrl !== undefined) {
+        const trimmedUrl = inputUrl.trim();
+        if (trimmedUrl === '') {
+          encryptedUrlVal = '';
+        } else if (!trimmedUrl.startsWith('U2FsdGVkX1')) {
+          try {
+             const idToken = await auth?.currentUser?.getIdToken();
+             const res = await fetch('/api/v1/admin/encrypt', {
+                method: 'POST',
+                headers: {
+                   'Content-Type': 'application/json',
+                   'Authorization': `Bearer ${idToken}`
+                },
+                body: JSON.stringify({ url: trimmedUrl })
+             });
+             if (res.ok) {
+                encryptedUrlVal = (await res.json()).encrypted;
+             } else {
+                alert(`Failed to secure URL: ${await res.text()}`);
+                return; // Abort save if encryption fails
+             }
+          } catch (err: any) {
+             console.error("Failed to secure URL", err);
+             alert(`Failed to secure URL: ${err.message}`);
+             return;
+          }
+        } else {
+          encryptedUrlVal = trimmedUrl;
+        }
       }
       
       const actualAppId = editingAppId || Math.random().toString(36).substr(2, 9);

@@ -812,11 +812,19 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
             }
           } else if (fallbackRes.status !== 404) {
             const errJSON = await fallbackRes.json().catch(() => ({})) as any;
-            getErrorContext = `Default branch lookup failed with status ${fallbackRes.status}: ${errJSON.message || 'Unknown error'}`;
+            let tip = "";
+            if (errJSON.message && (errJSON.message.toLowerCase().includes("resource not accessible") || errJSON.message.toLowerCase().includes("permission") || fallbackRes.status === 403)) {
+              tip = "\n\n🔑 GitHub Access Denied:\n1. Fine-Grained Token: Under 'Repository access', you MUST select 'All repositories' or specifically select '" + cleanRepo + "'.\n2. Permissions: Ensure 'Contents' is set to 'Read and write'.\n3. Organization Policy: If '" + cleanOwner + "' is a GitHub Organization, Fine-grained PATs are often BLOCKED by default. Try using a Classic Personal Access Token (ghp_...) instead.";
+            }
+            getErrorContext = `Default branch lookup failed with status ${fallbackRes.status}: ${errJSON.message || 'Unknown error'}${tip}`;
           }
         } else {
           const errJSON = await fetchRes.json().catch(() => ({})) as any;
-          getErrorContext = `Target branch lookup failed with status ${fetchRes.status}: ${errJSON.message || 'Unknown error'}`;
+          let tip = "";
+          if (errJSON.message && (errJSON.message.toLowerCase().includes("resource not accessible") || errJSON.message.toLowerCase().includes("permission") || fetchRes.status === 403)) {
+            tip = "\n\n🔑 GitHub Access Denied:\n1. Fine-Grained Token: Under 'Repository access', you MUST select 'All repositories' or specifically select '" + cleanRepo + "'.\n2. Permissions: Ensure 'Contents' is set to 'Read and write'.\n3. Organization Policy: If '" + cleanOwner + "' is a GitHub Organization, Fine-grained PATs are often BLOCKED by default. Try using a Classic Personal Access Token (ghp_...) instead.";
+          }
+          getErrorContext = `Target branch lookup failed with status ${fetchRes.status}: ${errJSON.message || 'Unknown error'}${tip}`;
         }
       } catch (e: any) {
         console.error("GitHub SHA Fetch error on Server:", e);
@@ -868,6 +876,9 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
           enhancedTip = "\n\n�� Token is invalid or expired. Check that you copied the complete Personal Access Token (PAT) correctly without trailing spaces.";
         }
 
+        if (!enhancedTip && (errMsg.toLowerCase().includes("resource not accessible") || errMsg.toLowerCase().includes("permission") || saveRes.status === 403)) {
+          enhancedTip = "\n\n🔑 GitHub Access Denied (Resource not accessible):\n1. Fine-Grained Token: Under 'Repository access', you MUST select either 'All repositories' or specifically select the repository '" + cleanRepo + "'.\n2. Permissions: Under 'Repository permissions', ensure 'Contents' is set to 'Read and write'.\n3. Organization Policy: If '" + cleanOwner + "' is a GitHub Organization, Fine-grained PATs are often BLOCKED by default organization security policies. You should use a Classic Personal Access Token (ghp_...) instead, or ask your Org Owner to approve the token.";
+        }
         return res.status(saveRes.status).json({ message: errMsg + enhancedTip });
       }
 
@@ -1105,10 +1116,7 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
 
       processedItems.forEach((newItem: any) => {
         if (newItem && newItem.id) {
-          const existingItem = finalMap.get(newItem.id);
-          if (newItem.url || !existingItem) {
-            finalMap.set(newItem.id, newItem);
-          }
+          finalMap.set(newItem.id, newItem);
         }
       });
       
