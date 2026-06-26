@@ -267,7 +267,7 @@ export async function commitFileToGitHub({
 }: {
   owner: string;
   repo: string;
-  token: string;
+  token?: string;
   branch: string;
   path: string;
   content: string;
@@ -299,7 +299,8 @@ export async function commitFileToGitHub({
     body: JSON.stringify({
       owner,
       repo,
-      token,
+      // Do NOT send the token from the client to the server-side proxy
+      // The server retrieves the token securely from the Firestore database
       branch,
       path,
       content,

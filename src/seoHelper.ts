@@ -163,6 +163,24 @@ function escapeHtml(unsafe: string) {
     .replace(/'/g, "&#039;");
 }
 
+function sanitizeHtml(html: string): string {
+  if (!html) return '';
+  // 1. Strip script tags and their contents completely
+  let clean = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  
+  // 2. Strip inline event handlers (e.g. onerror, onload, onclick, etc.)
+  clean = clean.replace(/\s+on\w+\s*=\s*(['"][^'"]*['"]|[^>\s]+)/gi, '');
+  
+  // 3. Prevent javascript: protocol links
+  clean = clean.replace(/href\s*=\s*['"]\s*javascript:[^'"]*['"]/gi, 'href="#"');
+  
+  // 4. Strip iframe, object, embed, form, meta, link, style tags to prevent execution
+  clean = clean.replace(/<(iframe|object|embed|form|meta|link|style)\b[^>]*>([\s\S]*?)<\/\1>/gi, '');
+  clean = clean.replace(/<(iframe|object|embed|form|meta|link|style)\b[^>]*>/gi, '');
+  
+  return clean;
+}
+
 function stripHtml(html: string) {
   if (!html) return '';
   const stripped = html.replace(/<[^>]*>?/gm, ' ');
@@ -429,8 +447,8 @@ function renderAppDetails(slug: string, apps: any[], settings: any) {
   const size = getField(app, 'file_size', 'Variable');
   const rating = getField(app, 'rating', '5.0');
   const icon = getField(app, 'icon_url');
-  const desc = getField(app, 'description_html') || `<p>No comprehensive details are configured yet for ${escapeHtml(name)}.</p>`;
-  const features = getField(app, 'features_html');
+  const desc = app.description_html ? sanitizeHtml(app.description_html) : `<p>No comprehensive details are configured yet for ${escapeHtml(name)}.</p>`;
+  const features = app.features_html ? sanitizeHtml(app.features_html) : '';
   const featureSectionContext = features ? `<h2 class="text-lg font-bold mt-8 mb-4">App Features</h2><div class="prose dark:prose-invert text-zinc-650 leading-relaxed font-semibold">${features}</div>` : '';
   const pkg = getField(app, 'package_name', 'Not published');
 
@@ -521,11 +539,12 @@ function renderNewsDetail(slug: string, news: any[], settings: any) {
   const author = getField(item, 'ceo_name', 'System Author');
   const cat = getField(item, 'category', 'Report');
   const content = getField(item, 'content') || getField(item, 'description', '');
+  const sanitizedContent = sanitizeHtml(content);
 
   return `
     <article class="max-w-3xl mx-auto py-12 px-4 text-left">
       <header class="mb-6"><span class="text-xs text-blue-500 uppercase font-bold mr-2">${escapeHtml(cat)}</span><span class="text-xs text-zinc-400 uppercase font-bold">${dateStr} | By ${escapeHtml(author)}</span><h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight mt-2 leading-tight">${escapeHtml(title)}</h1></header>
-      <section class="prose dark:prose-invert text-zinc-700 leading-relaxed font-semibold">${content.replace(/\n\n/g, '<br/><br/>').replace(/\n/g, '<br/>')}</section>
+      <section class="prose dark:prose-invert text-zinc-700 leading-relaxed font-semibold">${sanitizedContent.replace(/\n\n/g, '<br/><br/>').replace(/\n/g, '<br/>')}</section>
     </article>
   `;
 }
@@ -553,11 +572,12 @@ function renderBlogDetail(slug: string, blogs: any[], settings: any) {
   const dateStr = getField(item, 'created_at') || 'May 2026';
   const author = getField(item, 'author', 'System Author');
   const content = getField(item, 'content', '');
+  const sanitizedContent = sanitizeHtml(content);
 
   return `
     <article class="max-w-3xl mx-auto py-12 px-4 text-left">
       <header class="mb-6"><span class="text-xs text-zinc-400 uppercase font-bold">${dateStr} | Strategy by ${escapeHtml(author)}</span><h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight mt-2 leading-tight">${escapeHtml(title)}</h1></header>
-      <section class="prose dark:prose-invert text-zinc-700 leading-relaxed font-semibold">${content.replace(/\n\n/g, '<br/><br/>').replace(/\n/g, '<br/>')}</section>
+      <section class="prose dark:prose-invert text-zinc-700 leading-relaxed font-semibold">${sanitizedContent.replace(/\n\n/g, '<br/><br/>').replace(/\n/g, '<br/>')}</section>
     </article>
   `;
 }
