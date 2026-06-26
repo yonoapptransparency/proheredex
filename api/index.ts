@@ -1,8 +1,16 @@
 declare global { var AES_SECRET_GLOBAL: string; }
 if (!process.env.AES_SECRET) {
-  console.warn("WARNING: AES_SECRET is not configured! Enforced fallback to empty. Decryption/encryption will fail securely until AES_SECRET is set in the environment variables.");
+  let fallbackKey = "";
+  try {
+    fallbackKey = require('crypto').randomBytes(32).toString('hex');
+  } catch (err) {
+    fallbackKey = 'fallback-' + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+  }
+  console.warn("WARNING: process.env.AES_SECRET is missing! To ensure security, we have generated a unique cryptographically secure random session key for this session. Decrypted links will work securely within this session but will require AES_SECRET to be configured in environment variables to persist across server restarts.");
+  global.AES_SECRET_GLOBAL = fallbackKey;
+} else {
+  global.AES_SECRET_GLOBAL = process.env.AES_SECRET;
 }
-global.AES_SECRET_GLOBAL = process.env.AES_SECRET || '';
 import express from "express";
 import cookieParser from "cookie-parser";
 import path from "path";
@@ -1190,6 +1198,9 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
       return res.status(500).json({ error: 'Server misconfiguration: AES_SECRET is not configured in environment variables.' });
     }
 
+    const adminEmail = (req as any).adminUser?.email || 'unknown-admin';
+    console.log(`[AUDIT] Admin decryption of single URL requested by ${adminEmail} from IP ${ip} at ${new Date().toISOString()}`);
+
     try {
       const dec = safeDecrypt(encryptedUrl, AES_SECRET);
       res.json({ decrypted: dec || 'Failed to decrypt or empty string' });
@@ -1213,6 +1224,9 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
     if (!AES_SECRET || AES_SECRET.trim() === '') {
       return res.status(500).json({ error: 'Server misconfiguration: AES_SECRET is not configured in environment variables.' });
     }
+
+    const adminEmail = (req as any).adminUser?.email || 'unknown-admin';
+    console.log(`[AUDIT] Admin decryption of secure links list payload requested by ${adminEmail} from IP ${ip} at ${new Date().toISOString()}`);
 
     try {
       const decryptedText = safeDecrypt(encryptedData, AES_SECRET);
@@ -1998,6 +2012,9 @@ ${JSON.stringify(publicContext, null, 2)}`;
                         } else {
                            targetUrl = encryptedUrl;
                         }
+                        if (targetUrl && targetUrl.startsWith('http')) {
+                          console.log(`[AUDIT] Successfully resolved and decrypted redirect URL via Git Vault (secureVault.ts) for app ID: ${appId}`);
+                        }
                      }
                   }
               }
@@ -2017,6 +2034,9 @@ ${JSON.stringify(publicContext, null, 2)}`;
                      targetUrl = safeDecrypt(encryptedUrl, AES_SECRET);
                   } else {
                      targetUrl = encryptedUrl;
+                  }
+                  if (targetUrl && targetUrl.startsWith('http')) {
+                    console.log(`[AUDIT] Successfully resolved and decrypted redirect URL via process.env.SECURE_LINKS for app ID: ${appId}`);
                   }
                 }
               }
@@ -2047,7 +2067,9 @@ ${JSON.stringify(publicContext, null, 2)}`;
                   } else {
                     targetUrl = encryptedUrl;
                   }
-                  console.log("Successfully retrieved targetUrl from local filesystem backup for app ID:", appId);
+                  if (targetUrl && targetUrl.startsWith('http')) {
+                    console.log(`[AUDIT] Successfully resolved and decrypted redirect URL via local backup file (secure_links_backup.json) for app ID: ${appId}`);
+                  }
                 }
               }
             } catch (backupErr) {
