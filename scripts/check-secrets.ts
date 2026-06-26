@@ -57,10 +57,24 @@ function scanDirectory(dir: string): boolean {
 console.log('🔍 Running pre-deployment secret scan...');
 const currentDir = process.cwd();
 
-// Synthesize placeholder firebase-applet-config.json if it doesn't exist
+// Synthesize placeholder firebase-applet-config.json if it doesn't exist or is invalid
 const configPath = path.join(currentDir, 'firebase-applet-config.json');
+let needsRegen = false;
 if (!fs.existsSync(configPath)) {
-  console.log('Creating fallback firebase-applet-config.json...');
+  needsRegen = true;
+} else {
+  try {
+    const rawContent = fs.readFileSync(configPath, 'utf8');
+    if (rawContent.includes('PLACEHOLDER') || rawContent.trim() === '') {
+      needsRegen = true;
+    }
+  } catch (e) {
+    needsRegen = true;
+  }
+}
+
+if (needsRegen) {
+  console.log('Generating/overwriting firebase-applet-config.json with real active settings...');
   fs.writeFileSync(configPath, JSON.stringify({
     projectId: process.env.VITE_FIREBASE_PROJECT_ID || "gen-lang-client-0825832493",
     appId: process.env.VITE_FIREBASE_APP_ID || "1:103973989874:web:733a6afd8e837224900f6b",
