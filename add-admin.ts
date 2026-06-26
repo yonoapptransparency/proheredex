@@ -8,7 +8,11 @@ async function run() {
   const db = getFirestore(app);
 
   try {
-    const adminEmail = process.argv[2] || process.env.ADMIN_EMAIL || 'defentechscholar@gmail.com';
+    const adminEmail = process.argv[2] || process.env.ADMIN_EMAIL;
+    if (!adminEmail) {
+      console.error("Error: ADMIN_EMAIL environment variable or CLI argument is required.");
+      process.exit(1);
+    }
     const emailRef = doc(db, 'admins', adminEmail.toLowerCase().trim());
     await setDoc(emailRef, {
       email: adminEmail.toLowerCase().trim(),

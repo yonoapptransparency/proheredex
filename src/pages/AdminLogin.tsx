@@ -33,8 +33,28 @@ export default function AdminLogin() {
   const [domainMismatch, setDomainMismatch] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [attempts, setAttempts] = useState(0);
-  const [lockedUntil, setLockedUntil] = useState(0);
+  const [attempts, setAttempts] = useState(() => {
+    try {
+      const stored = localStorage.getItem('_portal_login_att');
+      return stored ? parseInt(stored, 10) : 0;
+    } catch { return 0; }
+  });
+  const [lockedUntil, setLockedUntil] = useState(() => {
+    try {
+      const stored = localStorage.getItem('_portal_login_lck');
+      return stored ? parseInt(stored, 10) : 0;
+    } catch { return 0; }
+  });
+
+  const saveAttempts = (val: number) => {
+    setAttempts(val);
+    try { localStorage.setItem('_portal_login_att', String(val)); } catch {}
+  };
+
+  const saveLockout = (val: number) => {
+    setLockedUntil(val);
+    try { localStorage.setItem('_portal_login_lck', String(val)); } catch {}
+  };
 
   // Manual Captcha
   const [captchaText, setCaptchaText] = useState('');
@@ -166,10 +186,10 @@ export default function AdminLogin() {
         // Reject non-admins immediately at the login gate so the login system is fully secure.
         // Deep enforcement is already in firestore.rules and server.ts
         const email = user.email?.toLowerCase();
-        const fallbackAdmin = (import.meta.env.VITE_ADMIN_EMAIL || 'defentechscholar@gmail.com').toLowerCase();
+        const fallbackAdmin = (import.meta.env.VITE_ADMIN_EMAIL || '').toLowerCase();
         
         let verified = false;
-        if (user.emailVerified && email === fallbackAdmin) {
+        if (fallbackAdmin && user.emailVerified && email === fallbackAdmin) {
            verified = true;
         } else {
            try {
@@ -264,12 +284,14 @@ export default function AdminLogin() {
     setMessage(null);
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      saveAttempts(0);
+      saveLockout(0);
     } catch (err: any) {
       const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
+      saveAttempts(newAttempts);
       if (newAttempts >= 3) {
         const lockMs = newAttempts >= 7 ? 600000 : newAttempts >= 5 ? 120000 : 30000;
-        setLockedUntil(Date.now() + lockMs);
+        saveLockout(Date.now() + lockMs);
       }
       
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {

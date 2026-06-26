@@ -17,6 +17,7 @@ import path from "path";
 import crypto from "crypto";
 import compression from "compression";
 import fs from "fs";
+import dns from "dns";
 import { injectSeoTags, fetchStoreData, getField } from "../src/seoHelper";
 import { mockApps, mockSettings, mockNews, mockBlogs, mockVideos } from "../src/lib/staticData";
 import { generateStaticDataFileCode } from "../src/lib/githubSync";
@@ -210,8 +211,81 @@ function getIp(req: express.Request): string {
   return req.socket?.remoteAddress || "unknown";
 }
 
+// Helper to parse potential IPv4 representations including octal, hex, and shortened formats
+function parseIpv4(hostname: string): number[] | null {
+  const parts = hostname.split('.');
+  if (parts.length === 0 || parts.length > 4) return null;
+  
+  const ipBytes: number[] = [];
+  for (const part of parts) {
+    let num: number;
+    if (part.toLowerCase().startsWith('0x')) {
+      num = parseInt(part, 16);
+    } else if (part.startsWith('0') && part.length > 1) {
+      num = parseInt(part, 8);
+    } else {
+      num = parseInt(part, 10);
+    }
+    if (isNaN(num) || num < 0 || num > 255) return null;
+    ipBytes.push(num);
+  }
+
+  if (parts.length === 1) {
+    const val = ipBytes[0];
+    if (isNaN(val) || val < 0 || val > 0xffffffff) return null;
+    return [
+      (val >>> 24) & 255,
+      (val >>> 16) & 255,
+      (val >>> 8) & 255,
+      val & 255
+    ];
+  } else if (parts.length === 2) {
+    const a = ipBytes[0];
+    const b = ipBytes[1];
+    if (b > 0xffffff) return null;
+    return [
+      a,
+      (b >>> 16) & 255,
+      (b >>> 8) & 255,
+      b & 255
+    ];
+  } else if (parts.length === 3) {
+    const a = ipBytes[0];
+    const b = ipBytes[1];
+    const c = ipBytes[2];
+    if (c > 0xffff) return null;
+    return [
+      a,
+      b,
+      (c >>> 8) & 255,
+      c & 255
+    ];
+  }
+
+  return ipBytes;
+}
+
+function isPrivateIpv4(ip: number[]): boolean {
+  const [a, b, c, d] = ip;
+  if (a === 127) return true;
+  if (a === 10) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 0) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true;
+  if (a === 192 && b === 0 && c === 0) return true;
+  if (a === 192 && b === 0 && c === 2) return true;
+  if (a === 198 && b >= 18 && b <= 19) return true;
+  if (a === 198 && b === 51 && c >= 100 && c <= 103) return true;
+  if (a === 203 && b === 0 && c === 113) return true;
+  if (a >= 224 && a <= 239) return true;
+  if (a >= 240) return true;
+  return false;
+}
+
 // Helper to prevent SSRF by checking if a URL targets localhost or private IP addresses
-function isSafeUrl(urlString: string): boolean {
+async function isSafeUrl(urlString: string): Promise<boolean> {
   try {
     const parsedUrl = new URL(urlString);
     if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
@@ -219,45 +293,39 @@ function isSafeUrl(urlString: string): boolean {
     }
     const hostname = parsedUrl.hostname.toLowerCase();
     
-    // Strict match of local and loopback blocks
-    const isLocalOrPrivate = 
-      hostname === 'localhost' ||
-      hostname === 'loopback' ||
-      hostname.endsWith('.local') ||
-      hostname.endsWith('.internal') ||
-      hostname === '127.0.0.1' ||
-      hostname === '0.0.0.0' ||
-      hostname === '169.254.169.254' ||
-      hostname === 'metadata' ||
-      hostname === 'metadata.google' ||
-      hostname === 'metadata.google.internal' ||
-      // Check for common private IP block prefixes in IPv4
-      hostname.startsWith('10.') ||
-      hostname.startsWith('192.168.') ||
-      hostname.startsWith('172.16.') ||
-      hostname.startsWith('172.17.') ||
-      hostname.startsWith('172.18.') ||
-      hostname.startsWith('172.19.') ||
-      hostname.startsWith('172.20.') ||
-      hostname.startsWith('172.21.') ||
-      hostname.startsWith('172.22.') ||
-      hostname.startsWith('172.23.') ||
-      hostname.startsWith('172.24.') ||
-      hostname.startsWith('172.25.') ||
-      hostname.startsWith('172.26.') ||
-      hostname.startsWith('172.27.') ||
-      hostname.startsWith('172.28.') ||
-      hostname.startsWith('172.29.') ||
-      hostname.startsWith('172.30.') ||
-      hostname.startsWith('172.31.') ||
-      hostname.startsWith('169.254.') ||
-      // Check for IPv6 patterns
-      hostname.startsWith('[fc00') ||
-      hostname.startsWith('[fe80') ||
-      hostname === '[::1]' ||
-      hostname === '::1';
+    // 1. First check if hostname is direct private IP
+    const ipv4Bytes = parseIpv4(hostname);
+    if (ipv4Bytes) {
+      if (isPrivateIpv4(ipv4Bytes)) return false;
+    }
 
-    return !isLocalOrPrivate;
+    if (hostname === '[::1]' || hostname === '::1' || hostname.startsWith('[fc00') || hostname.startsWith('[fe80')) {
+      return false;
+    }
+
+    const badHosts = ['localhost', 'loopback', 'metadata', 'metadata.google', 'metadata.google.internal'];
+    if (badHosts.includes(hostname) || hostname.endsWith('.local') || hostname.endsWith('.internal')) {
+      return false;
+    }
+
+    // 2. Resolve DNS to prevent DNS rebinding attacks
+    try {
+      const addresses = await dns.promises.lookup(hostname, { all: true });
+      for (const addr of addresses) {
+        const ip = addr.address;
+        const parsedIp = parseIpv4(ip);
+        if (parsedIp) {
+          if (isPrivateIpv4(parsedIp)) return false;
+        }
+        if (ip === '::1' || ip.startsWith('fc00:') || ip.startsWith('fe80:')) {
+          return false;
+        }
+      }
+    } catch (dnsErr) {
+      return false;
+    }
+
+    return true;
   } catch {
     return false;
   }
@@ -392,12 +460,45 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
 
     // CORS Headers for public API endpoints and sandboxed iframes
-    const origin = req.headers.origin || "*";
-    res.setHeader("Access-Control-Allow-Origin", origin);
+    const origin = req.headers.origin;
+    let allowedOrigin = "";
+    let allowCredentials = false;
+
+    if (origin) {
+      let isAllowed = false;
+      const parsedUrl = (() => {
+        try { return new URL(origin); } catch { return null; }
+      })();
+      if (parsedUrl) {
+        const hostname = parsedUrl.hostname;
+        if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.endsWith(".google.com") || hostname.endsWith(".studio") || hostname.endsWith(".run.app")) {
+          isAllowed = true;
+        } else if (process.env.ALLOWED_ORIGINS) {
+          const list = process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim());
+          if (list.includes(origin)) {
+            isAllowed = true;
+          }
+        }
+      }
+      if (isAllowed) {
+        allowedOrigin = origin;
+        allowCredentials = true;
+      } else {
+        allowedOrigin = "null";
+      }
+    } else {
+      allowedOrigin = "*";
+    }
+
+    if (allowedOrigin) {
+      res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+    }
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PATCH, PUT, DELETE");
     res.setHeader("Access-Control-Allow-Headers", "X-Requested-With,Content-Type,Accept,Authorization,X-Forwarded-For");
-    res.setHeader("Access-Control-Allow-Credentials", "true");
+    if (allowCredentials) {
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+    }
 
     if (req.method === 'OPTIONS') {
       res.sendStatus(200);
@@ -459,7 +560,7 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
         }
 
         console.log('--- FAVICON/LOGO ROUTE RESOLVED ---', imageUrl);
-        if (typeof imageUrl === 'string' && imageUrl.startsWith('http') && isSafeUrl(imageUrl)) {
+        if (typeof imageUrl === 'string' && imageUrl.startsWith('http') && (await isSafeUrl(imageUrl))) {
           
           try {
             // Dynamic image proxy to bypass CORS/Same-origin and 302 redirect failure in indexing scrapers
@@ -665,9 +766,9 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
       
       // Admin access check via firestore (strictly requires verified email to prevent hijack/spoofing attempts)
       let isDbAdmin = false;
-      const configuredAdminEmail = (process.env.ADMIN_EMAIL || 'defentechscholar@gmail.com').toLowerCase();
+      const configuredAdminEmail = (process.env.ADMIN_EMAIL || '').toLowerCase();
       
-      if (email === configuredAdminEmail && user.emailVerified === true) {
+      if (configuredAdminEmail && email === configuredAdminEmail && user.emailVerified === true) {
         isDbAdmin = true;
       }
       if (!isDbAdmin && user.emailVerified === true) {
@@ -939,7 +1040,7 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
         }
       } catch (e) {}
 
-      if (!isSafeUrl(targetUrl)) {
+      if (!(await isSafeUrl(targetUrl))) {
         console.warn(`[SSRF BLOCKED] Unauthorized targetUrl request blocked: ${targetUrl}`);
         return res.status(403).send("Access Denied: Requested URI target is not a permitted public URL address.");
       }
@@ -1290,11 +1391,15 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
 
       // 1. Save public clean staticData.ts file (with secure URLs scrubbed)
       const tsCode = generateStaticDataFileCode(apps, settings, news, blogs, videos);
-      fs.writeFileSync(
-        path.join(process.cwd(), 'src/lib/staticData.ts'),
-        tsCode,
-        'utf8'
-      );
+      try {
+        fs.writeFileSync(
+          path.join(process.cwd(), 'src/lib/staticData.ts'),
+          tsCode,
+          'utf8'
+        );
+      } catch (writeErr: any) {
+        console.warn("Skipping local staticData.ts fallback write (read-only filesystem or inaccessible path):", writeErr.message);
+      }
 
       // Save a non-cached JSON backup of the same clean public data for instant API & SEO availability
       const cleanApps = JSON.parse(JSON.stringify(apps)).map((app: any) => {
@@ -1309,17 +1414,21 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
       const cleanVideos = JSON.parse(JSON.stringify(videos || []));
 
       const publicBackupPath = path.join(process.cwd(), 'src/lib/public_backup.json');
-      fs.writeFileSync(
-        publicBackupPath,
-        JSON.stringify({
-          apps: cleanApps,
-          settings: cleanSettings,
-          news: cleanNews,
-          blogs: cleanBlogs,
-          videos: cleanVideos
-        }, null, 2),
-        'utf8'
-      );
+      try {
+        fs.writeFileSync(
+          publicBackupPath,
+          JSON.stringify({
+            apps: cleanApps,
+            settings: cleanSettings,
+            news: cleanNews,
+            blogs: cleanBlogs,
+            videos: cleanVideos
+          }, null, 2),
+          'utf8'
+        );
+      } catch (writeErr: any) {
+        console.warn("Skipping local public_backup.json write (read-only filesystem or inaccessible path):", writeErr.message);
+      }
 
       // 2. Save secure download/more_information_url references separately (ALWAYS store encrypted!)
       const AES_SECRET = process.env.AES_SECRET || AES_SECRET_GLOBAL;
@@ -1357,7 +1466,11 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
         }
       }
 
-      fs.writeFileSync(backupPath, JSON.stringify(mergedBackup, null, 2), 'utf8');
+      try {
+        fs.writeFileSync(backupPath, JSON.stringify(mergedBackup, null, 2), 'utf8');
+      } catch (writeErr: any) {
+        console.warn("Skipping local secure_links_backup.json write (read-only filesystem or inaccessible path):", writeErr.message);
+      }
 
       res.json({ success: true, message: "Local fallback components strictly synced." });
     } catch (err: any) {

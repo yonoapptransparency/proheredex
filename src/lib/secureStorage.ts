@@ -32,14 +32,23 @@ export const secureStorage = {
       const raw = localStorage.getItem(realKey);
       if (!raw) {
         const legacyRaw = localStorage.getItem(key);
-        if (legacyRaw) return legacyRaw;
+        if (legacyRaw) {
+          // Encrypt legacy plain text on discovery
+          secureStorage.setItem(key, legacyRaw);
+          return legacyRaw;
+        }
         return null;
       }
-      if (raw.startsWith('U2FsdGVkX1')) {
-          localStorage.removeItem(realKey); // clear old encrypted data so we re-sync
-          return null;
+      
+      // Decrypt using AES
+      const secret = getStorageSecret();
+      const bytes = CryptoJS.AES.decrypt(raw, secret);
+      const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+      if (!decrypted) {
+        // If decryption failed, return original value or null
+        return null;
       }
-      return raw;
+      return decrypted;
     } catch (e) {
       console.warn("Secure storage read fallback:", e);
       return null;
@@ -50,7 +59,12 @@ export const secureStorage = {
     try {
       if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
       const realKey = getObfuscatedKey(key);
-      localStorage.setItem(realKey, value);
+      
+      // Encrypt value using AES
+      const secret = getStorageSecret();
+      const encrypted = CryptoJS.AES.encrypt(value, secret).toString();
+      
+      localStorage.setItem(realKey, encrypted);
       
       // Clean up legacy plain text if present
       if (localStorage.getItem(key)) {
