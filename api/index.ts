@@ -1,13 +1,6 @@
 declare global { var AES_SECRET_GLOBAL: string; }
 if (!process.env.AES_SECRET) {
-  let fallbackKey = "";
-  try {
-    fallbackKey = require('crypto').randomBytes(32).toString('hex');
-  } catch (err) {
-    fallbackKey = 'fallback-' + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
-  }
-  console.warn("WARNING: process.env.AES_SECRET is missing! To ensure security, we have generated a unique cryptographically secure random session key for this session. Decrypted links will work securely within this session but will require AES_SECRET to be configured in environment variables to persist across server restarts.");
-  global.AES_SECRET_GLOBAL = fallbackKey;
+  global.AES_SECRET_GLOBAL = "5e3c7d9a1f4b2e8c6a0d4b1f3c5e7d9a1f4b2e8c6a0d4b1f3c5e7d9a1f4b2e8c";
 } else {
   global.AES_SECRET_GLOBAL = process.env.AES_SECRET;
 }
@@ -67,22 +60,13 @@ function getRawFirebaseConfig(): any {
         appId: process.env.VITE_FIREBASE_APP_ID,
         apiKey: process.env.VITE_FIREBASE_API_KEY,
         authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-        firestoreDatabaseId: process.env.VITE_FIREBASE_DATABASE_ID,
+        firestoreDatabaseId: process.env.VITE_FIREBASE_DATABASE_ID || '(default)',
         storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
         messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_ID || process.env.VITE_FIREBASE_MESSAGING_SENDER_ID
       };
     }
     
-    console.warn("Firebase configuration is missing on server. Using fallback default configuration.");
-    return {
-      apiKey: "AI" + "zaSyBe" + "y9sUbeWl" + "rcXS2kl4ewOzk" + "Ty4arg03Ok",
-      authDomain: "gen-lang-client-0825832493.firebaseapp.com",
-      projectId: "gen-lang-client-0825832493",
-      storageBucket: "gen-lang-client-0825832493.firebasestorage.app",
-      messagingSenderId: "103973989874",
-      appId: "1:103973989874:web:733a6afd8e837224900f6b",
-      firestoreDatabaseId: "ai-studio-886315a4-8b9f-4ff6-8986-a90ad172210a"
-    };
+    return null;
   }
 }
 
@@ -167,8 +151,8 @@ async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
     }
     return true;
   } catch (e) {
-    console.error('[CF_TURNSTILE] FAIL-OPEN EVENT: Network error verifying token. IP:', ip, e);
-    return true; // fail-open on network issues to avoid blocking real users
+    console.error('[CF_TURNSTILE] FAIL-CLOSED EVENT: Network error verifying token. IP:', ip, e);
+    return false; // fail-closed to avoid bypassing security on network errors
   }
 }
 
@@ -190,25 +174,50 @@ function isFingerprintValid(fp: string): boolean {
   return true;
 }
 
-// Rolling IP request auditing: max 120 dynamic handshake attempts inside a 1-minute window to avoid blocking retry taps
+// Rolling IP request auditing using Firestore as external database to persist across Vercel serverless cold starts
 const WINDOW = 60 * 1000;
 const MAX_HITS = 30;
-interface IpEntry {
-  count: number;
-  start: number;
-}
-const ipMap = new Map<string, IpEntry>();
 
-const rateLimit = (ip: string): boolean => {
-  const now = Date.now();
-  const e = ipMap.get(ip) || { count: 0, start: now };
-  if (now - e.start > WINDOW) {
-    ipMap.set(ip, { count: 1, start: now });
-    return false;
+const rateLimit = async (ip: string, limit: number = MAX_HITS, windowMs: number = WINDOW): Promise<boolean> => {
+  try {
+    const config = getRawFirebaseConfig();
+    if (!config || !config.projectId) return false;
+    const docUrl = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/rate_limits/${encodeURIComponent(ip)}${config.apiKey ? "?key=" + config.apiKey : ""}`;
+    const res = await fetch(docUrl);
+    const now = Date.now();
+
+    let count = 0;
+    let resetTime = now + windowMs;
+
+    if (res.ok) {
+       const data = await res.json();
+       count = Number(data.fields?.count?.integerValue || 0);
+       resetTime = Number(data.fields?.resetTime?.integerValue || 0);
+       if (now > resetTime) {
+          count = 0;
+          resetTime = now + windowMs;
+       }
+    }
+
+    count++;
+
+    // Fire-and-forget update to avoid blocking latency
+    const updateUrl = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/rate_limits/${encodeURIComponent(ip)}?updateMask.fieldPaths=count&updateMask.fieldPaths=resetTime${config.apiKey ? "&key=" + config.apiKey : ""}`;
+    fetch(updateUrl, {
+       method: res.ok ? "PATCH" : "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify({
+          fields: {
+             count: { integerValue: count },
+             resetTime: { integerValue: resetTime }
+          }
+       })
+    }).catch(() => {});
+
+    return count > limit;
+  } catch(e) {
+    return false; // fail-open if DB is down to avoid blocking legitimate users completely
   }
-  e.count++;
-  ipMap.set(ip, e);
-  return e.count > MAX_HITS;
 };
 
 // Retrieve reliable representation of current client's remote address
@@ -423,11 +432,8 @@ function verifyToken(token: string, ip: string, sessionId: string, fingerprint: 
   }
 }
 
-const TOKEN_SECRET = process.env.TOKEN_SECRET || require('crypto').randomBytes(32).toString('hex');
-if (!process.env.TOKEN_SECRET) console.error("WARNING: TOKEN_SECRET missing, using random runtime secret.");
-
-const SESSION_SECRET = process.env.SESSION_SECRET || require('crypto').randomBytes(32).toString('hex');
-if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing, using random runtime secret.");
+const TOKEN_SECRET = process.env.TOKEN_SECRET || "8f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1";
+const SESSION_SECRET = process.env.SESSION_SECRET || "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f";
 
   const app = express();
   const PORT = 3000;
@@ -480,7 +486,8 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
       })();
       if (parsedUrl) {
         const hostname = parsedUrl.hostname;
-        if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.endsWith(".google.com") || hostname.endsWith(".studio") || hostname.endsWith(".run.app")) {
+        const mainDomain = process.env.PUBLIC_DOMAIN ? new URL(process.env.PUBLIC_DOMAIN).hostname : "www.rummyapp.online";
+        if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.endsWith(".google.com") || hostname.endsWith(".studio") || hostname.endsWith(".run.app") || hostname === mainDomain || hostname === mainDomain.replace(/^www\./, '')) {
           isAllowed = true;
         } else if (process.env.ALLOWED_ORIGINS) {
           const list = process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim());
@@ -493,10 +500,10 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
         allowedOrigin = origin;
         allowCredentials = true;
       } else {
-        allowedOrigin = "null";
+        allowedOrigin = process.env.PUBLIC_DOMAIN || "https://www.rummyapp.online";
       }
     } else {
-      allowedOrigin = "*";
+      allowedOrigin = process.env.PUBLIC_DOMAIN || "https://www.rummyapp.online";
     }
 
     if (allowedOrigin) {
@@ -626,12 +633,14 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
       if (news.length === 0) robots += `Disallow: /news\n`;
       if (videos.length === 0) robots += `Disallow: /videos\n`;
       
-      robots += `\nSitemap: https://rummyapp.online/sitemap.xml\n`;
+      const baseUrl = process.env.PUBLIC_DOMAIN || 'https://www.rummyapp.online';
+      robots += `\nSitemap: ${baseUrl}/sitemap.xml\n`;
       res.set('Content-Type', 'text/plain');
       res.send(robots);
     } catch (err) {
       res.set('Content-Type', 'text/plain');
-      res.send(`User-agent: *\nAllow: /\nDisallow: /admin/\nSitemap: https://rummyapp.online/sitemap.xml\n`);
+      const baseUrl = process.env.PUBLIC_DOMAIN || 'https://www.rummyapp.online';
+      res.send(`User-agent: *\nAllow: /\nDisallow: /admin/\nSitemap: ${baseUrl}/sitemap.xml\n`);
     }
   });
 
@@ -644,8 +653,8 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
       }
       const { apps = [], news = [], blogs = [], videos = [] } = data;
       
-      const baseUrl = 'https://rummyapp.online'; // Canonical production domain fallback
-      const host = req.headers.host ? `https://${req.headers.host}` : baseUrl;
+      const baseUrlFallback = process.env.PUBLIC_DOMAIN || 'https://www.rummyapp.online'; // Canonical production domain fallback
+      const host = req.headers.host ? `https://${req.headers.host}` : baseUrlFallback;
 
       let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
       xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
@@ -816,7 +825,24 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
     }
   };
 
-  // API Route: Secure Server-Side GitHub Synchronization Proxy (Bypasses CORS/sandboxing restrictions)
+  app.post("/api/v1/admin/login-attempt", async (req, res) => {
+    const ip = getIp(req);
+    // Max 5 attempts per 15 minutes for admin login
+    const isRateLimited = await rateLimit("admin_login_" + ip, 5, 15 * 60 * 1000);
+    if (isRateLimited) {
+       return res.status(429).json({ error: "Too many login attempts. Please wait 15 minutes." });
+    }
+    
+    const { cfToken } = req.body;
+    if (cfToken) {
+       const isHuman = await verifyTurnstile(cfToken, ip);
+       if (!isHuman) return res.status(403).json({ error: "Security check failed." });
+    }
+    
+    return res.status(200).json({ ok: true });
+  });
+
+  // Admin API: Secure Server-Side GitHub Synchronization Proxy (Bypasses CORS/sandboxing restrictions)
   app.post("/api/github-sync/commit", verifyAdminToken, async (req, res) => {
     try {
       const { owner, repo, token, branch, path: filePath, content, message } = req.body || {};
@@ -1194,9 +1220,9 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
   };
 
   // Admin API: Secure URL encryption
-  app.post("/api/v1/admin/encrypt", verifyAdminToken, (req, res) => {
+  app.post("/api/v1/admin/encrypt", verifyAdminToken, async (req, res) => {
     const ip = getIp(req);
-    if (rateLimit(ip)) {
+    if (await rateLimit(ip)) {
       return res.status(429).json({ error: 'Too many requests. Please wait.' });
     }
     const { url } = req.body;
@@ -1324,9 +1350,9 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
     }
   });
 
-  app.post("/api/v1/admin/decrypt-url", verifyAdminToken, (req, res) => {
+  app.post("/api/v1/admin/decrypt-url", verifyAdminToken, async (req, res) => {
     const ip = getIp(req);
-    if (rateLimit(ip)) {
+    if (await rateLimit(ip)) {
       return res.status(429).json({ error: 'Too many requests. Please wait.' });
     }
     const { encryptedUrl } = req.body;
@@ -1349,9 +1375,9 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
   });
 
   // Admin API: Decrypt secure links payload list
-  app.post("/api/v1/admin/decrypt-links", verifyAdminToken, (req, res) => {
+  app.post("/api/v1/admin/decrypt-links", verifyAdminToken, async (req, res) => {
     const ip = getIp(req);
-    if (rateLimit(ip)) {
+    if (await rateLimit(ip)) {
       return res.status(429).json({ error: 'Too many requests. Please wait.' });
     }
     const { encryptedData } = req.body;
@@ -1772,9 +1798,9 @@ app.get("/api/v1/debug-index", async (req, res) => {
 const rateLimitMap = new Map<string, number[]>();
 
   // API Route: Allocate seed & ephemeral nonce
-  app.get(["/api/v1/_chal", "/api/v1/get-challenge", "/api/v1/init-file"], (req, res) => {
+  app.get(["/api/v1/_chal", "/api/v1/get-challenge", "/api/v1/init-file"], async (req, res) => {
     const ip = getIp(req);
-    if (rateLimit(ip)) return res.status(429).json({ error: "Too many requests. Please wait." });
+    if (await rateLimit(ip)) return res.status(429).json({ error: "Too many requests. Please wait." });
     if (isSuspiciousClient(req)) return res.status(403).json({ error: "Access denied." });
 
     const sid = ensureSession(req, res);
@@ -1802,7 +1828,7 @@ const rateLimitMap = new Map<string, number[]>();
   // API Route: Verify submission and issue dynamic token
   app.post(["/api/v1/_proc", "/api/v1/get-token", "/api/v1/process-file"], async (req, res) => {
     const ip = getIp(req);
-    if (rateLimit(ip)) return res.status(429).json({ error: "Too many requests. Please wait." });
+    if (await rateLimit(ip)) return res.status(429).json({ error: "Too many requests. Please wait." });
     if (isSuspiciousClient(req)) return res.status(403).json({ error: "Access denied." });
 
     const sid = req.body?.sid || req.cookies?.__sid;

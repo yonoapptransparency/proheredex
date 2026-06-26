@@ -33,28 +33,6 @@ export default function AdminLogin() {
   const [domainMismatch, setDomainMismatch] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [attempts, setAttempts] = useState(() => {
-    try {
-      const stored = localStorage.getItem('_portal_login_att');
-      return stored ? parseInt(stored, 10) : 0;
-    } catch { return 0; }
-  });
-  const [lockedUntil, setLockedUntil] = useState(() => {
-    try {
-      const stored = localStorage.getItem('_portal_login_lck');
-      return stored ? parseInt(stored, 10) : 0;
-    } catch { return 0; }
-  });
-
-  const saveAttempts = (val: number) => {
-    setAttempts(val);
-    try { localStorage.setItem('_portal_login_att', String(val)); } catch {}
-  };
-
-  const saveLockout = (val: number) => {
-    setLockedUntil(val);
-    try { localStorage.setItem('_portal_login_lck', String(val)); } catch {}
-  };
 
   // Manual Captcha
   const [captchaText, setCaptchaText] = useState('');
@@ -269,31 +247,32 @@ export default function AdminLogin() {
       return;
     }
 
-    if (Date.now() < lockedUntil) {
-      const secs = Math.ceil((lockedUntil - Date.now()) / 1000);
-      setError(`Too many failed attempts. Try again in ${secs} seconds.`);
-      return;
-    }
-
     if (!email || !password) {
       setError("Please enter both email and password.");
       return;
     }
+
     setIsLoading(true);
     setError(null);
     setMessage(null);
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      saveAttempts(0);
-      saveLockout(0);
-    } catch (err: any) {
-      const newAttempts = attempts + 1;
-      saveAttempts(newAttempts);
-      if (newAttempts >= 3) {
-        const lockMs = newAttempts >= 7 ? 600000 : newAttempts >= 5 ? 120000 : 30000;
-        saveLockout(Date.now() + lockMs);
+      // 1. Server-side IP rate limiting and turnstile check
+      const checkRes = await fetch('/api/v1/admin/login-attempt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cfToken })
+      });
+      if (!checkRes.ok) {
+         if (checkRes.status === 429) {
+            throw new Error("Too many failed attempts. Try again in 15 minutes.");
+         } else {
+            throw new Error("Security verification failed on the server.");
+         }
       }
-      
+
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err: any) {
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
         setError("Invalid email or password.");
       } else {

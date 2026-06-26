@@ -34,22 +34,13 @@ function getRawFirebaseConfig(): any {
         appId: process.env.VITE_FIREBASE_APP_ID,
         apiKey: process.env.VITE_FIREBASE_API_KEY,
         authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-        firestoreDatabaseId: process.env.VITE_FIREBASE_DATABASE_ID,
+        firestoreDatabaseId: process.env.VITE_FIREBASE_DATABASE_ID || '(default)',
         storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
         messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_ID || process.env.VITE_FIREBASE_MESSAGING_SENDER_ID
       };
     }
     
-    
-    return {
-      apiKey: "AI" + "zaSyBe" + "y9sUbeWl" + "rcXS2kl4ewOzk" + "Ty4arg03Ok",
-      authDomain: "gen-lang-client-0825832493.firebaseapp.com",
-      projectId: "gen-lang-client-0825832493",
-      storageBucket: "gen-lang-client-0825832493.firebasestorage.app",
-      messagingSenderId: "103973989874",
-      appId: "1:103973989874:web:733a6afd8e837224900f6b",
-      firestoreDatabaseId: "ai-studio-886315a4-8b9f-4ff6-8986-a90ad172210a"
-    };
+    return null;
   }
 }
 
@@ -965,9 +956,10 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
     }
   }
 
-  const fallbackHost = hostUrl || 'https://rummystore.com';
+  const fallbackHost = process.env.PUBLIC_DOMAIN || 'https://www.rummyapp.online';
   const cleanHost = fallbackHost.replace(/\/+$/, '');
-  const absoluteUrl = `${cleanHost}${urlPath}`;
+  const cleanPath = urlPath.replace(/^\/api(\/[^/]+)?/i, '') || '/';
+  const absoluteUrl = `${cleanHost}${cleanPath}`;
 
   let absoluteOgImage = ogImage;
   if (ogImage) {

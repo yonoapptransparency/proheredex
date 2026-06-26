@@ -1,1 +1,3 @@
-export const ENCRYPTED_LINKS = "U2FsdGVkX1/c2h4JLZs1HGflPbONcY90JkBsDdXdG9E=";
+// SECURE VAULT - DO NOT EDIT MANUALLY
+export const IS_SEALED = false;
+export const ENCRYPTED_LINKS = "{}";
