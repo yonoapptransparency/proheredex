@@ -712,13 +712,20 @@ if (!process.env.SESSION_SECRET) console.error("WARNING: SESSION_SECRET missing,
         try {
           const config = getRawFirebaseConfig();
           const gitConfigUrl = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/${config.firestoreDatabaseId}/documents/sec_git/cfg${config.apiKey ? "?key=" + config.apiKey : ""}`;
-          const gitConfigRes = await fetch(gitConfigUrl);
+          const gitHeaders: Record<string, string> = {};
+          if (req.headers.authorization) {
+            gitHeaders["Authorization"] = req.headers.authorization;
+          }
+          const gitConfigRes = await fetch(gitConfigUrl, { headers: gitHeaders });
           if (gitConfigRes.ok) {
             const gitConfigDoc = await gitConfigRes.json() as any;
             if (gitConfigDoc && gitConfigDoc.fields && gitConfigDoc.fields.token && gitConfigDoc.fields.token.stringValue) {
               activeToken = gitConfigDoc.fields.token.stringValue;
               console.log("[AUDIT] Successfully fetched Git token securely from Firestore 'sec_git/cfg'");
             }
+          } else {
+            const errBody = await gitConfigRes.text();
+            console.error(`GitHub Sync Server: Firestore fetch failed with status ${gitConfigRes.status}:`, errBody);
           }
         } catch (gitErr: any) {
           console.error("GitHub Sync Server: Failed to fetch Git token from Firestore:", gitErr.message);
