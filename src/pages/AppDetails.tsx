@@ -101,7 +101,8 @@ export default function AppDetails() {
   const { apps: mockApps, settings: mockSettings, blogs: mockBlogs, loading, appsSyncedWithServer, serverAppsFetched, refreshAll } = useData();
   const { slug: routeSlug, "*": splat } = useParams();
   const decodedSplat = splat ? decodeURIComponent(splat) : '';
-  const slug = routeSlug || decodedSplat.replace(/^\/|\/$/g, '').split('/')[0];
+  const splatStripped = decodedSplat.replace(/^\/app\//, '/').replace(/^\/|\/$/g, '');
+  const slug = routeSlug || splatStripped;
   const app = mockApps.find(a => a.slug?.toLowerCase() === slug?.toLowerCase());
   
   const navigate = useNavigate();
@@ -362,14 +363,14 @@ export default function AppDetails() {
         <meta property="og:title" content={title} />
         <meta property="og:description" content={desc} />
         <meta property="og:image" content={ogImage} />
-        <meta property="og:url" content={app.canonical_url || window.location.href} />
+        <meta property="og:url" content={app.canonical_url || `https://${window.location.hostname}/${app.slug}`} />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={desc} />
         <meta name="twitter:image" content={ogImage} />
 
-        {app.canonical_url ? <link rel="canonical" href={app.canonical_url} /> : <link rel="canonical" href={window.location.href} />}
+        <link rel="canonical" href={app.canonical_url || `https://${window.location.hostname}/${app.slug}`} />
         <script type="application/ld+json">
           {JSON.stringify(softwareSchema)}
         </script>

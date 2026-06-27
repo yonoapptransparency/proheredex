@@ -77,7 +77,7 @@ export default function Blogs() {
                   {blog.related_app_name && blog.related_app_slug && (
                     <>
                       <span className="text-zinc-300">•</span>
-                      <Link to={`/app/${blog.related_app_slug}`} className="text-xs font-bold text-blue-500 hover:text-blue-600 transition-colors">
+                      <Link to={`/${blog.related_app_slug}`} className="text-xs font-bold text-blue-500 hover:text-blue-600 transition-colors">
                         {blog.related_app_name}
                       </Link>
                     </>

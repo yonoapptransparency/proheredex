@@ -138,16 +138,16 @@ export default function Contact() {
 
             <>
               <div>
-                <label className="block text-sm font-semibold text-zinc-750 dark:text-zinc-300 mb-2">Name</label>
-                <input required type="text" placeholder="Your Name" value={username} onChange={e => setUsername(e.target.value)} className="w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-black/5 dark:border-white/5 text-zinc-900 dark:text-zinc-100 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+                <label htmlFor="contact-name" className="block text-sm font-semibold text-zinc-750 dark:text-zinc-300 mb-2">Name</label>
+                <input id="contact-name" required type="text" placeholder="Your Name" value={username} onChange={e => setUsername(e.target.value)} className="w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-black/5 dark:border-white/5 text-zinc-900 dark:text-zinc-100 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Email</label>
-                <input required type="email" placeholder="Your Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-black/5 dark:border-white/5 text-zinc-900 dark:text-zinc-100 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+                <label htmlFor="contact-email" className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Email</label>
+                <input id="contact-email" required type="email" placeholder="Your Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-black/5 dark:border-white/5 text-zinc-900 dark:text-zinc-100 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Message</label>
-                <textarea required value={msgText} onChange={(e) => setMsgText(e.target.value)} className="w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-black/5 dark:border-white/5 h-44 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white text-zinc-900 dark:text-zinc-100 font-medium resize-none" placeholder="How can we help?"></textarea>
+                <label htmlFor="contact-message" className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Message</label>
+                <textarea id="contact-message" required value={msgText} onChange={(e) => setMsgText(e.target.value)} className="w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-black/5 dark:border-white/5 h-44 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white text-zinc-900 dark:text-zinc-100 font-medium resize-none" placeholder="How can we help?"></textarea>
               </div>
 
               {errorText && (

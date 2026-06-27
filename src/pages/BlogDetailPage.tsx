@@ -154,7 +154,7 @@ export default function BlogDetailPage() {
                 </div>
                 {blog.related_app_name && blog.related_app_slug && (
                   <div className="flex items-center gap-2 py-1 px-3 bg-blue-50 dark:bg-blue-900/20 rounded-full text-blue-600 dark:text-blue-400 font-medium">
-                      Related: <Link to={`/app/${blog.related_app_slug}`} className="hover:underline">{blog.related_app_name}</Link>
+                      Related: <Link to={`/${blog.related_app_slug}`} className="hover:underline">{blog.related_app_name}</Link>
                   </div>
                 )}
             </div>
@@ -172,7 +172,7 @@ export default function BlogDetailPage() {
               <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-1">Get the App</h3>
               <p className="text-zinc-600 dark:text-zinc-400 text-sm">Download {blog.related_app_name} to experience these new features.</p>
             </div>
-            <Link to={`/app/${blog.related_app_slug}`} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-bold transition-all shadow-sm shrink-0 whitespace-nowrap">
+            <Link to={`/${blog.related_app_slug}`} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-bold transition-all shadow-sm shrink-0 whitespace-nowrap">
               View {blog.related_app_name}
             </Link>
           </div>

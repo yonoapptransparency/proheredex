@@ -5,6 +5,8 @@ if (!process.env.AES_SECRET) {
   global.AES_SECRET_GLOBAL = process.env.AES_SECRET;
 }
 import express from "express";
+import helmet from "helmet";
+import expressRateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import path from "path";
 import crypto from "crypto";
@@ -437,6 +439,21 @@ const SESSION_SECRET = process.env.SESSION_SECRET || "a1b2c3d4e5f6g7h8i9j0k1l2m3
 async function startServer() {
   const app = express();
   const PORT = 3000;
+  
+  // Security Headers
+  app.use(helmet({
+    contentSecurityPolicy: false, // Disabling strict CSP for now to allow dynamic react and inline scripts. Can be configured strictly later.
+    crossOriginEmbedderPolicy: false,
+  }));
+  
+  // Rate Limiting
+  const limiter = expressRateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 1000, // Limit each IP to 1000 requests per `window`
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+  });
+  app.use(limiter);
 
   // File Logging Middleware for Diagnostics in Sandbox Environment
   app.use((req, res, next) => {
@@ -689,7 +706,7 @@ async function startServer() {
         if (slug && !canonicalUrl) {
           // Standard app detail path
           xml += `  <url>\n`;
-          xml += `    <loc>${host}/app/${escapeHtmlForSitemap(slug)}</loc>\n`;
+          xml += `    <loc>${host}/${escapeHtmlForSitemap(slug)}</loc>\n`;
           xml += `    <changefreq>weekly</changefreq>\n`;
           xml += `    <priority>0.9</priority>\n`;
           xml += `  </url>\n`;

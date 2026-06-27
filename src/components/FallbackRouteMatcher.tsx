@@ -14,7 +14,7 @@ export default function FallbackRouteMatcher() {
   
   // Clean pathname into a lowercase slug
   const rawPath = decodeURIComponent(location.pathname);
-  const slug = rawPath.replace(/^\/|\/$/g, '').toLowerCase().trim();
+  const slug = rawPath.replace(/^\/app\//, '/').replace(/^\/|\/$/g, '').toLowerCase().trim();
   
   const [resolvedType, setResolvedType] = useState<'app' | 'news' | 'blog' | 'video' | 'loading' | 'not_found'>('loading');
   const [triedRefresh, setTriedRefresh] = useState(false);

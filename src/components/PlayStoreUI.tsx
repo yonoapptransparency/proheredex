@@ -76,6 +76,7 @@ export const FeaturedBanner = React.memo(({ items }: BannerProps) => {
             const content = (
               <div className="w-full h-full relative overflow-hidden select-none pointer-events-none">
                 <img 
+                  loading="lazy"
                   src={item.image || `https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=400&fit=crop`} 
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 pointer-events-none"
                   alt="Banner"
@@ -115,7 +116,7 @@ export const FeaturedBanner = React.memo(({ items }: BannerProps) => {
                   key={item.id || i}
                   href={item.link} 
                   target="_blank" 
-                  rel="noopener noreferrer" 
+                  rel="nofollow noopener noreferrer" 
                   className="h-full block flex-shrink-0"
                   style={slideStyle}
                   draggable={false}

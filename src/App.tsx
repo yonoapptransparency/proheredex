@@ -45,27 +45,47 @@ const pageFactories = {
   VideoDetailPage: () => import('./pages/VideoDetailPage')
 };
 
-const AppDetails = lazy(pageFactories.AppDetails);
-const GatewayPage = lazy(pageFactories.GatewayPage);
-const NewApps = lazy(pageFactories.NewApps);
-const NewsPage = lazy(pageFactories.NewsPage);
-const VideosPage = lazy(pageFactories.VideosPage);
-const About = lazy(pageFactories.About);
-const Contact = lazy(pageFactories.Contact);
-const Privacy = lazy(pageFactories.Privacy);
-const Terms = lazy(pageFactories.Terms);
-const Responsibility = lazy(pageFactories.Responsibility);
-const Notice = lazy(pageFactories.Notice);
-const Ethics = lazy(pageFactories.Ethics);
-const Disclaimer = lazy(pageFactories.Disclaimer);
-const Developers = lazy(pageFactories.Developers);
-const NewsDetailPage = lazy(pageFactories.NewsDetailPage);
-const Blogs = lazy(pageFactories.Blogs);
-const BlogDetailPage = lazy(pageFactories.BlogDetailPage);
-const VideoDetailPage = lazy(pageFactories.VideoDetailPage);
+const lazyWithRetry = (componentImport: () => Promise<any>) =>
+  lazy(async () => {
+    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
+      window.sessionStorage.getItem('page-has-been-force-refreshed') || 'false'
+    );
+    try {
+      const component = await componentImport();
+      window.sessionStorage.setItem('page-has-been-force-refreshed', 'false');
+      return component;
+    } catch (error) {
+      if (!pageHasAlreadyBeenForceRefreshed) {
+        window.sessionStorage.setItem('page-has-been-force-refreshed', 'true');
+        window.location.reload();
+        // Return a dummy promise to prevent React from throwing while reloading
+        return new Promise(() => {});
+      }
+      throw error;
+    }
+  });
 
-const AdminLogin = lazy(() => import('./pages/AdminLogin'));
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AppDetails = lazyWithRetry(pageFactories.AppDetails);
+const GatewayPage = lazyWithRetry(pageFactories.GatewayPage);
+const NewApps = lazyWithRetry(pageFactories.NewApps);
+const NewsPage = lazyWithRetry(pageFactories.NewsPage);
+const VideosPage = lazyWithRetry(pageFactories.VideosPage);
+const About = lazyWithRetry(pageFactories.About);
+const Contact = lazyWithRetry(pageFactories.Contact);
+const Privacy = lazyWithRetry(pageFactories.Privacy);
+const Terms = lazyWithRetry(pageFactories.Terms);
+const Responsibility = lazyWithRetry(pageFactories.Responsibility);
+const Notice = lazyWithRetry(pageFactories.Notice);
+const Ethics = lazyWithRetry(pageFactories.Ethics);
+const Disclaimer = lazyWithRetry(pageFactories.Disclaimer);
+const Developers = lazyWithRetry(pageFactories.Developers);
+const NewsDetailPage = lazyWithRetry(pageFactories.NewsDetailPage);
+const Blogs = lazyWithRetry(pageFactories.Blogs);
+const BlogDetailPage = lazyWithRetry(pageFactories.BlogDetailPage);
+const VideoDetailPage = lazyWithRetry(pageFactories.VideoDetailPage);
+
+const AdminLogin = lazyWithRetry(() => import('./pages/AdminLogin'));
+const AdminDashboard = lazyWithRetry(() => import('./pages/AdminDashboard'));
 
 import FallbackRouteMatcher from './components/FallbackRouteMatcher';
 
@@ -238,7 +258,7 @@ function Header() {
                 <a 
                   href={settings.helpline_telegram.startsWith('http') ? settings.helpline_telegram : `https://t.me/${settings.helpline_telegram.replace('@', '')}`}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="nofollow noopener noreferrer"
                   className="flex items-center justify-center w-8 h-8 bg-blue-50 text-blue-500 rounded-full hover:bg-blue-100 transition-colors"
                   aria-label="Telegram"
                 >
@@ -494,19 +514,19 @@ function Footer() {
           <span>&copy; {new Date().getFullYear()} {settings.site_title}. All rights reserved.</span>
           <div className="flex items-center gap-3 md:ml-4">
             {settings.social_links?.facebook && (
-              <a href={settings.social_links.facebook} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Facebook className="w-4 h-4" /></a>
+              <a aria-label="Facebook" href={settings.social_links.facebook} target="_blank" rel="nofollow noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Facebook className="w-4 h-4" /></a>
             )}
             {settings.social_links?.instagram && (
-              <a href={settings.social_links.instagram} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Instagram className="w-4 h-4" /></a>
+              <a aria-label="Instagram" href={settings.social_links.instagram} target="_blank" rel="nofollow noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Instagram className="w-4 h-4" /></a>
             )}
             {settings.social_links?.twitter && (
-              <a href={settings.social_links.twitter} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Twitter className="w-4 h-4" /></a>
+              <a aria-label="Twitter" href={settings.social_links.twitter} target="_blank" rel="nofollow noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Twitter className="w-4 h-4" /></a>
             )}
             {settings.social_links?.linkedin && (
-              <a href={settings.social_links.linkedin} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Linkedin className="w-4 h-4" /></a>
+              <a aria-label="LinkedIn" href={settings.social_links.linkedin} target="_blank" rel="nofollow noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Linkedin className="w-4 h-4" /></a>
             )}
             {settings.social_links?.youtube && (
-              <a href={settings.social_links.youtube} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Youtube className="w-4 h-4" /></a>
+              <a aria-label="YouTube" href={settings.social_links.youtube} target="_blank" rel="nofollow noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"><Youtube className="w-4 h-4" /></a>
             )}
           </div>
         </div>
@@ -966,7 +986,6 @@ function AppContent() {
           <Routes location={location}>
             <Route path="/" element={<Home />} />
             <Route path="/new-apps" element={<NewApps />} />
-            <Route path="/app/:slug" element={<AppDetails />} />
             <Route path="/info/:slug" element={<GatewayPage />} />
             <Route path="/gateway/:slug" element={<GatewayPage />} />
             <Route path="/about" element={<About />} />

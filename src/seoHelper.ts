@@ -347,9 +347,6 @@ async function getPagePreRender(urlPath: string, data: any): Promise<string> {
     bodyContent = renderHome(apps, settings, news, blogs, videos);
   } else if (cleanPathLower === '/new-apps') {
     bodyContent = renderNewApps(apps, settings);
-  } else if (cleanPathLower.startsWith('/app/')) {
-    const slug = cleanPath.split('/app/')[1];
-    bodyContent = renderAppDetails(slug, apps, settings);
   } else if (cleanPathLower.startsWith('/info/') || cleanPathLower.startsWith('/gateway/')) {
     const slug = cleanPathLower.startsWith('/info/') ? cleanPath.split('/info/')[1] : cleanPath.split('/gateway/')[1];
     bodyContent = renderGateway(slug, apps, settings);
@@ -386,7 +383,7 @@ async function getPagePreRender(urlPath: string, data: any): Promise<string> {
     bodyContent = renderResponsibility(settings);
   } else {
     // Dynamic fallback for canonical root-level slugs (new direct path structure)
-    const possibleSlug = cleanPathLower.replace(/^\/|\/$/g, '');
+    const possibleSlug = cleanPathLower.replace(/^\/app\//, '/').replace(/^\/|\/$/g, '');
     if (apps.some((a: any) => a.slug?.toLowerCase() === possibleSlug)) {
       bodyContent = renderAppDetails(possibleSlug, apps, settings);
     } else if (news.some((n: any) => n.slug?.toLowerCase() === possibleSlug)) {
@@ -846,11 +843,15 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
   let author = siteTitle || "Platform Administrator";
   let canonicalUrlOverride: string | null = null;
   
-  if (urlPath.startsWith('/app/')) {
-    const slug = decodeURIComponent(urlPath.split('/app/')[1].split('/')[0].split('?')[0]);
+  const possibleAppSlug = urlPath.replace(/^\/app\//, '/').replace(/^\/|\/$/g, '').toLowerCase();
+  
+  if (apps.some((a: any) => {
+      const aSlug = getField(a, 'slug');
+      return aSlug && aSlug.toLowerCase() === possibleAppSlug;
+  })) {
     const app = apps.find((a: any) => {
       const aSlug = getField(a, 'slug');
-      return aSlug && aSlug.toLowerCase() === slug.toLowerCase();
+      return aSlug && aSlug.toLowerCase() === possibleAppSlug;
     });
     
     if (app) {
@@ -860,7 +861,8 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
       description = cleanSeoDescription(getField(app, 'seo_description')) || (descHtml ? stripHtml(descHtml).substring(0, 160) : '') || description;
       keywords = getField(app, 'seo_keywords') || keywords;
       ogImage = getField(app, 'og_image_url') || getField(app, 'icon_url') || ogImage;
-      canonicalUrlOverride = getField(app, 'canonical_url');
+      const cleanHost = (process.env.PUBLIC_DOMAIN || 'https://www.rummyapp.online').replace(/\/+$/, '');
+      canonicalUrlOverride = getField(app, 'canonical_url') || `${cleanHost}/${getField(app, 'slug')}`;
     }
   } else if (urlPath.startsWith('/info/') || urlPath.startsWith('/gateway/')) {
     const prefix = urlPath.startsWith('/info/') ? '/info/' : '/gateway/';
@@ -1003,7 +1005,8 @@ export async function injectSeoTags(template: string, urlPath: string, hostUrl?:
 
   let schemaOrg: any = null;
   if (!isAdmin) {
-    if (urlPath.startsWith('/app/') || urlPath.startsWith('/gateway/')) {
+    const isAppSlug = apps.some((a: any) => a.slug?.toLowerCase() === urlPath.replace(/^\/app\//, '/').replace(/^\/|\/$/g, '').toLowerCase());
+    if (isAppSlug || urlPath.startsWith('/gateway/')) {
        schemaOrg = {
          "@context": "https://schema.org",
          "@type": "SoftwareApplication",

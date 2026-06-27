@@ -203,7 +203,7 @@ export default function StarRatingFeedback() {
                         id="google-review-primary-button"
                         href="https://g.page/r/Cd8k-znwB0BDEBI/review"
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel="nofollow noopener noreferrer"
                         onClick={handleGoogleReviewClick}
                         className="inline-flex items-center gap-2 bg-white text-slate-900 hover:bg-slate-100 font-bold py-2 px-4 rounded-lg shadow-md transition-all active:scale-95 text-[11px]"
                       >
@@ -335,7 +335,7 @@ export default function StarRatingFeedback() {
                   id="google-review-success-button"
                   href="https://g.page/r/Cd8k-znwB0BDEBI/review"
                   target="_blank"
-                  rel="noopener noreferrer"
+                  rel="nofollow noopener noreferrer"
                   onClick={handleGoogleReviewClick}
                   className="inline-flex items-center gap-2 bg-white text-slate-900 hover:bg-slate-100 font-bold py-2 px-4 rounded-lg transition-all pointer-events-auto text-[11px]"
                 >

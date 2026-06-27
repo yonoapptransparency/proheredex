@@ -251,7 +251,7 @@ export default function GatewayPage() {
     <div className="animate-fade-in select-none pb-20 max-w-[1550px] mx-auto">
       <div className="mb-6 pt-6">
         <Link 
-          to={`/app/${app.slug}`} 
+          to={`/${app.slug}`} 
           className="inline-flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors group"
         >
           <div className="p-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 group-hover:-translate-x-1 transition-transform">
@@ -307,7 +307,7 @@ export default function GatewayPage() {
             {/* Left side: App Presentation */}
             <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-6 w-full lg:w-auto">
               <div className="relative w-24 h-24 bg-white dark:bg-zinc-800 rounded-[22px] overflow-hidden shadow-sm border border-black/5 dark:border-white/5 shrink-0">
-                {app.icon_url ? <img src={app.icon_url} alt="" className="w-full h-full object-cover"/> : null}
+                {app.icon_url ? <img src={app.icon_url} loading="lazy" alt={`${app.name} icon`} className="w-full h-full object-cover"/> : null}
               </div>
               <div className="flex flex-col justify-center">
                 <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2 text-zinc-900 dark:text-zinc-100">{app.name}</h2>
@@ -444,12 +444,12 @@ export default function GatewayPage() {
       {/* Strict Section Order 4: Helpline Block */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-8 w-full mt-20 mb-32 px-4">
         {mockSettings.helpline_whatsapp && (
-          <a href={`https://wa.me/${mockSettings.helpline_whatsapp.replace('+','')}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 text-zinc-500 hover:text-green-600 dark:hover:text-green-400 transition-colors font-semibold text-sm">
+          <a href={`https://wa.me/${mockSettings.helpline_whatsapp.replace('+','')}`} target="_blank" rel="nofollow noopener noreferrer" className="flex items-center justify-center gap-2 text-zinc-500 hover:text-green-600 dark:hover:text-green-400 transition-colors font-semibold text-sm">
             WhatsApp Support
           </a>
         )}
         {mockSettings.helpline_telegram && (
-          <a href={`https://t.me/${mockSettings.helpline_telegram.replace('@','')}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 text-zinc-500 hover:text-blue-500 transition-colors font-semibold text-sm">
+          <a href={`https://t.me/${mockSettings.helpline_telegram.replace('@','')}`} target="_blank" rel="nofollow noopener noreferrer" className="flex items-center justify-center gap-2 text-zinc-500 hover:text-blue-500 transition-colors font-semibold text-sm">
             Telegram Support
           </a>
         )}
@@ -466,9 +466,9 @@ export default function GatewayPage() {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {mockApps.filter(a => a.is_new && a.id !== app.id).slice(0, 4).map(discoverApp => (
-            <Link key={discoverApp.id} to={`/app/${discoverApp.slug}`} className="bg-zinc-50 dark:bg-zinc-800/30 p-6 flex flex-col items-center text-center transition-all border border-black/5 dark:border-white/5 rounded-[24px] hover:border-black/10 dark:hover:border-white/10 group">
+            <Link key={discoverApp.id} to={`/${discoverApp.slug}`} className="bg-zinc-50 dark:bg-zinc-800/30 p-6 flex flex-col items-center text-center transition-all border border-black/5 dark:border-white/5 rounded-[24px] hover:border-black/10 dark:hover:border-white/10 group">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[18px] overflow-hidden mb-4 bg-white dark:bg-zinc-900 shadow-sm border border-black/5 dark:border-white/5 group-hover:scale-105 transition-transform">
-                 {discoverApp.icon_url && <img src={discoverApp.icon_url} alt="" className="w-full h-full object-cover"/>}
+                 {discoverApp.icon_url && <img src={discoverApp.icon_url} loading="lazy" alt={`${discoverApp.name} icon`} className="w-full h-full object-cover"/>}
               </div>
               <h4 className="font-semibold text-sm tracking-tight w-full text-zinc-900 dark:text-zinc-100 truncate mb-1">{discoverApp.name}</h4>
               <div className="text-[11px] font-medium text-zinc-500 truncate w-full">{discoverApp.developer}</div>

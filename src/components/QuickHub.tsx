@@ -412,7 +412,7 @@ export default function QuickHub({ buttonClassName, isMobileSize = false }: Quic
                           id="hub-whatsapp-chat"
                           href={`https://wa.me/${(settings.helpline_whatsapp).replace('+','')}`}
                           target="_blank"
-                          rel="noreferrer"
+                          rel="nofollow noopener noreferrer"
                           onClick={handleToggle}
                           className="p-3 bg-emerald-500/5 hover:bg-emerald-500/10 dark:bg-emerald-500/5 dark:hover:bg-emerald-500/10 border border-emerald-500/10 rounded-2xl transition-all group flex items-center gap-3.5 cursor-pointer hover:-translate-y-0.5"
                         >
@@ -432,7 +432,7 @@ export default function QuickHub({ buttonClassName, isMobileSize = false }: Quic
                           id="hub-telegram-chat"
                           href={settings.helpline_telegram.startsWith('http') ? settings.helpline_telegram : `https://t.me/${settings.helpline_telegram.replace('@', '')}`}
                           target="_blank"
-                          rel="noreferrer"
+                          rel="nofollow noopener noreferrer"
                           onClick={handleToggle}
                           className="p-3 bg-blue-500/5 hover:bg-blue-500/10 dark:bg-blue-500/5 dark:hover:bg-blue-500/10 border border-blue-500/10 rounded-2xl transition-all group flex items-center gap-3.5 cursor-pointer hover:-translate-y-0.5"
                         >
