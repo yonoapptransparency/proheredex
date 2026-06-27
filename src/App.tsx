@@ -946,7 +946,7 @@ function AppContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
               <span>
-                <strong>Shared Firebase Sandbox Quota Exceeded:</strong> Because this app uses the shared sandbox project (<code className="bg-amber-500/20 px-1 rounded text-amber-700 dark:text-amber-300">gen-lang-client</code>), the global 50k reads/day ceiling is frequently exhausted by other builders. Your listed items are 100% safe! Standard visitors load items instantly via our server backup cache. For dedicated, permanent access, you can easily connect your own free Firebase project for free in minutes!
+                <strong>Database Quota Exceeded:</strong> You have reached your Firebase plan's free daily quota for read/write operations. Standard visitors load items instantly via our server backup cache. The database quota will reset tomorrow.
               </span>
             </div>
             <a 
@@ -955,7 +955,7 @@ function AppContent() {
               rel="noopener noreferrer"
               className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold uppercase text-[10px] tracking-wider rounded-lg transition-all shadow-md shrink-0 active:scale-95"
             >
-              Get Dedicated DB Free
+              Upgrade Firebase Plan
             </a>
           </div>
         </div>

