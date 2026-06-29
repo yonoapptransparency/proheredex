@@ -1031,24 +1031,24 @@ export const mockApps: AppConfig[] = [
     "rating": 3.9,
     "faqs": [
       {
-        "question": "How does the registry evaluate Memory-Heap Compaction in Jaiho Rummy?",
-        "answer": "Answer: We conduct a Dynamic Allocation Audit to monitor how efficiently the localized application reorganizes its active data structures in your device's RAM. By executing memory-heap compaction, the engine prevents storage fragmentation—the primary cause of application crashing. Our diagnostic measures this compaction efficiency to establish a baseline for long-term software stability."
+        "question": "How does the registry evaluate Asynchronous Matrix Permutation in 567 Slots?",
+        "answer": "Answer: We conduct a Variable Generation Audit to monitor how efficiently the localized application calculates its randomized data arrays. By evaluating asynchronous matrix permutation, we establish a technical baseline for how smoothly the engine computes unpredictable logic sequences off the main thread without causing the visual interface to stutter."
       },
       {
-        "answer": "Answer: Vector-Graphic Rasterization refers to the engine's capability to take scalable, mathematical descriptions of layout shapes (like card paths and button geometric layers) and draw them onto your screen's pixel grid in real-time. Our diagnostic teardown measures the frame-consistency of this rendering path, ensuring that asset scaling does not introduce blurry visuals or drag-and-drop input lag.",
-        "question": "What is \"Vector-Graphic Rasterization\" within this software architecture?"
+        "question": "What is \"Cryptographic State Fencing\" within this software architecture?",
+        "answer": "Answer: Cryptographic State Fencing refers to the engine's ability to lock its current mathematical outcome in a secure, isolated section of your device's memory. Our diagnostic teardown measures the strictness of this boundary. An optimized state fence ensures that background applications or OS interruptions cannot corrupt the matrix data before it visually renders on your screen."
       },
       {
-        "question": "How does the rasterization pipeline impact hardware thermals?",
-        "answer": "Answer: Maintaining continuous, hardware-accelerated rasterization demands sustained GPU clock speeds. While highly efficient for high-definition visual parsing, aggressive rendering loops generate thermal load. Our Hardware Snapshot indicates that the Jaiho Rummy engine intelligently drops background particle anti-aliasing when device temperatures cross critical thresholds, protecting core state integrity over aesthetic graphics."
+        "question": "How does asynchronous processing impact hardware thermals?",
+        "answer": "Answer: Offloading complex matrix math from the main UI thread requires sustained multi-core CPU allocation. While highly efficient for preventing screen freezing, aggressive asynchronous processing generates localized thermal load. Our Hardware Snapshot indicates that the 567 Slots engine intelligently scales back background visual particle effects when device temperatures rise, preserving core matrix generation over aesthetic graphics."
       },
       {
-        "answer": "Answer: Yes, the application utilizes Adaptive Asset Blitting to maintain system stability on older hardware architectures. While core heap compaction remains mathematically prioritized, the execution environment automatically downscales vector canvas complexity on legacy mobile processors. This ensures that localized input parsing remains uncompromised, regardless of the device's chip tier.",
-        "question": "Can entry-level mobile processors handle the Jaiho Rummy heap logic?"
+        "question": "Can entry-level mobile processors handle the 567 Slots permutation logic?",
+        "answer": "Answer: Yes, the application utilizes Dynamic Logic Downscaling to maintain system stability on older hardware architectures. While the core matrix permutation remains mathematically strict, the execution environment automatically increases the algorithmic polling interval on legacy mobile processors. This ensures that localized input processing remains uncompromised without overheating the chip."
       },
       {
-        "answer": "Answer: No. RummyApp Online operates strictly as an independent evaluator of Client-Side Software Processing and Ergonomics. We benchmark how the specific software binary utilizes your local hardware resources to manage its heap states and compile its graphics. We do not evaluate, monitor, or access secure server-side logic, ensuring our metrics remain exclusively focused on localized structural software integrity.",
-        "question": "Does the Jaiho Rummy diagnostic monitor external node communications?"
+        "question": "Does the 567 Slots diagnostic monitor external server environments?",
+        "answer": "Answer: No. RummyApp Online operates strictly as an independent evaluator of Client-Side Software Processing and Ergonomics. We benchmark how the specific software binary utilizes your local hardware resources to calculate its matrices and fence its logic states. We do not evaluate, monitor, or access secure server-side cryptographic logic, ensuring our metrics remain exclusively focused on localized structural software integrity."
       }
     ],
     "og_image_url": "https://13eehe59cj.ucarecd.net/c693366d-d543-4d76-84ba-3963a3f3c792/-/preview/190x190/",
@@ -1062,7 +1062,9 @@ export const mockApps: AppConfig[] = [
     "release_notes": "Patched memory leaks within the localized runtime environment. The engine now efficiently executes memory-heap compaction routines, eliminating mid-session garbage collection stutters and locking the interface at a stable frame rhythm during intensive tactical execution.",
     "is_featured": false,
     "screenshots": [],
-    "safety_status": "Verified"
+    "safety_status": "Verified",
+    "features_html": "",
+    "is_coming_soon": false
   },
   {
     "seo_keywords": "Love Rummy node-tree parsing, predictive cache allocation, UI node-tree audit, Love Rummy system diagnostic",
