@@ -1433,7 +1433,8 @@ export const mockApps: AppConfig[] = [
     ],
     "og_image_url": "https://13eehe59cj.ucarecd.net/e4314d5e-eb77-46b9-8998-8e0f94970b38/-/preview/72x72/",
     "target_region": "India (Tier 1 & Tier 2 Search Optimization)",
-    "seo_description": "Explore the 567 Slots system architecture. RummyApp Online provides a technical audit of asynchronous matrix permutation, state fencing, and local execution."
+    "seo_description": "Explore the 567 Slots system architecture. RummyApp Online provides a technical audit of asynchronous matrix permutation, state fencing, and local execution.",
+    "features_html": ""
   },
   {
     "developer": "Admin",
